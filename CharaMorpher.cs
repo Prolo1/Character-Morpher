@@ -54,7 +54,7 @@ namespace HS2_CharaMorpher
         // Be careful with public const fields! Read more: https://stackoverflow.com/questions/55984
         // Avoid changing GUID unless absolutely necessary. Plugins that rely on your plugin will no longer recognize it, and if you use it in function controllers you will lose all data saved to cards before the change!
         public const string GUID = "prolo.chararmorpher";
-        public const string Version = "0.1.14";
+        public const string Version = "0.1.15";
 
         internal static CharaMorpher Instance;
         internal static new ManualLogSource Logger;
@@ -68,15 +68,15 @@ namespace HS2_CharaMorpher
 
             //Main
             public ConfigEntry<bool> enable { set; get; }
-            public ConfigEntry<string> mergeCharDir { set; get; }
+            public ConfigEntry<string> morphCharDir { set; get; }
             public ConfigEntry<uint> sliderExtents { set; get; }
             //public ConfigEntry<uint> awaitTime { set; get; }
 
             public List<ConfigEntry<float>> defaults { set; get; }
 
-
             //Advanced (show up at the top)
             public ConfigEntry<int> headIndex { set; get; }
+            public List<ConfigEntry<int>> noseIndex { set; get; }
             public List<ConfigEntry<int>> earIndex { set; get; }
             public List<ConfigEntry<int>> eyeIndex { set; get; }
             public List<ConfigEntry<int>> mouthIndex { set; get; }
@@ -100,42 +100,42 @@ namespace HS2_CharaMorpher
             {
                 enable = Config.Bind("_Main_", "Enable", true, new ConfigDescription("Allows the plugin to run (may need to reload if results are not changing)", null, new ConfigurationManagerAttributes { Order = --index })),
                 enableABMX = Config.Bind("_Main_", "Enable ABMX", true, new ConfigDescription("Allows the plugin to run (may need to reload if results are not changing)", null, new ConfigurationManagerAttributes { Order = --index })),
-                mergeCharDir = Config.Bind("_Main_", "Character Location", new ChaFileControl().ConvertCharaFilePath("../navi/navi.png", 255), new ConfigDescription("Template character", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
+                morphCharDir = Config.Bind("_Main_", "Character Location", new ChaFileControl().ConvertCharaFilePath("../navi/navi.png", 255), new ConfigDescription("Template character", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
                 sliderExtents = Config.Bind("_Main_", "Slider Extents", 200u, new ConfigDescription("How far the slider values go above default (e.i. setting value to 10 gives values -10 -> 110)", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true })),
                 //awaitTime =     Config.Bind("_Main_", "await", 200u, new ConfigDescription("How far the slider values go above default (e.i. setting value to 10 gives values -10 -> 110)", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true })),
 
                 //you don't need to see this in game
                 defaults = new List<ConfigEntry<float>>{
-                    Config.Bind("Defaults", "Body  Default" , 75f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = index = 0, Browsable=false })),
-                    Config.Bind("Defaults", "Head  Default" , 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable=false })),
-                    Config.Bind("Defaults", "Boobs Default", 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
-                    Config.Bind("Defaults", "Butt  Default" , 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable=false })),
-                    Config.Bind("Defaults", "Torso Default", 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
-                    Config.Bind("Defaults", "Arms  Default" , 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable=false })),
-                    Config.Bind("Defaults", "Legs  Default" , 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable=false })),
+                    Config.Bind("Defaults", "Body  Default" , 75f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = index = 0, Browsable = true })),
+                    Config.Bind("Defaults", "Head  Default" , 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable = true })),
+                    Config.Bind("Defaults", "Boobs Default", 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable = true})),
+                    Config.Bind("Defaults", "Butt  Default" , 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable = true })),
+                    Config.Bind("Defaults", "Torso Default", 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable = true})),
+                    Config.Bind("Defaults", "Arms  Default" , 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable = true })),
+                    Config.Bind("Defaults", "Legs  Default" , 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable = true })),
 
-                    Config.Bind("Defaults", "Face  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
-                    Config.Bind("Defaults", "Ears  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
-                    Config.Bind("Defaults", "Eyes  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
-                    Config.Bind("Defaults", "Mouth Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
-
-
-                    Config.Bind("Defaults", "ABMX  Body Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index    , Browsable=false})),
-                    Config.Bind("Defaults", "ABMX  Boobs Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index    , Browsable=false})),
-                    Config.Bind("Defaults", "ABMX  Butt Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index     , Browsable=false})),
-                    Config.Bind("Defaults", "ABMX  Torso Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index    , Browsable=false})),
-                    Config.Bind("Defaults", "ABMX  Arms Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index     , Browsable=false})),
-                    Config.Bind("Defaults", "ABMX  Hands Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order =--index     , Browsable=false})),
-                    Config.Bind("Defaults", "ABMX  Legs Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index    , Browsable=false})),
-                    Config.Bind("Defaults", "ABMX  Feet Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index    , Browsable=false})),
-                    Config.Bind("Defaults", "ABMX  Genitals Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
+                    Config.Bind("Defaults", "Face  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable = true})),
+                    Config.Bind("Defaults", "Ears  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable = true})),
+                    Config.Bind("Defaults", "Eyes  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable = true})),
+                    Config.Bind("Defaults", "Mouth Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable = true})),
 
 
-                    Config.Bind("Defaults", "ABMX  Head Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
-                    Config.Bind("Defaults", "ABMX  Ears Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable=false})),
-                    Config.Bind("Defaults", "ABMX  Eyes Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable=false})),
-                    Config.Bind("Defaults", "ABMX  Mouth Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
-                    Config.Bind("Defaults", "ABMX  Hair Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable=false})),
+                    Config.Bind("Defaults", "ABMX  Body Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index    , Browsable = true})),
+                    Config.Bind("Defaults", "ABMX  Boobs Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index    , Browsable = true})),
+                    Config.Bind("Defaults", "ABMX  Butt Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index     , Browsable = true})),
+                    Config.Bind("Defaults", "ABMX  Torso Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index    , Browsable = true})),
+                    Config.Bind("Defaults", "ABMX  Arms Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index     , Browsable = true})),
+                    Config.Bind("Defaults", "ABMX  Hands Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order =--index     , Browsable = true})),
+                    Config.Bind("Defaults", "ABMX  Legs Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index    , Browsable = true})),
+                    Config.Bind("Defaults", "ABMX  Feet Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index    , Browsable = true})),
+                    Config.Bind("Defaults", "ABMX  Genitals Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable = true})),
+
+
+                    Config.Bind("Defaults", "ABMX  Head Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable = true})),
+                    Config.Bind("Defaults", "ABMX  Ears Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable = true})),
+                    Config.Bind("Defaults", "ABMX  Eyes Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable = true})),
+                    Config.Bind("Defaults", "ABMX  Mouth Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable = true})),
+                    Config.Bind("Defaults", "ABMX  Hair Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable = true})),
                 },
 
                 headIndex = Config.Bind("Adv1 Head", "Head Index", 9, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true })),
@@ -186,29 +186,47 @@ namespace HS2_CharaMorpher
                     Config.Bind("Adv7 Ear", "Ear Index 5", 58, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = --index, IsAdvanced=true})),
                 },
                 eyeIndex = new List<ConfigEntry<int>>{
-                    Config.Bind("Adv8 Eye", $"Ear Index {index=1}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv8 Eye", $"Ear Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv8 Eye", $"Ear Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv8 Eye", $"Ear Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv8 Eye", $"Ear Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv8 Eye", $"Ear Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv8 Eye", $"Ear Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv8 Eye", $"Ear Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv8 Eye", $"Ear Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv8 Eye", $"Ear Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {index=1}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {++index}", 21, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {++index}", 22, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {++index}", 23, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {++index}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {++index}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {++index}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {++index}", 28, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {++index}", 29, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv8 Eye", $"Eye Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                 },
                 mouthIndex = new List<ConfigEntry<int>>{
-                    Config.Bind("Adv9 Eye", $"Mouth Index {index=1}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv9 Eye", $"Mouth Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv9 Eye", $"Mouth Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv9 Eye", $"Mouth Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv9 Eye", $"Mouth Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv9 Eye", $"Mouth Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv9 Eye", $"Mouth Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv9 Eye", $"Mouth Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv9 Eye", $"Mouth Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                    Config.Bind("Adv9 Eye", $"Mouth Index {++index}", 0, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-                },
+                    Config.Bind("Adv9 Mouth", $"Mouth Index {index=1}", 47, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 48, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 49, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 50, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 51, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 52, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 53, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                 },
+                noseIndex = new List<ConfigEntry<int>>{
+                    Config.Bind("Adv10 Nose", $"Nose Index {index=1}", 32, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 33, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 34, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 35, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 36, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 37, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 38, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 39, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 40, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 41, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 42, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 43, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 44, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 45, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                    Config.Bind("Adv10 Nose", $"Nose Index {++index}", 46, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+                 },
+
             };
 
 
