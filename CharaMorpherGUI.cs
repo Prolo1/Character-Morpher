@@ -46,12 +46,12 @@ namespace HS2_CharaMorpher
             var enable = e.AddControl(new MakerToggle(category, "Enable", cfg.enable.Value, CharaMorpher.Instance));
             enable.BindToFunctionController<CharaMorpherController, bool>(
                 (control) => cfg.enable.Value,
-                (control, val) => { cfg.enable.Value = val; control.UpdateMorphValues(!val); for(int a = 0; a < sliders.Count; ++a) sliders[a].ControlObject.SetActive(val); });
+                (control, val) => { cfg.enable.Value = val; for(int a = 0; a < sliders.Count; ++a) sliders[a].ControlObject.SetActive(val); });
 
             var enableabmx = e.AddControl(new MakerToggle(category, "Enable ABMX", cfg.enableABMX.Value, CharaMorpher.Instance));
             enableabmx.BindToFunctionController<CharaMorpherController, bool>(
                 (control) => cfg.enableABMX.Value,
-                (control, val) => { cfg.enableABMX.Value = val; control.UpdateMorphValues(!val); for(int a = sliders.Count - 14; a < sliders.Count; ++a) sliders[a].ControlObject.SetActive(cfg.enable.Value && val); });
+                (control, val) => { cfg.enableABMX.Value = val; for(int a = sliders.Count - 14; a < sliders.Count; ++a) sliders[a].ControlObject.SetActive(cfg.enable.Value && val); });
 
 
 

@@ -51,8 +51,8 @@ namespace HS2_CharaMorpher
                     {
                         //#if AI || HS2
                         var headRoot = charaCtrl.objHeadBone.transform.parent.parent;
-                        CharaMorpher.Logger.LogDebug(charaCtrl.objHeadBone.transform.parent.parent.name);
-                        CharaMorpher.Logger.LogDebug(charaCtrl.objBodyBone.name);
+                        // CharaMorpher.Logger.LogDebug(charaCtrl.objHeadBone.transform.parent.parent.name);
+                        // CharaMorpher.Logger.LogDebug(charaCtrl.objBodyBone.transform.parent.parent.name);
                         //#else
                         //                        var headRoot = charaCtrl.transform.FindLoop("cf_j_head");
                         //#endif
@@ -68,7 +68,7 @@ namespace HS2_CharaMorpher
                         headBones.Add(headRoot.name);
                         body.RemoveAll(x => headBones.Contains(x.BoneName));
 
-                        var bodyBones = new HashSet<string>(modbody.transform.FindLoop("BodyTop").GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
+                        var bodyBones = new HashSet<string>(charaCtrl.objBodyBone.transform.parent.parent.GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
 
                         face.RemoveAll(x => bodyBones.Contains(x.BoneName));
                     }
@@ -455,41 +455,42 @@ namespace HS2_CharaMorpher
             public float abmxHair;
         }
 
-        private static int index = 0;//used exclusively for the controls
+        private static int controlsIndex = 0;//used exclusively for the controls
         public static MorphControls controls = new MorphControls()
         {
             //Main
-            body = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            head = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            boob = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            butt = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            torso = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            arm = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            leg = CharaMorpher.Instance.cfg.defaults[index++].Value,
+            body = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            head = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            boob = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            butt = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            torso = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            arm = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            leg = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
 
-            face = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            ear = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            eyes = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            mouth = CharaMorpher.Instance.cfg.defaults[index++].Value,
+            face = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            ear = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            eyes = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            mouth = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
 
             //ABMX
-            abmxBody = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            abmxBoobs = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            abmxButt  = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            abmxTorso = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            abmxArms  = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            abmxHands = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            abmxLegs = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            abmxFeet = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            abmxGenitals = CharaMorpher.Instance.cfg.defaults[index++].Value,
+            abmxBody = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            abmxBoobs = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            abmxButt = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            abmxTorso = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            abmxArms = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            abmxHands = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            abmxLegs = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            abmxFeet = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            abmxGenitals = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
 
-            abmxFace = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            abmxEars = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            abmxEyes = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            abmxMouth = CharaMorpher.Instance.cfg.defaults[index++].Value,
-            abmxHair = CharaMorpher.Instance.cfg.defaults[index++].Value,
+            abmxFace = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            abmxEars = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            abmxEyes = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            abmxMouth = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
+            abmxHair = CharaMorpher.Instance.cfg.defaults[controlsIndex++].Value * .01f,
         };
         internal bool initialLoad = true, loadingSecondary = false;
+
 
         /// <inheritdoc />
         protected override void OnReload(GameMode currentGameMode)
@@ -498,21 +499,9 @@ namespace HS2_CharaMorpher
             initialLoad = true;
 
             var cfg = CharaMorpher.Instance.cfg;
-            if(currentGameMode != GameMode.Maker || !cfg.enable.Value || MakerAPI.GetMakerSex() != 1/*could just allow it in both makers later*/|| loadingSecondary)
-            {
-                KKAPI.Maker.MakerAPI.MakerExiting += (a, b) => { CharaMorpher.Logger.LogDebug($"Morpher Has exited!"); };
-                if(loadingSecondary)
-                {
-                    CharaMorpher.Logger.LogDebug($"this is a secondarry load");
-                    ChaControl.chaFile.CopyCustom(m_data1.main.custom);
-
-                    //Update the model
-                    MorphChangeUpdate();
-                    loadingSecondary = false;
-                }
-
+            if((int)ChaControl.sex != 1/*could just allow it in both makers later*/)
                 return;
-            }
+
 
 
             //TODO: Enter logic here...
@@ -537,49 +526,24 @@ namespace HS2_CharaMorpher
                 lastCharDir = cfg.morphCharDir.Value;
                 charData = new MorphData();
 
-                //I have no clue if this works
-                //GameObject go = Instantiate(ChaControl.gameObject, ChaControl.gameObject.transform.parent);
-                try
-                {
-                    loadingSecondary = true;
-                    CharaMorpher.Logger.LogDebug($"Start loading chara file");
-                    ChaControl.chaFile.LoadCharaFile(cfg.morphCharDir.Value);
-
-                    CharaMorpher.Logger.LogDebug($"End loading chara file");
-
-                    CharaMorpher.Logger.LogDebug($"found file data");
-                    charData.main.CopyCustom(ChaControl.fileCustom);
-
-                    CharaMorpher.Logger.LogDebug($"Got File data");
-                    //Store Bonemod Extended Data
-                    charData.abmx.Populate(GetComponent<BoneController>(), this.transform);
-
-                    CharaMorpher.Logger.LogDebug($"Got Extended File data");
 
 
-                    ChaControl.chaFile.LoadFromBytes(m_data1.main.GetCustomBytes());
-                    CharaMorpher.Logger.LogDebug($"Loaded Original data");
+                ChaControl.chaFile.LoadCharaFile(cfg.morphCharDir.Value);
+                charData.main.CopyCustom(ChaControl.fileCustom);
 
-                    m_data2 = charData.Copy();
+                //Store Bonemod Extended Data
+                charData.abmx.Populate(GetComponent<BoneController>(), this.transform);
 
-                    //ChaControl.SetBodyBaseMaterial();//probobly not what I need
-                }
-                catch(Exception e)
-                {
-                    CharaMorpher.Logger.LogDebug(e);
-                    // Destroy(go);
-                }
-
+                //CharaMorpher.Logger.LogDebug($"this is a secondarry load");
+                ChaControl.chaFile.CopyCustom(m_data1.main.custom);
             }
-            else
-            {
-                m_data2.main.CopyCustom(charData.main.custom);
-                m_data2.abmx.body = new List<BoneModifier>(charData.abmx.body);
-                m_data2.abmx.face = new List<BoneModifier>(charData.abmx.face);
-            }
+
+            m_data2 = charData.Copy();
 
             //Update the model
             MorphChangeUpdate();
+
+
         }
 
 
@@ -622,7 +586,7 @@ namespace HS2_CharaMorpher
 
             //Merge results
 
-            var charaCtrl = MakerAPI.GetCharacterControl();
+            var charaCtrl = ChaControl;
             var boneCtrl = charaCtrl.GetComponent<BoneController>();
             if(cfg.enableABMX.Value)
             {
@@ -648,10 +612,10 @@ namespace HS2_CharaMorpher
 
         }
 
-        public void UpdateMorphValues(bool reset)
+        public void UpdateMorphValues(bool reset = false)
         {
             var cfg = CharaMorpher.Instance.cfg;
-            var charaCtrl = MakerAPI.GetCharacterControl();
+            var charaCtrl = ChaControl;
             var boneCtrl = charaCtrl.GetComponent<BoneController>();
 
             float enable = reset ? 0 : 1;
@@ -661,14 +625,17 @@ namespace HS2_CharaMorpher
                 charaCtrl.fileBody.areolaSize = (m_data1.main.custom.body.areolaSize +
                               enable * controls.body * controls.boob * (m_data2.main.custom.body.areolaSize - m_data1.main.custom.body.areolaSize));
 
+
                 charaCtrl.fileBody.bustSoftness = (m_data1.main.custom.body.bustSoftness +
                                enable * controls.body * controls.boob * (m_data2.main.custom.body.bustSoftness - m_data1.main.custom.body.bustSoftness));
+                charaCtrl.ChangeBustSoftness(charaCtrl.fileBody.bustSoftness);
 
                 charaCtrl.fileBody.bustWeight = (m_data1.main.custom.body.bustWeight +
                                enable * controls.body * controls.boob * (m_data2.main.custom.body.bustWeight - m_data1.main.custom.body.bustWeight));
+                charaCtrl.ChangeBustGravity(charaCtrl.fileBody.bustWeight);
 
 
-                charaCtrl.UpdateBustSoftnessAndGravity();
+                charaCtrl.updateBustSize = true;
                 //one of these may work (if they are what I think they do: and they did!)
                 charaCtrl.ChangeNipColor();
                 charaCtrl.ChangeNipGloss();
@@ -682,8 +649,8 @@ namespace HS2_CharaMorpher
             {
                 float result = 0;
 
+                enable = reset || !cfg.enableABMX.Value ? 0 : 1;
                 //ABMX
-                if(cfg.enableABMX.Value || reset)
                 {
                     //Body
                     if(a < m_data1.abmx.body.Count)
@@ -814,6 +781,7 @@ namespace HS2_CharaMorpher
                     }
                 }
 
+                enable = reset ? 0 : 1;
                 //Body Shape
                 if(a < m_data1.main.custom.body.shapeValueBody.Length)
                 {
@@ -871,7 +839,7 @@ namespace HS2_CharaMorpher
                         result = (m_data1.main.custom.face.shapeValueFace[a] +
                           enable * controls.face * (m_data2.main.custom.face.shapeValueFace[a] - m_data1.main.custom.face.shapeValueFace[a]));
 
-                    CharaMorpher.Logger.LogDebug($"Loaded Face [{a}]: {m_data1.main.custom.face.shapeValueFace[a]}");
+                    //CharaMorpher.Logger.LogDebug($"Loaded Face [{a}]: {m_data1.main.custom.face.shapeValueFace[a]}");
                     //CharMerger.Logger.LogDebug($"Loaded Face Part 2: {data2.main.custom.face.shapeValueFace[a]}");
 
 
@@ -884,7 +852,10 @@ namespace HS2_CharaMorpher
 
 
             if(initialLoad)
+            {
                 boneCtrl.NeedsFullRefresh = true;
+                boneCtrl.NeedsBaselineUpdate = true;
+            }
             else
                 boneCtrl.NeedsBaselineUpdate = true;
 

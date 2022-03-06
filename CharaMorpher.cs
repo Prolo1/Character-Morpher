@@ -229,7 +229,19 @@ namespace HS2_CharaMorpher
 
             };
 
-
+            cfg.enable.SettingChanged += (m, n) =>
+            {
+                foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+                    if(hnd.ControllerType == typeof(CharaMorpherController))
+                        foreach(var cha in hnd.Instances)
+                            ((CharaMorpherController)cha).MorphChangeUpdate();
+            }; cfg.enableABMX.SettingChanged += (m, n) =>
+            {
+                foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+                    if(hnd.ControllerType == typeof(CharaMorpherController))
+                        foreach(var cha in hnd.Instances)
+                            ((CharaMorpherController)cha).MorphChangeUpdate();
+            };
 
             if(StudioAPI.InsideStudio) return;
 
