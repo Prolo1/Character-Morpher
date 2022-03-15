@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,17 +13,15 @@ using KKAPI.MainGame;
 using KKAPI.Utilities;
 using KKAPI.Maker;
 using KKAPI.Maker.UI;
-using KKAPI.Maker.UI.Sidebar;
 using KKAPI.Chara;
 
 using UnityEngine;
 using UnityEngine.UI;
 
 
-
 namespace HS2_CharaMorpher
 {
-    class CharaMorpherGUI : MonoBehaviour
+    class CharaMorpherGUI
     {
 
         internal static void Initialize()
@@ -29,14 +29,15 @@ namespace HS2_CharaMorpher
             MakerAPI.RegisterCustomSubCategories += AddCharaMorpherMenu;
         }
 
+
+        static int abmxIndex = 0;
         static List<MakerSlider> sliders = new List<MakerSlider>();
         private static void AddCharaMorpherMenu(object sender, RegisterSubCategoriesEvent e)
         {
             if(MakerAPI.GetMakerSex() != 1) return;
 
-            var cfg = CharaMorpher.Instance.cfg;
 
-           
+            var cfg = CharaMorpher.Instance.cfg;
 
             MakerCategory category = new MakerCategory(MakerConstants.Parameter.CategoryName, "Character Morpher");
             e.AddSubCategory(category);
@@ -51,18 +52,19 @@ namespace HS2_CharaMorpher
             var enableabmx = e.AddControl(new MakerToggle(category, "Enable ABMX", cfg.enableABMX.Value, CharaMorpher.Instance));
             enableabmx.BindToFunctionController<CharaMorpherController, bool>(
                 (control) => cfg.enableABMX.Value,
-                (control, val) => { cfg.enableABMX.Value = val; for(int a = sliders.Count - 14; a < sliders.Count; ++a) sliders[a].ControlObject.SetActive(cfg.enable.Value && val); });
+                (control, val) => { cfg.enableABMX.Value = val; for(int a = abmxIndex; a < sliders.Count; ++a) sliders[a].ControlObject.SetActive(cfg.enable.Value && val); });
 
 
+            e.AddControl(new MakerSeparator(category, CharaMorpher.Instance));
+            e.AddControl(new MakerText("", category, CharaMorpher.Instance));//create space
 
-            int abmxIndex = 0;
+
             //Sliders
             {
                 int index = 0;
                 sliders.Clear();
                 float min = -cfg.sliderExtents.Value * .01f, max = 1 + cfg.sliderExtents.Value * .01f;
 
-                e.AddControl(new MakerText("", category, CharaMorpher.Instance));//add space
                 e.AddControl(new MakerText("Body Controls", category, CharaMorpher.Instance));
                 sliders.Add(e.AddControl(new MakerSlider(category, "Overall Body", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher.Instance)));
                 sliders.Last().BindToFunctionController<CharaMorpherController, float>(
@@ -102,10 +104,10 @@ namespace HS2_CharaMorpher
 
 
 
-                e.AddControl(new MakerText("", category, CharaMorpher.Instance));//add space
-                e.AddControl(new MakerText("Face Controls", category, CharaMorpher.Instance));
+                e.AddControl(new MakerText("", category, CharaMorpher.Instance));//create space
+                e.AddControl(new MakerText("Head Controls", category, CharaMorpher.Instance));
 
-                sliders.Add(e.AddControl(new MakerSlider(category, "Overall Face", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher.Instance)));
+                sliders.Add(e.AddControl(new MakerSlider(category, "Overall Head", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher.Instance)));
                 sliders.Last().BindToFunctionController<CharaMorpherController, float>(
                    (control) => CharaMorpherController.controls.face,
                     (control, val) => { CharaMorpherController.controls.face = val; control.MorphChangeUpdate(); });
@@ -128,7 +130,7 @@ namespace HS2_CharaMorpher
 
                 abmxIndex = index;//may use this later
 
-                e.AddControl(new MakerText("", category, CharaMorpher.Instance));//add space
+                e.AddControl(new MakerText("", category, CharaMorpher.Instance));//create space
                 e.AddControl(new MakerText("ABMX Body", category, CharaMorpher.Instance));
 
                 sliders.Add(e.AddControl(new MakerSlider(category, "Body", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher.Instance)));
@@ -181,13 +183,13 @@ namespace HS2_CharaMorpher
 
 
 
-                e.AddControl(new MakerText("", category, CharaMorpher.Instance));//add space
+                e.AddControl(new MakerText("", category, CharaMorpher.Instance));//create space
                 e.AddControl(new MakerText("ABMX Head", category, CharaMorpher.Instance));
 
                 sliders.Add(e.AddControl(new MakerSlider(category, "Head", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher.Instance)));
                 sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-                 (control) => CharaMorpherController.controls.abmxFace,
-                  (control, val) => { CharaMorpherController.controls.abmxFace = val; control.MorphChangeUpdate(); });
+                 (control) => CharaMorpherController.controls.abmxHead,
+                  (control, val) => { CharaMorpherController.controls.abmxHead = val; control.MorphChangeUpdate(); });
 
                 e.AddControl(new MakerSeparator(category, CharaMorpher.Instance));
                 sliders.Add(e.AddControl(new MakerSlider(category, "Ears", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher.Instance)));
@@ -211,23 +213,21 @@ namespace HS2_CharaMorpher
                   (control, val) => { CharaMorpherController.controls.abmxHair = val; control.MorphChangeUpdate(); });
             }
 
-            //slider visability
+            e.AddControl(new MakerText("", category, CharaMorpher.Instance));//create space
+            e.AddControl(new MakerSeparator(category, CharaMorpher.Instance));
+
+            //initial slider visability
             for(int a = 0; a < sliders.Count; ++a)
             {
                 var obj = sliders[a].ControlObject;
                 if(obj) obj.SetActive(cfg.enable.Value);
             }
-            for(int a = sliders.Count - 14; a < sliders.Count; ++a)
+            for(int a = abmxIndex; a < sliders.Count; ++a)
             {
                 var obj = sliders[a].ControlObject;
                 if(obj) obj.SetActive(cfg.enable.Value && cfg.enableABMX.Value);
             }
 
-
-
-
-            e.AddControl(new MakerText("", category, CharaMorpher.Instance));//add space
-            e.AddControl(new MakerSeparator(category, CharaMorpher.Instance));
             //Buttons
             var saveDefaultsButton = e.AddControl(new MakerButton("Save Default", category, CharaMorpher.Instance));
             saveDefaultsButton.OnClick.AddListener(
@@ -248,13 +248,23 @@ namespace HS2_CharaMorpher
                });
         }
 
-
-
-
-        private static void CustomMakerUI(object sender, RegisterCustomControlsEvent e)
+        private void OpenFolder(string folderPath)
         {
+            if(Directory.Exists(folderPath))
+            {
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    Arguments = folderPath,
+                    FileName = "explorer.exe",
+                    
+                };
 
-
+                Process.Start(startInfo);
+            }
+            else
+            {
+                //Error here
+            }
         }
     }
 }
