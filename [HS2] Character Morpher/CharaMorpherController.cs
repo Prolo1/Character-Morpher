@@ -6,10 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using IllusionUtility.GetUtility;
-using HS2;
-
-
 using KKAPI;
 using KKAPI.Chara;
 
@@ -17,7 +13,7 @@ using KKABMX.Core;
 using ExtensibleSaveFormat;
 
 using UnityEngine;
-using UniRx;
+
 
 
 
@@ -57,8 +53,8 @@ namespace HS2_CharaMorpher
                         var headBones = new HashSet<string>(headRoot.GetComponentsInChildren<Transform>().Select(x => x.name));
                         headBones.Add(headRoot.name);
                         body.RemoveAll(x => headBones.Contains(x.BoneName));
-
-                        var bodyBones = new HashSet<string>(charaCtrl.objBodyBone.transform.parent.parent.GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
+                        var tmp = charaCtrl.objBodyBone.transform.parent.parent;
+                        var bodyBones = new HashSet<string>(tmp.GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
                         face.RemoveAll(x => bodyBones.Contains(x.BoneName));
                     }
                 }
@@ -451,7 +447,7 @@ namespace HS2_CharaMorpher
             public float abmxHair;
         }
 
-        static int morphindex = 0;//get defaults from config
+        private static int morphindex = 0;//get defaults from config
         public static MorphControls controls = new MorphControls()
         {
 
@@ -494,13 +490,13 @@ namespace HS2_CharaMorpher
             CharaMorpherController ctrl = n.ReloadedCharacter.GetComponent<CharaMorpherController>();
 
             //initialLoad = true;
-            
-            
-                CharaMorpher.Logger.LogDebug("Reloading Character");
-                ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode());
-                // initialLoad = true;
-                // ctrl.UpdateMorphValues(false);
-            
+
+
+            CharaMorpher.Logger.LogDebug("Reloading Character");
+            ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode());
+            // initialLoad = true;
+            // ctrl.UpdateMorphValues(false);
+
         }
 
         protected override void Awake()
@@ -555,7 +551,7 @@ namespace HS2_CharaMorpher
 
                 //Reset original character data
                 ChaControl.chaFile.CopyCustom(m_data1.main.custom);
-              //  initialLoad = true;
+                //  initialLoad = true;
             }
 
             m_data2.Copy(charData);
@@ -875,7 +871,7 @@ namespace HS2_CharaMorpher
 
             boneCtrl.NeedsBaselineUpdate = true;
 
-           // initialLoad = false;
+            // initialLoad = false;
         }
 
         /// <summary>
