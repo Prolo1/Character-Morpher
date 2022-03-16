@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using HS2;
+
 
 using KKAPI;
 using KKAPI.MainGame;
@@ -39,7 +39,17 @@ namespace HS2_CharaMorpher
 
             var cfg = CharaMorpher.Instance.cfg;
 
+#if HS2 || AI
+
             MakerCategory category = new MakerCategory(MakerConstants.Parameter.CategoryName, "Character Morpher");
+#else
+            foreach(var cat in MakerConstants.BuiltInCategories)
+                CharaMorpher.Logger.LogDebug(cat.CategoryName);
+
+            MakerCategory peram = MakerConstants.Parameter.Character;
+            MakerCategory category = new MakerCategory(peram.CategoryName, "Morph", int.MaxValue, "Chara Morph");
+#endif
+
             e.AddSubCategory(category);
 
             //Enables
@@ -256,7 +266,7 @@ namespace HS2_CharaMorpher
                 {
                     Arguments = folderPath,
                     FileName = "explorer.exe",
-                    
+
                 };
 
                 Process.Start(startInfo);

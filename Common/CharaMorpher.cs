@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using HS2;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -14,7 +13,8 @@ using KKAPI.Chara;
 using KKAPI.Maker;
 using KKAPI.Studio;
 using Unity.Jobs;
-using AIChara;
+
+
 /***********************************************
   Features:
 
@@ -35,8 +35,9 @@ using AIChara;
 namespace HS2_CharaMorpher
 {
 
+
     // Specify this as a plugin that gets loaded by BepInEx
-    [BepInPlugin(GUID, "HS2 Character Morpher", Version)]
+    [BepInPlugin(GUID, ModName, Version)]
 
     // Tell BepInEx that we need KKAPI to run, and that we need the latest version of it.
     // Check documentation of KoikatuAPI.VersionConst for more info.
@@ -53,8 +54,9 @@ namespace HS2_CharaMorpher
         // Expose both your GUID and current version to allow other plugins to easily check for your presence and version, for example by using the BepInDependency attribute.
         // Be careful with public const fields! Read more: https://stackoverflow.com/questions/55984
         // Avoid changing GUID unless absolutely necessary. Plugins that rely on your plugin will no longer recognize it, and if you use it in function controllers you will lose all data saved to cards before the change!
+        public const string ModName = "Character Morpher";
         public const string GUID = "prolo.chararmorpher";
-        public const string Version = "0.1.17";
+        public const string Version = "0.1.18";
 
         internal static CharaMorpher Instance;
         internal static new ManualLogSource Logger;

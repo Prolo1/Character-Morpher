@@ -1,4 +1,4 @@
-﻿using HS2;
+﻿
 using BepInEx;
 using BepInEx.Configuration;
 using ConfigurationManager.Utilities;

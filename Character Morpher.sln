@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31829.152
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "[HS2] Character Morpher", "[HS2] Character Morpher.csproj", "{E96314CF-3D68-4A08-94E7-DD86D7BFA157}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "[KKSS] Character Morpher", "[KKSS] Character Morpher\[KKSS] Character Morpher.csproj", "{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "[HS2] Character Morpher", "[HS2] Character Morpher\[HS2] Character Morpher.csproj", "{E96314CF-3D68-4A08-94E7-DD86D7BFA157}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,14 +13,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{E96314CF-3D68-4A08-94E7-DD86D7BFA157}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E96314CF-3D68-4A08-94E7-DD86D7BFA157}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E96314CF-3D68-4A08-94E7-DD86D7BFA157}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E96314CF-3D68-4A08-94E7-DD86D7BFA157}.Release|Any CPU.Build.0 = Release|Any CPU
 		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E96314CF-3D68-4A08-94E7-DD86D7BFA157}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E96314CF-3D68-4A08-94E7-DD86D7BFA157}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E96314CF-3D68-4A08-94E7-DD86D7BFA157}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E96314CF-3D68-4A08-94E7-DD86D7BFA157}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
