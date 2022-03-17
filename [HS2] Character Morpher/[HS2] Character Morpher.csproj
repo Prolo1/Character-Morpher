@@ -57,9 +57,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Common\CharaMorpher.cs">
-      <Link>CharaMorpher.cs</Link>
-    </Compile>
     <Compile Include="..\Common\CharaMorpher.Hooks.cs">
       <Link>CharaMorpher.Hooks.cs</Link>
     </Compile>
@@ -73,6 +70,7 @@
       <Link>ConfigurationManagerAttributes.cs</Link>
     </Compile>
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="CharaMorpher.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">

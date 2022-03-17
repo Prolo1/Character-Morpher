@@ -10,9 +10,9 @@ using KKAPI;
 using KKABMX;
 using KKABMX.Core;
 
-namespace HS2_CharaMorpher
+namespace CharaMorpher
 {
-	public partial class CharaMorpher
+	public partial class CharaMorpher_Core
 	{
 		private static class Hooks
 		{

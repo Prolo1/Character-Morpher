@@ -13,9 +13,7 @@ using KKAPI.Chara;
 using KKAPI.Maker;
 using KKAPI.Studio;
 using Unity.Jobs;
-#if HS2
 using AIChara;
-#endif
 
 
 
@@ -74,6 +72,7 @@ namespace CharaMorpher
 
             //Main
             public ConfigEntry<bool> enable { set; get; }
+            public ConfigEntry<bool> enableInGame { set; get; }
             public ConfigEntry<string> mergeCharDir { set; get; }
             public ConfigEntry<uint> sliderExtents { set; get; }
             //public ConfigEntry<uint> awaitTime { set; get; }
@@ -105,6 +104,7 @@ namespace CharaMorpher
             cfg = new MyConfig
             {
                 enable = Config.Bind("_Main_", "Enable", true, new ConfigDescription("Allows the plugin to run (may need to reload if results are not changing)", null, new ConfigurationManagerAttributes { Order = --index })),
+                enableInGame = Config.Bind("_Main_", "Enable in Game", true, new ConfigDescription("Allows the plugin to run while in main game", null, new ConfigurationManagerAttributes { Order = --index })),
                 enableABMX = Config.Bind("_Main_", "Enable ABMX", true, new ConfigDescription("Allows the plugin to run (may need to reload if results are not changing)", null, new ConfigurationManagerAttributes { Order = --index })),
                 mergeCharDir = Config.Bind("_Main_", "Character Location", new ChaFileControl().ConvertCharaFilePath("../navi/navi.png", 255), new ConfigDescription("Template character", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
                 sliderExtents = Config.Bind("_Main_", "Slider Extents", 200u, new ConfigDescription("How far the slider values go above default (e.i. setting value to 10 gives values -10 -> 110)", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true })),
