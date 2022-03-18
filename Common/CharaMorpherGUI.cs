@@ -115,9 +115,9 @@ namespace CharaMorpher
 
 
                 e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
-                e.AddControl(new MakerText("Head Controls", category, CharaMorpher_Core.Instance));
+                e.AddControl(new MakerText("Face Controls", category, CharaMorpher_Core.Instance));
 
-                sliders.Add(e.AddControl(new MakerSlider(category, "Overall Head", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
+                sliders.Add(e.AddControl(new MakerSlider(category, "Overall Face", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
                 sliders.Last().BindToFunctionController<CharaMorpherController, float>(
                    (control) => CharaMorpherController.controls.face,
                     (control, val) => { CharaMorpherController.controls.face = val; control.MorphChangeUpdate(); });
