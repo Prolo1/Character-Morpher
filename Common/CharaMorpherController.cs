@@ -22,6 +22,7 @@ using UniRx;
 
 namespace CharaMorpher
 {
+
     public class CharaMorpherController : CharaCustomFunctionController
     {
         internal class MorphData
@@ -107,14 +108,97 @@ namespace CharaMorpher
             }
         }
 
+        public struct MorphControls
+        {
+            //Main
+            public float body;
+            public float head;
+            public float boob;
+            public float torso;
+            public float arm;
+            public float butt;
+            public float leg;
+
+            public float face;
+            public float eyes;
+            public float mouth;
+            public float ear;
+
+            //ABMX
+            public float abmxBody;
+            public float abmxTorso;
+            public float abmxBoobs;
+            public float abmxButt;
+            public float abmxArms;
+            public float abmxHands;
+            public float abmxGenitals;
+            public float abmxLegs;
+            public float abmxFeet;
+
+            public float abmxHead;
+            public float abmxEyes;
+            public float abmxMouth;
+            public float abmxEars;
+            public float abmxHair;
+        }
+
+        /// <summary>
+        /// Called after the model has been updated for the first time
+        /// </summary>
+        public bool initLoadFinished { get; private set; } = false;
+
+        /// <summary>
+        /// In the process of reloading. set to false after complete
+        /// </summary>
+        public bool reloading { get; private set; } = false;
+
         private static MorphData charData = null;
         private static string lastCharDir = "";
         private static DateTime lastDT = new DateTime();
         private readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
 
-        //this is a tuple list btw (of all the bones I found online https://betterpaste.me/?14286297a731ab43#4LAzfYnuymh5Eq2ce6v5zj4gGbQhFxwK6KZp1dM9LKGb)
 
 
+        private static int morphindex = 0;//get defaults from config
+        public static MorphControls controls = new MorphControls()
+        {
+
+            //Main
+            body = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            head = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            boob = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            butt = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            torso = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            arm = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            leg = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+
+            face = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            ear = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            eyes = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            mouth = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+
+            //ABMX
+            abmxBody = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            abmxBoobs = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            abmxButt = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            abmxTorso = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            abmxArms = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            abmxHands = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            abmxLegs = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            abmxFeet = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            abmxGenitals = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+
+            abmxHead = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            abmxEars = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            abmxEyes = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            abmxMouth = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+            abmxHair = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+        };
+
+        /// <summary>
+        ///  this is a tuple list btw of all the bones I found online:
+        ///  https://betterpaste.me/?14286297a731ab43#4LAzfYnuymh5Eq2ce6v5zj4gGbQhFxwK6KZp1dM9LKGb
+        /// </summary>
         public static readonly List<(string, string)> bonecatagories =
              new List<(string, string)>()
 
@@ -589,103 +673,25 @@ namespace CharaMorpher
 
     };
 
-        public struct MorphControls
-        {
-            //Main
-            public float body;
-            public float head;
-            public float boob;
-            public float torso;
-            public float arm;
-            public float butt;
-            public float leg;
-
-            public float face;
-            public float eyes;
-            public float mouth;
-            public float ear;
-
-            //ABMX
-            public float abmxBody;
-            public float abmxTorso;
-            public float abmxBoobs;
-            public float abmxButt;
-            public float abmxArms;
-            public float abmxHands;
-            public float abmxGenitals;
-            public float abmxLegs;
-            public float abmxFeet;
-
-            public float abmxHead;
-            public float abmxEyes;
-            public float abmxMouth;
-            public float abmxEars;
-            public float abmxHair;
-        }
-
-        static int morphindex = 0;//get defaults from config
-        public static MorphControls controls = new MorphControls()
-        {
-
-            //Main
-            body = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            head = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            boob = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            butt = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            torso = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            arm = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            leg = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-
-            face = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            ear = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            eyes = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            mouth = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-
-            //ABMX
-            abmxBody = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            abmxBoobs = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            abmxButt = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            abmxTorso = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            abmxArms = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            abmxHands = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            abmxLegs = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            abmxFeet = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            abmxGenitals = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-
-            abmxHead = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            abmxEars = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            abmxEyes = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            abmxMouth = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-            abmxHair = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
-        };
-        //internal static bool initialLoad = false;
-
-        bool reloading = false;
         void CharaReloaded(object m, CharaReloadEventArgs n)
         {
             CharaMorpherController ctrl = n.ReloadedCharacter.GetComponent<CharaMorpherController>();
 
-            //initialLoad = true;
+#if KKSS
+            CurrentCoordinate.Subscribe((type) => { MorphChangeUpdate(); });
+#endif
+            StartCoroutine(ctrl.CoCharaReload());
 
-
-            //   CharaMorpher_Core.Logger.LogDebug("Reloading Character");
-            StartCoroutine(ctrl.CoMorphAsync());
-
-            // initialLoad = true;
-            // ctrl.UpdateMorphValues(false);
 
         }
 
         protected override void Awake()
         {
-
-            KKAPI.Chara.CharacterApi.CharacterReloaded += CharaReloaded;
-
-            //Make sure to call base version
             base.Awake();
+            KKAPI.Chara.CharacterApi.CharacterReloaded += CharaReloaded;
         }
 
-        IEnumerator CoMorphAsync()
+        IEnumerator CoCharaReload()
         {
             for(int a = 0; a < 4; ++a)//make sure to load last
                 yield return new WaitForEndOfFrame();
@@ -694,14 +700,26 @@ namespace CharaMorpher
             reloading = true;
             OnCharaReload(KoikatuAPI.GetCurrentGameMode());
 
-            for(int a = 0; a < 1; ++a)//let character base update
+            for(int a = 0; a < 2; ++a)//let character base update
                 yield return new WaitForEndOfFrame();
 
             //  CharaMorpher_Core.Logger.LogDebug("Morphing model...");
             MorphChangeUpdate();
             reloading = false;
+
+            initLoadFinished = true;
         }
 
+        IEnumerator CoStateChange()
+        {
+
+            for(int a = 0; a < 2; ++a)//let character base update
+                yield return new WaitForEndOfFrame();
+
+            //  CharaMorpher_Core.Logger.LogDebug("Morphing model...");
+            MorphChangeUpdate();
+
+        }
 
 
         protected override void OnDestroy()
@@ -714,24 +732,26 @@ namespace CharaMorpher
         void OnCharaReload(GameMode currentGameMode)
         {
             var cfg = CharaMorpher_Core.Instance.cfg;
+            var charaCtrl = ChaControl;
+            var boneCtrl = charaCtrl.GetComponent<BoneController>();
+
+
             if(!cfg.enableInGame.Value && currentGameMode == GameMode.MainGame) return;
             if(!reloading || ChaControl.sex != 1/*could allow it with both genders later*/)
                 return;
 
 
-            var charaCtrl = ChaControl;
-            var boneCtrl = charaCtrl.GetComponent<BoneController>();
 
             //TODO: Enter logic here...
             //    CharaMorpher_Core.Logger.LogDebug("clear data");
             m_data1.Clear();
             m_data2.Clear();
 
-            //remove current modifiers
-            //   CharaMorpher_Core.Logger.LogDebug("remove existing bone mods");
+            //reset current modifiers
             foreach(var mod in boneCtrl.Modifiers)
                 mod.Reset();
-            boneCtrl.Modifiers.Clear();
+            boneCtrl.NeedsFullRefresh = true;
+
 
             //Get picked character data
             //   CharaMorpher_Core.Logger.LogDebug("replace data 1");
@@ -769,10 +789,18 @@ namespace CharaMorpher
 
 
 
-            //CharaMorpher_Core.Logger.LogDebug("Morphing model...");
-            ////Update the model
-            //MorphChangeUpdate();
+            //  //CharaMorpher_Core.Logger.LogDebug("Morphing model...");
+            //  //Update the model
+            //  MorphChangeUpdate();
         }
+
+        /// <inheritdoc />
+        protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
+        {
+            if(initLoadFinished)//just making sure 
+                MorphChangeUpdate();
+        }
+
 
         //Taken from ABMX to get the data from card more easily 
         internal static List<BoneModifier> ReadBoneModifiers(PluginData data)
@@ -815,7 +843,8 @@ namespace CharaMorpher
             var charaCtrl = ChaControl;
             var boneCtrl = charaCtrl.GetComponent<BoneController>();
 
-
+            //   CharaMorpher_Core.Logger.LogDebug("remove existing bone mods");
+            boneCtrl.Modifiers.Clear();
             //Merge results
             {
 
@@ -840,7 +869,9 @@ namespace CharaMorpher
                 m_data2.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
             }
 
-            UpdateMorphValues(!cfg.enable.Value);
+            bool reset = !cfg.enable.Value;
+            reset = KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame ? reset || !cfg.enableInGame.Value : reset;
+            UpdateMorphValues(reset);
         }
 
         private void UpdateMorphValues(bool reset)
@@ -878,13 +909,13 @@ namespace CharaMorpher
                 charaCtrl.UpdateBustSoftnessAndGravity();
             }
 
-            // CharaMorpher_Core.Logger.LogDebug($"data 1 body bones: {m_data1.abmx.body.Count}");
-            // CharaMorpher_Core.Logger.LogDebug($"data 2 body bones: {m_data2.abmx.body.Count}");
-            // CharaMorpher_Core.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
-            // CharaMorpher_Core.Logger.LogDebug($"data 2 face bones: {m_data2.abmx.face.Count}");
-            // CharaMorpher_Core.Logger.LogDebug($"chara bones: {boneCtrl.Modifiers.Count}");
-            // CharaMorpher_Core.Logger.LogDebug($"body parts: {m_data1.main.custom.body.shapeValueBody.Length}");
-            // CharaMorpher_Core.Logger.LogDebug($"face parts: {m_data1.main.custom.face.shapeValueFace.Length}");
+            CharaMorpher_Core.Logger.LogDebug($"data 1 body bones: {m_data1.abmx.body.Count}");
+            CharaMorpher_Core.Logger.LogDebug($"data 2 body bones: {m_data2.abmx.body.Count}");
+            CharaMorpher_Core.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
+            CharaMorpher_Core.Logger.LogDebug($"data 2 face bones: {m_data2.abmx.face.Count}");
+            CharaMorpher_Core.Logger.LogDebug($"chara bones: {boneCtrl.Modifiers.Count}");
+            CharaMorpher_Core.Logger.LogDebug($"body parts: {m_data1.main.custom.body.shapeValueBody.Length}");
+            CharaMorpher_Core.Logger.LogDebug($"face parts: {m_data1.main.custom.face.shapeValueFace.Length}");
 
             //value update loop
             for(int a = 0; a < Mathf.Max(new float[]
@@ -901,14 +932,14 @@ namespace CharaMorpher
                     //Body
                     if(a < m_data1.abmx.body.Count)
                     {
-                        //  CharaMorpher.Logger.LogDebug($"looking for values");
+                        CharaMorpher_Core.Logger.LogDebug($"looking for values");
                         var bone1 = m_data1.abmx.body[a];
                         var bone2 = m_data2.abmx.body[a];
                         var current = boneCtrl.Modifiers.Find((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
                         int count = 0;//may use this in other mods
 
-                        //  CharaMorpher.Logger.LogDebug($"found values");
-                        // CharaMorpher_Core.Logger.LogDebug($"current = {current.BoneName}");
+                        CharaMorpher_Core.Logger.LogDebug($"found values");
+                        CharaMorpher_Core.Logger.LogDebug($"current = {current.BoneName}");
 
                         float modVal = 0;
 
@@ -928,27 +959,26 @@ namespace CharaMorpher
 
                         CharaMorpher_Core.Logger.LogDebug($"Body bone{a}: {content}");
                         if(fingers.ToList().FindIndex(k => content.Contains(k)) >= 0)
-                        {
                             modVal = controls.abmxHands;
-                            if(content.Contains("cf_j_thumb"))
-                                CharaMorpher_Core.Logger.LogDebug($"THIS IS A HAND SECTION!!!!");
-                        }
                         else
                         {
-                            int end = 0;
-                            string ending1 = content.Substring(content.LastIndexOf("_"));
-                            string ending2 = "";
 
-                            try
+                            if(content.LastIndexOf("_") >= 0)
                             {
-                                end = content.LastIndexOf("_");
-                                ending2 = content.Substring(end - (end - (content.Substring(0, end).LastIndexOf("_"))));
-                            }
-                            catch { ending2 = ""; }
 
-                            if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
-                                content = content.Substring(0, content.LastIndexOf(((ending1 == "_l_00" || ending1 == "_r_00") ? ending2 : ending1)));
-                            //  CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
+                                string ending1 = ending1 = content.Substring(content.LastIndexOf("_"));
+                                string ending2 = "";
+
+                                int end = content.LastIndexOf("_"), end2 = (content.Substring(0, end).LastIndexOf("_"));
+
+                                if(end2 >= 0)
+                                    ending2 = content.Substring(end - (end - end2));
+
+
+                                if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
+                                    content = content.Substring(0, content.LastIndexOf(((ending2 == "_l_00" || ending2 == "_r_00") ? ending2 : ending1)));
+                                //  CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
+                            }
 
                             switch(bonecatagories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
                             {
@@ -987,7 +1017,7 @@ namespace CharaMorpher
                         foreach(var mod in current.CoordinateModifiers)
                         {
 
-                            //  CharaMorpher_Core.Logger.LogDebug($"in for loop");
+                            CharaMorpher_Core.Logger.LogDebug($"in for loop");
                             var inRange = count < bone2.CoordinateModifiers.Length;
                             mod.PositionModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[count].PositionModifier, bone2.CoordinateModifiers[inRange ? count : 0].PositionModifier,
                                 enable * controls.body * controls.abmxBody * modVal);
@@ -1001,7 +1031,7 @@ namespace CharaMorpher
                             mod.LengthModifier = Mathf.LerpUnclamped(bone1.CoordinateModifiers[count].LengthModifier, bone2.CoordinateModifiers[inRange ? count : 0].LengthModifier,
                                 enable * controls.body * controls.abmxBody * modVal);
 
-                            //  CharaMorpher_Core.Logger.LogDebug($"updated values");
+                            CharaMorpher_Core.Logger.LogDebug($"updated values");
                             if(count == 0)
                             {
                                 //CharaMorpher.Logger.LogDebug($"lerp Value {a}: {enable * modVal}");
@@ -1030,20 +1060,23 @@ namespace CharaMorpher
 
                         //remove L/R from bone name
                         string content = bone1.BoneName.Trim().ToLower();
-                        string ending1 = content.Substring(content.LastIndexOf("_"));
-                        int end = 0;
-                        string ending2 = "";
-                        try
-                        {
-                            end = content.LastIndexOf("_");
-                            ending2 = content.Substring(end - (end - (content.Substring(0, end).LastIndexOf("_"))));
-                        }
-                        catch { ending2 = ""; }
-                        ending2 = ending2 ?? "";
-                        // CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
 
-                        if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
-                            content = content.Substring(0, content.LastIndexOf(((ending1 == "_l_00" || ending1 == "_r_00") ? ending2 : ending1)));
+                        if(content.LastIndexOf("_") >= 0)
+                        {
+
+                            string ending1 = ending1 = content.Substring(content.LastIndexOf("_"));
+                            string ending2 = "";
+
+                            int end = content.LastIndexOf("_"), end2 = (content.Substring(0, end).LastIndexOf("_"));
+
+                            if(end2 >= 0)
+                                ending2 = content.Substring(end - (end - end2));
+
+
+                            if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
+                                content = content.Substring(0, content.LastIndexOf(((ending2 == "_l_00" || ending2 == "_r_00") ? ending2 : ending1)));
+                            //  CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
+                        }
 
 
 
@@ -1069,7 +1102,7 @@ namespace CharaMorpher
                             break;
                         }
 
-                        //CharaMorpher.Logger.LogDebug($"Morphing Bone...");
+                        CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
                         foreach(var mod in current.CoordinateModifiers)
                         {
 
@@ -1180,7 +1213,7 @@ namespace CharaMorpher
 
             boneCtrl.NeedsBaselineUpdate = true;
 
-#if KKSS 
+#if KKSS
             charaCtrl.ChangeSettingBodyDetail();
             charaCtrl.ChangeSettingFaceDetail();
 #endif

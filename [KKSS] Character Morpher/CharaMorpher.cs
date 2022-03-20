@@ -9,6 +9,7 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using ExtensibleSaveFormat;
 using HarmonyLib;
+using HarmonyLib.Tools;
 using KKAPI.Chara;
 using KKAPI.Maker;
 using KKAPI.Studio;
@@ -38,7 +39,6 @@ namespace CharaMorpher
 
     // Specify this as a plugin that gets loaded by BepInEx
     [BepInPlugin(GUID, ModName, Version)]
-
     // Tell BepInEx that we need KKAPI to run, and that we need the latest version of it.
     // Check documentation of KoikatuAPI.VersionConst for more info.
     [BepInDependency(KKAPI.KoikatuAPI.GUID, KKAPI.KoikatuAPI.VersionConst)]
@@ -92,10 +92,10 @@ namespace CharaMorpher
 
         private void Awake()
         {
+            KKAPI.KoikatuAPI.EnableDebugLogging = false;
 
             Instance = this;
             Logger = base.Logger;
-
 
             int index = 0;//easier to input index order values
 
@@ -238,6 +238,13 @@ namespace CharaMorpher
                         foreach(CharaMorpherController ctrl in hnd.Instances)
                             ctrl.MorphChangeUpdate();
             };
+            cfg.enableInGame.SettingChanged += (m, n) =>
+            {
+                foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+                    if(hnd.ControllerType == typeof(CharaMorpherController))
+                        foreach(CharaMorpherController ctrl in hnd.Instances)
+                            ctrl.MorphChangeUpdate();
+            };
 
             cfg.enableABMX.SettingChanged += (m, n) =>
             {
@@ -248,7 +255,7 @@ namespace CharaMorpher
             };
 
 
-            if(StudioAPI.InsideStudio) return;
+            if(StudioAPI.InsideStudio) return;//not the best fit for studio (but maybe later)
 
             // Register your logic that depends on a character.
             // A new instance of this component will be added to ALL characters in the game.
@@ -258,8 +265,8 @@ namespace CharaMorpher
 
 
             CharaMorpherGUI.Initialize();
+            HarmonyFileLog.Enabled = false;
             Harmony.CreateAndPatchAll(typeof(Hooks), GUID);
-
 
 
 
