@@ -399,8 +399,9 @@ namespace CharaMorpher
 
         IEnumerator CoMorphReload()
         {
-            for(int a = 0; a < 4; ++a)
+            for(int a = 0; a < 6; ++a)
                 yield return new WaitForEndOfFrame();
+            reloading = true;
             CharaMorpher_Core.Logger.LogDebug("Reloading After character loaded");
             OnCharaReload(KoikatuAPI.GetCurrentGameMode());
 
@@ -424,23 +425,37 @@ namespace CharaMorpher
         /// <inheritdoc />
         void OnCharaReload(GameMode currentGameMode)
         {
-            reloading = true;
+
+            var boneCtrl = ChaControl.GetComponent<BoneController>();
+
+#if HS2
+                string storedID = m_data1.main.dataID, cardID = ChaControl.chaFile.dataID;
+#else
+            string storedID = m_data1.main.about.dataID, cardID = ChaControl.chaFile.about.dataID;
+#endif
+
+            // CharaMorpher_Core.Logger.LogDebug($"file is: {cardID}");
+            // CharaMorpher_Core.Logger.LogDebug($"stored file is: {storedID}");
+
+            //clear original data
+            CharaMorpher_Core.Logger.LogDebug("clear data");
+            m_data1.Clear();
+            m_data2.Clear();
+
+            // if(cardID == null || cardID != storedID)
+            foreach(var data in boneCtrl.Modifiers)
+                data.Reset();
+            
+            boneCtrl.NeedsFullRefresh = true;
+
+
             var cfg = CharaMorpher_Core.Instance.cfg;
             if(!cfg.enableInGame.Value && currentGameMode == GameMode.MainGame) return;
             if(!reloading || ChaControl.sex != 1/*could allow it with both genders later*/)
                 return;
 
 
-            var charaCtrl = ChaControl;
-            var boneCtrl = charaCtrl.GetComponent<BoneController>();
-
-            //TODO: Enter logic here...
-            CharaMorpher_Core.Logger.LogDebug("clear data");
-            m_data1.Clear();
-            m_data2.Clear();
-
-
-            //Get picked character data
+            //store picked character data
             CharaMorpher_Core.Logger.LogDebug("replace data 1");
             m_data1.main.CopyAll(ChaControl.chaFile);//get all character data!!!          
             m_data1.abmx.Populate(this);
@@ -606,16 +621,13 @@ namespace CharaMorpher
                 charaCtrl.UpdateBustSoftnessAndGravity();
             }
 
-            CharaMorpher_Core.Logger.LogDebug($"data 1 body bones: {m_data1.abmx.body.Count}");
-            CharaMorpher_Core.Logger.LogDebug($"data 2 body bones: {m_data2.abmx.body.Count}");
-            CharaMorpher_Core.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
-            CharaMorpher_Core.Logger.LogDebug($"data 2 face bones: {m_data2.abmx.face.Count}");
-            CharaMorpher_Core.Logger.LogDebug($"chara bones: {boneCtrl.Modifiers.Count}");
-
-
-
-            CharaMorpher_Core.Logger.LogDebug($"body parts: {m_data1.main.custom.body.shapeValueBody.Length}");
-            CharaMorpher_Core.Logger.LogDebug($"face parts: {m_data1.main.custom.face.shapeValueFace.Length}");
+            //CharaMorpher_Core.Logger.LogDebug($"data 1 body bones: {m_data1.abmx.body.Count}");
+            //CharaMorpher_Core.Logger.LogDebug($"data 2 body bones: {m_data2.abmx.body.Count}");
+            //CharaMorpher_Core.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
+            //CharaMorpher_Core.Logger.LogDebug($"data 2 face bones: {m_data2.abmx.face.Count}");
+            //CharaMorpher_Core.Logger.LogDebug($"chara bones: {boneCtrl.Modifiers.Count}");
+            //CharaMorpher_Core.Logger.LogDebug($"body parts: {m_data1.main.custom.body.shapeValueBody.Length}");
+            //CharaMorpher_Core.Logger.LogDebug($"face parts: {m_data1.main.custom.face.shapeValueFace.Length}");
 
             //value update loop
             for(int a = 0; a < Mathf.Max(new float[]
@@ -639,7 +651,7 @@ namespace CharaMorpher
                         int count = 0;//may use this in other mods
 
                         //  CharaMorpher.Logger.LogDebug($"found values");
-                        CharaMorpher_Core.Logger.LogDebug($"current = {current.BoneName}");
+                        //    CharaMorpher_Core.Logger.LogDebug($"current = {current.BoneName}");
 
                         float modVal = 0;
 
@@ -669,12 +681,12 @@ namespace CharaMorpher
                             if(end2 >= 0)
                                 ending2 = content.Substring(end - (end - (end2)));
 
-                            CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
+                            // CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
 
                             if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
                                 content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
 
-                            CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
+                            // CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
 
                             switch(bonecatagories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
                             {
@@ -709,11 +721,11 @@ namespace CharaMorpher
                             }
                         }
 
-                        CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
+                        // CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
                         foreach(var mod in current.CoordinateModifiers)
                         {
 
-                            CharaMorpher_Core.Logger.LogDebug($"in for loop");
+                            //  CharaMorpher_Core.Logger.LogDebug($"in for loop");
                             var inRange = count < bone2.CoordinateModifiers.Length;
                             mod.PositionModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[count].PositionModifier, bone2.CoordinateModifiers[inRange ? count : 0].PositionModifier,
                                 enable * controls.body * controls.abmxBody * modVal);
@@ -727,7 +739,7 @@ namespace CharaMorpher
                             mod.LengthModifier = Mathf.LerpUnclamped(bone1.CoordinateModifiers[count].LengthModifier, bone2.CoordinateModifiers[inRange ? count : 0].LengthModifier,
                                 enable * controls.body * controls.abmxBody * modVal);
 
-                            CharaMorpher_Core.Logger.LogDebug($"updated values");
+                            //   CharaMorpher_Core.Logger.LogDebug($"updated values");
                             if(count == 0)
                             {
                                 //CharaMorpher.Logger.LogDebug($"lerp Value {a}: {enable * modVal}");
@@ -740,7 +752,7 @@ namespace CharaMorpher
                             ++count;
                         }
 
-                        CharaMorpher_Core.Logger.LogDebug($"applying values");
+                        // CharaMorpher_Core.Logger.LogDebug($"applying values");
                         current.Apply(boneCtrl.CurrentCoordinate.Value, null, KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame);
                     }
 
@@ -765,12 +777,12 @@ namespace CharaMorpher
                         if(end2 >= 0)
                             ending2 = content.Substring(end - (end - (end2)));
 
-                        CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
+                        // CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
 
                         if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
                             content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
 
-                        CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
+                        //  CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
 
 
                         switch(bonecatagories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
@@ -831,7 +843,7 @@ namespace CharaMorpher
 
                 enable = reset ? 0 : 1;
 
-                CharaMorpher_Core.Logger.LogDebug($"updating body");
+                // CharaMorpher_Core.Logger.LogDebug($"updating body");
                 //Body Shape
                 if(a < m_data1.main.custom.body.shapeValueBody.Length)
                 {
@@ -864,14 +876,14 @@ namespace CharaMorpher
                         result = (m_data1.main.custom.body.shapeValueBody[a] +
                         enable * controls.body * (m_data2.main.custom.body.shapeValueBody[a] - m_data1.main.custom.body.shapeValueBody[a]));//lerp, may change it later
 
-                    CharaMorpher_Core.Logger.LogDebug($"Loaded Body Part 1: {m_data1.main.custom.body.shapeValueBody[a]} at index {a}");
+                    // CharaMorpher_Core.Logger.LogDebug($"Loaded Body Part 1: {m_data1.main.custom.body.shapeValueBody[a]} at index {a}");
                     //CharaMorpher.Logger.LogDebug($"Loaded Body Part 2: {m_data2.main.custom.body.shapeValueBody[a]} at index {a}");
 
                     //load values to character
                     charaCtrl.SetShapeBodyValue(a, result);
                 }
 
-                CharaMorpher_Core.Logger.LogDebug($"updating face");
+                // CharaMorpher_Core.Logger.LogDebug($"updating face");
                 //Face Shape
                 if(a < m_data1.main.custom.face.shapeValueFace.Length)
                 {
@@ -890,14 +902,14 @@ namespace CharaMorpher
                         result = (m_data1.main.custom.face.shapeValueFace[a] +
                           enable * controls.face * (m_data2.main.custom.face.shapeValueFace[a] - m_data1.main.custom.face.shapeValueFace[a]));
 
-                    CharaMorpher_Core.Logger.LogDebug($"Loaded Face Part 1: {m_data1.main.custom.face.shapeValueFace[a]} at index {a}");
+                    // CharaMorpher_Core.Logger.LogDebug($"Loaded Face Part 1: {m_data1.main.custom.face.shapeValueFace[a]} at index {a}");
                     //CharaMorpher.Logger.LogDebug($"Loaded Face Part 2: {m_data1.main.custom.face.shapeValueFace[a]}");
 
 
                     //load values to character
                     charaCtrl.SetShapeFaceValue(a, result);
                 }
-                CharaMorpher_Core.Logger.LogDebug("");
+                //  CharaMorpher_Core.Logger.LogDebug("");
             }
 
             charaCtrl.updateShape = true;
