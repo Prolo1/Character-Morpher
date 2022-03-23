@@ -112,10 +112,10 @@ namespace CharaMorpher
         private static DateTime lastDT = new DateTime();
         private readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
 
-        //this is a tuple list btw (of all the bones I found online https://betterpaste.me/?14286297a731ab43#4LAzfYnuymh5Eq2ce6v5zj4gGbQhFxwK6KZp1dM9LKGb)
+        //this is a tuple list btw (of bones found in abmx)
         public static readonly List<(string, string)> bonecatagories =
              new List<(string, string)>()
-
+#if KKSS || KK
              {
                   //ABMX
         
@@ -270,8 +270,11 @@ namespace CharaMorpher
                 ("cm_J_dan109_00"    , "genitals"           ),
                 ("cm_J_dan_f_L"      , "genitals"           ),
                 ("cf_j_ana"          , "genitals"           ),
-            };
-
+            }
+#elif HS2 || AI
+           //  { }
+#endif
+             ;
         public struct MorphControls
         {
             //Main
@@ -305,7 +308,6 @@ namespace CharaMorpher
             public float abmxEars;
             public float abmxHair;
         }
-
         static int morphindex = 0;//get defaults from config
         public static MorphControls controls = new MorphControls()
         {
@@ -341,23 +343,40 @@ namespace CharaMorpher
             abmxMouth = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
             abmxHair = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
         };
-        //internal static bool initialLoad = false;
 
-        public bool reloading = false;
-        void CharaReloaded(object m, CharaReloadEventArgs n)
+        /// <summary>
+        /// Called after the model has been updated for the first time
+        /// </summary>
+        public bool initLoadFinished { get; private set; } = false;
+
+        /// <summary>
+        /// In the process of reloading. set to false after complete
+        /// </summary>
+        public bool reloading { get; private set; } = false;
+
+
+
+        void CharaReloaded(object o, CharaReloadEventArgs a)
         {
-            CharaMorpherController ctrl = n.ReloadedCharacter.GetComponent<CharaMorpherController>();
+            CharaMorpherController ctrl = a.ReloadedCharacter.GetComponent<CharaMorpherController>();
 
             //initialLoad = true;
 
 
+#if KKSS
+            if(initLoadFinished == false)
+                ctrl.CurrentCoordinate.Subscribe((type) => { StartCoroutine(CoMorphUpdate()); });
+#endif
+
             CharaMorpher_Core.Logger.LogDebug("Reloading Character");
-            StartCoroutine(ctrl.CoMorphAsync());
+            StartCoroutine(ctrl.CoMorphReload());
 
             // initialLoad = true;
             // ctrl.UpdateMorphValues(false);
 
         }
+
+
 
         protected override void Awake()
         {
@@ -368,24 +387,33 @@ namespace CharaMorpher
             base.Awake();
         }
 
-        IEnumerator CoMorphAsync()
+
+        IEnumerator CoMorphUpdate()
         {
-            for(int a = 0; a < 5; ++a)
+            for(int a = 0; a < 4; ++a)
                 yield return new WaitForEndOfFrame();
 
+            MorphChangeUpdate();
+
+        }
+
+        IEnumerator CoMorphReload()
+        {
+            for(int a = 0; a < 4; ++a)
+                yield return new WaitForEndOfFrame();
             CharaMorpher_Core.Logger.LogDebug("Reloading After character loaded");
-            reloading = true;
             OnCharaReload(KoikatuAPI.GetCurrentGameMode());
 
-            for(int a = 0; a < 1; ++a)
+            for(int a = 0; a < 4; ++a)
                 yield return new WaitForEndOfFrame();
 
             CharaMorpher_Core.Logger.LogDebug("Morphing model...");
             MorphChangeUpdate();
+
+
             reloading = false;
+            initLoadFinished = true;
         }
-
-
 
         protected override void OnDestroy()
         {
@@ -396,6 +424,7 @@ namespace CharaMorpher
         /// <inheritdoc />
         void OnCharaReload(GameMode currentGameMode)
         {
+            reloading = true;
             var cfg = CharaMorpher_Core.Instance.cfg;
             if(!cfg.enableInGame.Value && currentGameMode == GameMode.MainGame) return;
             if(!reloading || ChaControl.sex != 1/*could allow it with both genders later*/)
@@ -410,11 +439,6 @@ namespace CharaMorpher
             m_data1.Clear();
             m_data2.Clear();
 
-            //remove current modifiers
-            CharaMorpher_Core.Logger.LogDebug("remove existing bone mods");
-            foreach(var mod in boneCtrl.Modifiers)
-                mod.Reset();
-            boneCtrl.Modifiers.Clear();
 
             //Get picked character data
             CharaMorpher_Core.Logger.LogDebug("replace data 1");
@@ -456,6 +480,12 @@ namespace CharaMorpher
             ////Update the model
             //MorphChangeUpdate();
         }
+        protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
+        {
+            base.OnCoordinateBeingLoaded(coordinate);
+
+            StartCoroutine(CoMorphUpdate());
+        }
 
         //Taken from ABMX to get the data from card more easily 
         internal static List<BoneModifier> ReadBoneModifiers(PluginData data)
@@ -494,6 +524,21 @@ namespace CharaMorpher
         /// </summary>
         public void MorphChangeUpdate()
         {
+            if(m_data1.main != null)
+            {
+#if HS2
+                string storedID = m_data1.main.dataID, cardID = ChaControl.chaFile.dataID;
+#else
+                string storedID = m_data1.main.about.dataID, cardID = ChaControl.chaFile.about.dataID;
+#endif
+                // CharaMorpher_Core.Logger.LogDebug($"file is: {cardID}");
+                // CharaMorpher_Core.Logger.LogDebug($"stored file is: {storedID}");
+
+
+                if(cardID == null || cardID != storedID) return;
+            }
+            else return;
+
             var cfg = CharaMorpher_Core.Instance.cfg;
             var charaCtrl = ChaControl;
             var boneCtrl = charaCtrl.GetComponent<BoneController>();
@@ -609,6 +654,7 @@ namespace CharaMorpher
                             "cf_j_ring",
                             "cf_j_little"
                         };
+
                         if(fingerNames.ToList().FindIndex((k) => content.Contains(k)) >= 0)
                             modVal = controls.abmxHands;
                         else
@@ -630,7 +676,7 @@ namespace CharaMorpher
 
                             CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
 
-                            switch(bonecatagories.Find((k) => k.Item1.Contains(content)).Item2)
+                            switch(bonecatagories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
                             {
                             case "torso":
                                 modVal = controls.abmxTorso;
@@ -727,7 +773,7 @@ namespace CharaMorpher
                         CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
 
 
-                        switch(bonecatagories.Find((k) => k.Item1.Contains(content)).Item2)
+                        switch(bonecatagories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
                         {
 
                         case "eyes":
@@ -855,12 +901,13 @@ namespace CharaMorpher
             }
 
             charaCtrl.updateShape = true;
+            charaCtrl.updateBustSize = true;
             //   if(initialLoad || reset || !cfg.enableABMX.Value)
             //       boneCtrl.NeedsFullRefresh = true;
 
-           // boneCtrl.NeedsBaselineUpdate = true;
+            boneCtrl.NeedsBaselineUpdate = true;
 
-#if KKSS 
+#if KKSS
             charaCtrl.ChangeSettingBodyDetail();
             charaCtrl.ChangeSettingFaceDetail();
 #endif
