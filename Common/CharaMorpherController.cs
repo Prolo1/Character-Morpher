@@ -22,7 +22,6 @@ using UniRx;
 
 namespace CharaMorpher
 {
-
     public class CharaMorpherController : CharaCustomFunctionController
     {
         internal class MorphData
@@ -108,6 +107,174 @@ namespace CharaMorpher
             }
         }
 
+        private static MorphData charData = null;
+        private static string lastCharDir = "";
+        private static DateTime lastDT = new DateTime();
+        private readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
+
+        //this is a tuple list btw (of bones found in abmx)
+        public static readonly List<(string, string)> bonecatagories =
+             new List<(string, string)>()
+#if KKSS || KK
+             {
+                  //ABMX
+        
+                 //other head
+                ("cf_J_NoseBase_rx"  , "nose"    ),
+                ("cf_J_Nose_tip"     , "nose"    ),
+                ("cf_J_NoseBridge_rx", "nose"    ),
+                ("cf_J_NoseBridge_ty", "nose"    ),
+                ("cf_J_megane_rx_ear", ""    ),
+
+        //Head;
+                ("cf_J_FaceBase"     , ""     ),
+                ("cf_s_head"         , ""     ),
+                ("cf_J_FaceUp_ty"    , ""     ),
+                ("cf_J_FaceUp_tz"    , ""     ),
+                ("cf_J_FaceLow_sx"   , ""     ),
+                ("cf_J_FaceLow_tz"   , ""     ),
+                ("cf_hit_head"       , ""     ),
+                ("cf_J_Chin_Base"    , ""     ),
+                ("cf_J_ChinLow"      , ""     ),
+                ("cf_J_ChinTip_Base" , ""     ),
+                ("cf_J_CheekUpBase"  , ""     ),
+                ("cf_J_CheekUp2_L"   , ""     ),
+                ("cf_J_CheekUp_s_L"  , ""     ),
+                ("cf_J_CheekLow_s_L" , ""     ),
+                                                                
+        //Mouth;
+                ("cf_J_MouthBase_rx" ,"mouth" ),
+                ("cf_J_MouthBase_ty" ,"mouth" ),
+                ("cf_J_Mouth_L"      ,"mouth" ),
+                ("cf_J_Mouthup"      ,"mouth" ),
+                ("cf_J_MouthLow"     ,"mouth" ),
+                ("cf_J_MouthCavity"  ,"mouth" ),
+
+                                                                
+        //Ears;
+                ("cf_J_EarBase_ry_L" , "ears" ),
+                ("cf_J_EarUp_L"      , "ears" ),
+                ("cf_J_EarLow_L"     , "ears" ),
+
+        //Eyes;
+                ("cf_J_Mayu_L"       , "eyes"),
+                ("cf_J_MayuMid_s_L"  , "eyes"),
+                ("cf_J_MayuTip_s_L"  , "eyes"),
+                ("cf_J_Eye_tz"       , "eyes"),
+                ("cf_J_Eye_rz_L"     , "eyes"),
+                ("cf_J_Eye_tx_L"     , "eyes"),
+                ("cf_J_Eye01_s_L"    , "eyes"),
+                ("cf_J_Eye02_s_L"    , "eyes"),
+                ("cf_J_Eye03_s_L"    , "eyes"),
+                ("cf_J_Eye04_s_L"    , "eyes"),
+                ("cf_J_Eye05_s_L"    , "eyes"),
+                ("cf_J_Eye06_s_L"    , "eyes"),
+                ("cf_J_Eye07_s_L"    , "eyes"),
+                ("cf_J_Eye08_s_L"    , "eyes"),
+                                                                
+                                                                
+
+
+
+
+                                                           
+
+                //other body
+        //Body;
+                ("cf_n_height"       , "Body"                   ),
+                ("cf_s_neck"         , "Neck"                   ),
+                ("cf_d_sk_top"       , "Whole Skirt"            ),
+                ("cf_d_sk_00_00"     , "Skirt Front"            ),
+                ("cf_d_sk_07_00"     , "Skirt Front Sides"      ),
+                ("cf_d_sk_06_00"     , "Skirt Sides"            ),
+                ("cf_d_sk_05_00"     , "Skirt Back Sides"       ),
+                ("cf_d_sk_04_00"     , "Skirt Back"             ),
+                                                                
+        //Boobs;
+                ("cf_d_bust01_L"     , "boobs"   ),
+                ("cf_d_bust02_L"     , "boobs"   ),
+                ("cf_d_bust03_L"     , "boobs"   ),
+                ("cf_s_bust00_L"     , "boobs"   ),
+                ("cf_s_bust01_L"     , "boobs"   ),
+                ("cf_s_bust02_L"     , "boobs"   ),
+                ("cf_s_bust03_L"     , "boobs"   ),
+                ("cf_hit_bust02_L"   , "boobs"   ),
+                ("cf_s_bnip01_L"     , "boobs"   ),
+                ("cf_s_bnip025_L"    , "boobs"   ),
+                ("cf_d_bnip01_L"     , "boobs"   ),
+                ("cf_s_bnip02_L"     , "boobs"   ),
+                ("cf_s_bnipacc_L"    , "boobs"   ),
+                                                                
+                                                                
+        //Torso;
+                ("cf_s_spine03"      , "torso"  ),
+                ("cf_s_spine02"      , "torso"  ),
+                ("cf_s_spine01"      , "torso"  ),
+                ("cf_hit_spine01"    , "torso"  ),
+                ("cf_hit_spine02_L"  , "torso"  ),
+                ("cf_hit_berry"      , "torso"  ),
+                ("cf_hit_waist_L"    , "torso"  ),
+                ("cf_j_spine01"      , "torso"  ),
+                ("cf_j_spine02"      , "torso"  ),
+                ("cf_j_spine03"      , "torso"  ),
+                ("cf_s_waist01"      , "torso"  ),
+                ("cf_s_waist02"      , "torso"  ),
+                                                                
+        //Butt;
+                ("cf_s_siri_L"       , "butt"          ),
+                ("cf_hit_siri_L"     , "butt"          ),
+                                                                
+                                                                
+        //Arms;
+                ("cf_s_shoulder02_L" , "arms"  ),
+                ("cf_hit_shoulder_L" , "arms"  ),
+                ("cf_j_shoulder_L"   , "arms"  ),
+                ("cf_j_arm00_L"      , "arms"  ),
+                ("cf_s_arm01_L"      , "arms"  ),
+                ("cf_s_arm02_L"      , "arms"  ),
+                ("cf_s_arm03_L"      , "arms"  ),
+                ("cf_j_forearm01_L"  , "arms"  ),
+                ("cf_s_forearm01_L"  , "arms"  ),
+                ("cf_s_forearm02_L"  , "arms"  ),
+                ("cf_s_wrist_L"      , "arms"  ),
+
+        //Hands;
+                ("cf_j_hand_L"       , "hands"        ),
+                ("cf_s_hand_L"       , "hands"        ),
+                ("cf_hit_arm_L"      , "hands"        ),
+                                                               
+        //Legs;
+                ("cf_j_waist01"      , "legs"  ),
+                ("cf_j_waist02"      , "legs"  ),
+                ("cf_j_thigh00_L"    , "legs"  ),
+                ("cf_s_thigh01_L"    , "legs"  ),
+                ("cf_s_thigh02_L"    , "legs"  ),
+                ("cf_s_thigh03_L"    , "legs"  ),
+                ("cf_hit_thigh01_L"  , "legs"  ),
+                ("cf_hit_thigh02_L"  , "legs"  ),
+                ("cf_j_leg01_L"      , "legs"  ),
+                ("cf_s_leg01_L"      , "legs"  ),
+                ("cf_s_leg02_L"      , "legs"  ),
+                ("cf_s_leg03_L"      , "legs"  ),
+
+        //Feet;
+                ("cf_j_foot_L"       , "feet"          ),
+                ("cf_j_leg03_L"      , "feet"          ),
+                ("cf_j_toes_L"       , "feet"          ),
+                                                                
+                                                                
+        //Genitals;
+                ("cf_d_kokan"        , "genitals"           ),
+                ("cf_j_kokan"        , "genitals"           ),
+                ("cm_J_dan100_00"    , "genitals"           ),
+                ("cm_J_dan109_00"    , "genitals"           ),
+                ("cm_J_dan_f_L"      , "genitals"           ),
+                ("cf_j_ana"          , "genitals"           ),
+            }
+#elif HS2 || AI
+           //  { }
+#endif
+             ;
         public struct MorphControls
         {
             //Main
@@ -141,25 +308,7 @@ namespace CharaMorpher
             public float abmxEars;
             public float abmxHair;
         }
-
-        /// <summary>
-        /// Called after the model has been updated for the first time
-        /// </summary>
-        public bool initLoadFinished { get; private set; } = false;
-
-        /// <summary>
-        /// In the process of reloading. set to false after complete
-        /// </summary>
-        public bool reloading { get; private set; } = false;
-
-        private static MorphData charData = null;
-        private static string lastCharDir = "";
-        private static DateTime lastDT = new DateTime();
-        private readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
-
-
-
-        private static int morphindex = 0;//get defaults from config
+        static int morphindex = 0;//get defaults from config
         public static MorphControls controls = new MorphControls()
         {
 
@@ -196,531 +345,75 @@ namespace CharaMorpher
         };
 
         /// <summary>
-        ///  this is a tuple list btw of all the bones I found online:
-        ///  https://betterpaste.me/?14286297a731ab43#4LAzfYnuymh5Eq2ce6v5zj4gGbQhFxwK6KZp1dM9LKGb
+        /// Called after the model has been updated for the first time
         /// </summary>
-        public static readonly List<(string, string)> bonecatagories =
-             new List<(string, string)>()
+        public bool initLoadFinished { get; private set; } = false;
 
-             {
-                  //ABMX
-        
-                 
-
-
-                //hair
-                ("cf_hairS,False,1,1,1,1 Side Hair                                           ", "hair"),
-                ("cf_j_hair_camp1_F_L_2,False,1,1,1,1                                        ", "hair"),
-                ("cf_j_hair_camp1_F_R_2,False,1,1,1,1                                        ", "hair"),
-                ("cf_J_hairB,False,1,1,1,1                                                   ", "hair"),
-                ("cf_J_hairB_top,False,1,1,1,1 Hair Top                                      ", "hair"),
-                ("cf_J_hairBC_s,False,1,1,1,1 Back Hair (Middle)                             ", "hair"),
-                ("cf_J_hairBL_00,False,1,1,1,1                                               ", "hair"),
-                ("cf_J_hairBL_s,False,1,1,1,1 Pigtails (Left)                                ", "hair"),
-                ("cf_J_hairBR_00,False,1,1,1,1                                               ", "hair"),
-                ("cf_J_hairBR_s,False,1,1,1,1 Pigtails (Right)                               ", "hair"),
-                ("cf_J_hairF_top,False,1,1,1,1 Bangs                                         ", "hair"),
-                ("cf_J_hairFC_s,False,1,1,1,1 Bangs (Middle)                                 ", "hair"),
-                ("cf_J_hairFL_s,False,1,1,1,1 Bangs (Left)                                   ", "hair"),
-                ("cf_J_hairFR_s,False,1,1,1,1 Bangs (Right)                                  ", "hair"),
-                ("cf_J_hairS,False,1,1,1,1 Side Hair                                         ", "hair"),
-                ("cf_J_hairS_top,False,1,1,1,1 Side Hair                                     ", "hair"),
-                
-
-                  //other head
-                ("cf_J_NoseBase_rx"  , "nose"    ),
-                ("cf_J_Nose_tip"     , "nose"    ),
-                ("cf_J_NoseBridge_rx", "nose"    ),
-                ("cf_J_NoseBridge_ty", "nose"    ),
-                ("cf_J_megane_rx_ear", ""    ),
-
-        //Head;
-                ("cf_J_FaceBase"     , ""     ),
-                ("cf_s_head"         , ""     ),
-                ("cf_J_FaceUp_ty"    , ""     ),
-                ("cf_J_FaceUp_tz"    , ""     ),
-                ("cf_J_FaceLow_sx"   , ""     ),
-                ("cf_J_FaceLow_tz"   , ""     ),
-                ("cf_hit_head"       , ""     ),
-                ("cf_J_Chin_Base"    , ""     ),
-                ("cf_J_ChinLow"      , ""     ),
-                ("cf_J_ChinTip_Base" , ""     ),
-                ("cf_J_CheekUpBase"  , ""     ),
-                ("cf_J_CheekUp2_L"   , ""     ),
-                ("cf_J_CheekUp_s_L"  , ""     ),
-                ("cf_J_CheekLow_s_L" , ""     ),
-
-                //other
-                ("cf_J_CheekLow_L,False,1,1,1,1 Lower Cheek (Left)                            ",""),
-                ("cf_J_CheekLow_R,False,1,1,1,1 Lower Cheek (Right)                           ",""),
-                ("cf_J_CheekUp_L,False,1,1,1,1 Upper Cheek (Left)                             ",""),
-                ("cf_J_CheekUp_R,False,1,1,1,1 Upper Cheek (Right)                            ",""),
-                ("cf_J_Chin_rs,False,1,1,1,1 Jaw                                              ",""),
-                ("cf_J_ChinLow,False,1,1,1,1                                                  ",""),
-                ("cf_J_ChinTip_s,False,1,1,1,1 Chin                                           ",""),
-                ("cf_J_FaceBase,False,1,1,1,1 Overall Face                                   ", ""),
-                ("cf_J_FaceLow_s,False,1,1,1,1 Lower Face                                    ", ""),
-                ("cf_J_FaceLowBase,False,1,1,1,1 Lower Face Tone                             ", ""),
-                ("cf_J_FaceUp_ty,False,1,1,1,1 Upper Face                                    ", ""),
-                ("cf_J_FaceUp_tz,False,1,1,1,1 Upper Face Tone                               ", ""),
-                ("cf_J_Head,False,1,1,1,1 Head Scale                                         ", ""),
-                ("cf_J_Head_s,False,1,1,1,1 Overall Head                                     ", ""),
-                ("cf_J_megane,False,1,1,1,1 Glasses                                          ", ""),
-                ("cf_J_Neck,False,1,1,1,1 Head & Neck                                        ", ""),
-                ("cf_J_Neck_s,False,1,1,1,1 Neck [Don't Use]                                 ", ""),
-                ("cf_J_Nose_t,False,1,1,1,1 Upper Nose                                       ", ""),
-                ("cf_J_Nose_tip,False,1,1,1,1 Nose Tip                                       ", ""),
-                ("cf_J_NoseBase_s,False,1,1,1,1 Nose                                         ", ""),
-                ("cf_J_NoseBase_trs,False,1,1,1,1 Nose & Bridge                              ", ""),
-                ("cf_J_NoseBridge_s,False,1,1,1,1 Bridge                                     ", ""),
-                ("cf_J_NoseBridge_t,False,1,1,1,1 Bridge                                     ", ""),
-                ("cf_J_NoseWing_tx_L,False,1,1,1,1 Nostril (Left)                            ", ""),
-                ("cf_J_NoseWing_tx_R,False,1,1,1,1 Nostril (Right)                           ", ""),
-                ("cf_J_Root,False,1,1,1,1 Scale of Character                                 ", ""),
-                ("cf_J_sk_00_00_dam,False,1,1,1,1 Front of Skirt (Middle)                    ", ""),
-                ("cf_J_sk_01_00_dam,False,1,1,1,1 Front of Skirt (Right)                     ", ""),
-                ("cf_J_sk_02_00_dam,False,1,1,1,1 Side of Skirt (Right)                      ", ""),
-                ("cf_J_sk_03_00_dam,False,1,1,1,1 Back of Skirt (Right)                      ", ""),
-                ("cf_J_sk_04_00_dam,False,1,1,1,1 Back of Skirt (Middle)                     ", ""),
-                ("cf_J_sk_05_00_dam,False,1,1,1,1 Back of Skirt (Left)                       ", ""),
-                ("cf_J_sk_06_00_dam,False,1,1,1,1 Side of Skirt (Left)                       ", ""),
-                ("cf_J_sk_07_00_dam,False,1,1,1,1 Front of Skirt (Left)                      ", ""),
-                ("cf_J_sk_siri_dam,False,1,1,1,1 Back of Skirt                               ", ""),
-                ("cf_J_sk_top,False,1,1,1,1 Overall Skirt                                    ", ""),
-                ("cf_N_height,False,1,1,1,1 Height                                           ", ""),
-
-               
-                                                                
-        //Mouth;
-                ("cf_J_MouthBase_rx" ,"mouth" ),
-                ("cf_J_MouthBase_ty" ,"mouth" ),
-                ("cf_J_Mouth_L"      ,"mouth" ),
-                ("cf_J_Mouthup"      ,"mouth" ),
-                ("cf_J_MouthLow"     ,"mouth" ),
-                ("cf_J_MouthCavity"  ,"mouth" ),
-
-                 
-
-                //mouth
-                ("cf_J_Mouth_L,False,1,1,1,1 Mouth (Left)                                    ","mouth"),
-                ("cf_J_Mouth_R,False,1,1,1,1 Mouth (Right)                                   ","mouth"),
-                ("cf_J_MouthBase_s,False,1,1,1,1  Lips                                       ","mouth"),
-                ("cf_J_MouthBase_tr,False,1,1,1,1 Mouth (with teeth)                         ","mouth"),
-                ("cf_J_MouthCavity,False,1,1,1,1 Teeth                                       ","mouth"),
-                ("cf_J_MouthLow,False,1,1,1,1 Lower Lip Tone                                 ","mouth"),
-                ("cf_J_Mouthup,False,1,1,1,1 Upper Lip Tone                                  ","mouth"),
-                                                               
-        //Ears;
-                ("cf_J_EarBase_ry_L" , "ears" ),
-                ("cf_J_EarUp_L"      , "ears" ),
-                ("cf_J_EarLow_L"     , "ears" ),
-                
-                //ears
-                ("cf_J_EarBase_s_L,False,1,1,1,1 Overall Ear (Left)                          ", "ears"),
-                ("cf_J_EarBase_s_R,False,1,1,1,1 Overall Ear (Right)                         ", "ears"),
-                ("cf_J_EarLow_L,False,1,1,1,1 Lower Ear (Left)                               ", "ears"),
-                ("cf_J_EarLow_R,False,1,1,1,1 Lower Ear (Right)                              ", "ears"),
-                ("cf_J_EarRing_L,False,1,1,1,1 Earring (Left)                                ", "ears"),
-                ("cf_J_EarRing_R,False,1,1,1,1 Earring (Right)                               ", "ears"),
-                ("cf_J_EarUp_L,False,1,1,1,1 Upper Ear (Left)                                ", "ears"),
-                ("cf_J_EarUp_R,False,1,1,1,1 Upper Ear (Right)                               ", "ears"),
-
-
-        //Eyes;
-                ("cf_J_Mayu_L"       , "eyes"),
-                ("cf_J_MayuMid_s_L"  , "eyes"),
-                ("cf_J_MayuTip_s_L"  , "eyes"),
-                ("cf_J_Eye_tz"       , "eyes"),
-                ("cf_J_Eye_rz_L"     , "eyes"),
-                ("cf_J_Eye_tx_L"     , "eyes"),
-                ("cf_J_Eye01_s_L"    , "eyes"),
-                ("cf_J_Eye02_s_L"    , "eyes"),
-                ("cf_J_Eye03_s_L"    , "eyes"),
-                ("cf_J_Eye04_s_L"    , "eyes"),
-                ("cf_J_Eye05_s_L"    , "eyes"),
-                ("cf_J_Eye06_s_L"    , "eyes"),
-                ("cf_J_Eye07_s_L"    , "eyes"),
-                ("cf_J_Eye08_s_L"    , "eyes"),
-                                                                
-                                                                
-                
-            
-            
-                //eyes
-                ("cf_J_Eye_r_L,False,1,1,1,1 Eye (Left)                                      ","eyes"),
-                ("cf_J_Eye_r_R,False,1,1,1,1 Eye (Right)                                     ","eyes"),
-                ("cf_J_eye_rs_L,False,1,1,1,1 Eyeball (Left)                                 ","eyes"),
-                ("cf_J_eye_rs_R,False,1,1,1,1 Eyeball (Right)                                ","eyes"),
-                ("cf_J_Eye_s_L,False,1,1,1,1 Overall Eye 1 (Left)                            ","eyes"),
-                ("cf_J_Eye_s_R,False,1,1,1,1 Overall Eye 1 (Right)                           ","eyes"),
-                ("cf_J_Eye_t_L,False,1,1,1,1 Overall Eye 2 (Left)                            ","eyes"),
-                ("cf_J_Eye_t_R,False,1,1,1,1 Overall Eye 2 (Right)                           ","eyes"),
-                ("cf_J_Eye01_L,False,1,1,1,1 Eyelid 1 (Left)                                 ","eyes"),
-                ("cf_J_Eye01_R,False,1,1,1,1 Eyelid 1 (Right)                                ","eyes"),
-                ("cf_J_Eye02_L,False,1,1,1,1 Upper Eyelid (Left)                             ","eyes"),
-                ("cf_J_Eye02_R,False,1,1,1,1 Upper Eyelid (Right)                            ","eyes"),
-                ("cf_J_Eye03_L,False,1,1,1,1 Eyelid Outer Corner (Left)                      ","eyes"),
-                ("cf_J_Eye03_R,False,1,1,1,1 Eyelid Outer Corner (Right)                     ","eyes"),
-                ("cf_J_Eye04_L,False,1,1,1,1 Lower Eyelid (Left)                             ","eyes"),
-                ("cf_J_Eye04_R,False,1,1,1,1 Lower Eyelid (Right)                            ","eyes"),
-                ("cf_J_EyePos_rz_L,False,1,1,1,1 Eyeball (Left)                              ","eyes"),
-                ("cf_J_EyePos_rz_R,False,1,1,1,1 Eyeball (Right)                             ","eyes"),
-                ("cf_J_Mayu_L,False,1,1,1,1 Eyebrow (Left)                                   ","eyes"),
-                ("cf_J_Mayu_R,False,1,1,1,1 Eyebrow (Right)                                  ","eyes"),
-                ("cf_J_MayuMid_s_L,False,1,1,1,1 Eyebrow Middle (Left)                       ","eyes"),
-                ("cf_J_MayuMid_s_R,False,1,1,1,1 Eyebrow Middle (Right)                      ","eyes"),
-                ("cf_J_MayuTip_s_L,False,1,1,1,1 Eyebrow End (Left)                          ","eyes"),
-                ("cf_J_MayuTip_s_R,False,1,1,1,1 Eyebrow End (Right)                         ","eyes"),
-                ("cf_J_pupil_s_L,False,1,1,1,1 Pupil (Left)                                  ","eyes"),
-                ("cf_J_pupil_s_R,False,1,1,1,1 Pupil (Right)                                 ","eyes"),
-                
+        /// <summary>
+        /// In the process of reloading. set to false after complete
+        /// </summary>
+        public bool reloading { get; private set; } = false;
 
 
 
-
-                                                           
-
-                //other body
-        //Body;
-                ("cf_n_height"       , "Body"                   ),
-                ("cf_s_neck"         , "Neck"                   ),
-                ("cf_d_sk_top"       , "Whole Skirt"            ),
-                ("cf_d_sk_00_00"     , "Skirt Front"            ),
-                ("cf_d_sk_07_00"     , "Skirt Front Sides"      ),
-                ("cf_d_sk_06_00"     , "Skirt Sides"            ),
-                ("cf_d_sk_05_00"     , "Skirt Back Sides"       ),
-                ("cf_d_sk_04_00"     , "Skirt Back"             ),
-                                                                
-        //Boobs;
-                ("cf_d_bust01_L"     , "boobs"   ),
-                ("cf_d_bust02_L"     , "boobs"   ),
-                ("cf_d_bust03_L"     , "boobs"   ),
-                ("cf_s_bust00_L"     , "boobs"   ),
-                ("cf_s_bust01_L"     , "boobs"   ),
-                ("cf_s_bust02_L"     , "boobs"   ),
-                ("cf_s_bust03_L"     , "boobs"   ),
-                ("cf_hit_bust02_L"   , "boobs"   ),
-                ("cf_s_bnip01_L"     , "boobs"   ),
-                ("cf_s_bnip025_L"    , "boobs"   ),
-                ("cf_d_bnip01_L"     , "boobs"   ),
-                ("cf_s_bnip02_L"     , "boobs"   ),
-                ("cf_s_bnipacc_L"    , "boobs"   ),
-                                                                
-                //Boobs                
-                ("cf_hit_Mune02_s_L,False,1,1,1,1 Hitbox - Breast (Left)                     ",    "boobs"),
-                ("cf_hit_Mune02_s_R,False,1,1,1,1 Hitbox - Breast (Right)                    ",    "boobs"),
-                ("cf_J_Mune_Nip_R,False,1,1,1,1                                              ",    "boobs"),
-                ("cf_J_Mune_Nip_s_R,False,1,1,1,1                                            ",    "boobs"),
-                ("cf_J_Mune_Nip01_s_L,False,1,1,1,1 Nipple (Left)                            ",    "boobs"),
-                ("cf_J_Mune_Nip01_s_R,False,1,1,1,1 Nipple (Right)                           ",    "boobs"),
-                ("cf_J_Mune_Nip02_s_L,False,1,1,1,1 Nipple Tip (Left)                        ",    "boobs"),
-                ("cf_J_Mune_Nip02_s_R,False,1,1,1,1 Nipple Tip (Right)                       ",    "boobs"),
-                ("cf_J_Mune_Nip03_s_L,False,1,1,1,1                                          ",    "boobs"),
-                ("cf_J_Mune_Nip03_s_R,False,1,1,1,1                                          ",    "boobs"),
-                ("cf_J_Mune_Nipacs01_L,False,1,1,1,1                                         ",    "boobs"),
-                ("cf_J_Mune_Nipacs01_R,False,1,1,1,1                                         ",    "boobs"),
-                ("cf_J_Mune00_d_L,False,1,1,1,1 Middle part of Breast (Left)                 ",    "boobs"),
-                ("cf_J_Mune00_d_R,False,1,1,1,1 Middle part of Breast (Right)                ",    "boobs"),
-                ("cf_J_Mune00_s_L,False,1,1,1,1 Breast Closest to Chest (Left)               ",    "boobs"),
-                ("cf_J_Mune00_s_R,False,1,1,1,1 Breast Closest to Chest (Right)              ",    "boobs"),
-                ("cf_J_Mune00_t_L,False,1,1,1,1 Outer part of Breast (Left)                  ",    "boobs"),
-                ("cf_J_Mune00_t_R,False,1,1,1,1 Outer part of Breast (Right)                 ",    "boobs"),
-                ("cf_J_Mune01_d_L,False,1,1,1,1                                              ",    "boobs"),
-                ("cf_J_Mune01_d_R,False,1,1,1,1                                              ",    "boobs"),
-                ("cf_J_Mune01_s_L,False,1,1,1,1 Middle of Breast (Left)                      ",    "boobs"),
-                ("cf_J_Mune01_s_R,False,1,1,1,1 Middle of Breast (Right)                     ",    "boobs"),
-                ("cf_J_Mune01_t_L,False,1,1,1,1 Outer part of Breast (Left)                  ",    "boobs"),
-                ("cf_J_Mune01_t_R,False,1,1,1,1 Outer part of Breast (Right)                 ",    "boobs"),
-                ("cf_J_Mune02_s_L,False,1,1,1,1 Outer part of Breast (Left)                  ",    "boobs"),
-                ("cf_J_Mune02_s_R,False,1,1,1,1 Outer part of Breast (Right)                 ",    "boobs"),
-                ("cf_J_Mune02_t_L,False,1,1,1,1 Tip of Breast (Left)                         ",    "boobs"),
-                ("cf_J_Mune02_t_R,False,1,1,1,1 Tip of Breast (Right)                        ",    "boobs"),
-                ("cf_J_Mune03_s_L,False,1,1,1,1 Tip of Breast (Left)                         ",    "boobs"),
-                ("cf_J_Mune03_s_R,False,1,1,1,1 Tip of Breast (Right)                        ",    "boobs"),
-                ("cf_J_Mune04_s_L,False,1,1,1,1 Areola (Left)                                ",    "boobs"),
-                ("cf_J_Mune04_s_R,False,1,1,1,1 Areola (Right)                               ",    "boobs"),
-
-                                                                
-        //Torso;
-                ("cf_s_spine03"      , "torso"  ),
-                ("cf_s_spine02"      , "torso"  ),
-                ("cf_s_spine01"      , "torso"  ),
-                ("cf_hit_spine01"    , "torso"  ),
-                ("cf_hit_spine02_L"  , "torso"  ),
-                ("cf_hit_berry"      , "torso"  ),
-                ("cf_hit_waist_L"    , "torso"  ),
-                ("cf_j_spine01"      , "torso"  ),
-                ("cf_j_spine02"      , "torso"  ),
-                ("cf_j_spine03"      , "torso"  ),
-                ("cf_s_waist01"      , "torso"  ),
-                ("cf_s_waist02"      , "torso"  ),
-                //Torso
-                ("cf_J_Spine00,False,1,1,1,1                                                 ", "torso"),
-                ("cf_J_Spine00_s,False,1,1,1,1                                               ", "torso"),
-                ("cf_J_Spine01,False,1,1,1,1 Waist & Above                                   ", "torso"),
-                ("cf_J_Spine01_s,False,1,1,1,1 Waist                                         ", "torso"),
-                ("cf_J_Spine01s,False,1,1,1,1                                                ", "torso"),
-                ("cf_J_Spine02,False,1,1,1,1 Ribcage & Above                                 ", "torso"),
-                ("cf_J_Spine02_s,False,1,1,1,1                                               ", "torso"),
-                ("cf_J_Spine03,False,1,1,1,1 Neck Delta & Above                              ", "torso"),
-                ("cf_J_Spine03_s,False,1,1,1,1                                               ", "torso"),
-                ("cf_J_SpineSk00,False,1,1,1,1                                               ", "torso"),
-                ("cf_J_SpineSk00_dam,False,1,1,1,1                                           ", "torso"),
-                ("cf_J_SpineSk01,False,1,1,1,1                                               ", "torso"),
-                ("cf_J_SpineSk05,False,1,1,1,1                                               ", "torso"),
-                ("cf_J_SpineSk06,False,1,1,1,1                                               ", "torso"),
-
-                                                                
-        //Butt;
-                ("cf_s_siri_L"       , "butt"   ),
-                ("cf_hit_siri_L"     , "butt"   ),
-                                                                
-                                  //Butt
-                ("cf_hit_Kosi02_s,False,1,1,1,1 Hitbox - Hips                                ",   "butt"),
-                ("cf_hit_Siri_s_L,False,1,1,1,1 Hitbox - Butt (Left)                         ",   "butt"),
-                ("cf_hit_Siri_s_R,False,1,1,1,1 Hitbox - Butt (Right)                        ",   "butt"),
-                ("cf_J_Hips,False,1,1,1,1 Scale                                              ",   "butt"),
-                ("cf_J_SiriDam_L,False,1,1,1,1 Butt (Left)                                   ",   "butt"),
-                ("cf_J_SiriDam_R,False,1,1,1,1 Butt (Right)                                  ",   "butt"),
-                ("cf_J_SiriDam00_L,False,1,1,1,1                                             ",   "butt"),
-                ("cf_J_SiriDam01_L,False,1,1,1,1                                             ",   "butt"),
-                ("cf_J_SiriDam01_R,False,1,1,1,1                                             ",   "butt"),
-                ("cf_J_SiriDam02_L,False,1,1,1,1                                             ",   "butt"),
-                ("cf_J_Sirilow_L,False,1,1,1,1                                               ",   "butt"),
-                ("cf_J_Sirilow_s_L,False,1,1,1,1                                             ",   "butt"),
-                ("cf_J_Siriopen_s_L,False,1,1,1,1 Butt Apart (Left)                          ",   "butt"),
-                ("cf_J_Siriopen_s_R,False,1,1,1,1 Butt Apart (Right)                         ",   "butt"),
-                ("cf_J_SiriTop_L,False,1,1,1,1                                               ",   "butt"),
-                ("cf_J_Siriulow_L,False,1,1,1,1                                              ",   "butt"),
-                ("cf_J_Siriulow_s_L,False,1,1,1,1                                            ",   "butt"),
-                ("cf_J_Siriup_L,False,1,1,1,1                                                ",   "butt"),
-                ("cf_J_SiriUp_L,False,1,1,1,1                                                ",   "butt"),
-                ("cf_J_SiriUP_L,False,1,1,1,1                                                ",   "butt"),
-                ("cf_J_SiriUP_R,False,1,1,1,1                                                ",   "butt"),
-                ("cf_J_Siriup00_L,False,1,1,1,1                                              ",   "butt"),
-                ("cf_J_SiriUp00_L,False,1,1,1,1                                              ",   "butt"),
-                ("cf_J_SiriUp00_R,False,1,1,1,1                                              ",   "butt"),
-                ("cf_J_SiriUp01_L,False,1,1,1,1                                              ",   "butt"),
-                ("cf_J_SiriUP01_L,False,1,1,1,1                                              ",   "butt"),
-                ("cf_J_SiriUP01_R,False,1,1,1,1                                              ",   "butt"),
-                ("cf_J_SiriUp01_s_L,False,1,1,1,1                                            ",   "butt"),
-                ("cf_J_Siriups_L,False,1,1,1,1                                               ",   "butt"),
-                ("cf_J_Siri_L,False,1,1,1,1 Overall Butt (Left)                              ",   "butt"),
-                ("cf_J_Siri_R,False,1,1,1,1 Overall Butt (Right)                             ",   "butt"),
-                ("cf_J_Siri_s_L,False,1,1,1,1 Overall Butt/Butt Tone (Left) [Ignores Skirt]  ",   "butt"),
-                ("cf_J_Siri_s_R,False,1,1,1,1 Overall Butt/Butt Tone (Right) [Ignores Skirt] ",   "butt"),
-                                
-        //Arms;
-                ("cf_s_shoulder02_L" , "arms"  ),
-                ("cf_hit_shoulder_L" , "arms"  ),
-                ("cf_j_shoulder_L"   , "arms"  ),
-                ("cf_j_arm00_L"      , "arms"  ),
-                ("cf_s_arm01_L"      , "arms"  ),
-                ("cf_s_arm02_L"      , "arms"  ),
-                ("cf_s_arm03_L"      , "arms"  ),
-                ("cf_j_forearm01_L"  , "arms"  ),
-                ("cf_s_forearm01_L"  , "arms"  ),
-                ("cf_s_forearm02_L"  , "arms"  ),
-                ("cf_s_wrist_L"      , "arms"  ),
-                
-
-                //Arms                                
-                ("cf_J_ArmElbo_low_s_L,False,1,1,1,1 Elbow (Left)                             ","arms"),
-                ("cf_J_ArmElbo_low_s_R,False,1,1,1,1 Elbow (Right)                            ","arms"),
-                ("cf_J_ArmLow01_L,False,1,1,1,1 Forearm (Left)                               ", "arms"),
-                ("cf_J_ArmLow01_R,False,1,1,1,1 Forearm (Right)                              ", "arms"),
-                ("cf_J_ArmLow01_s_L,False,1,1,1,1 Upper Forearm Tone (Left)                   ","arms"),
-                ("cf_J_ArmLow01_s_R,False,1,1,1,1 Upper Forearm Tone (Right)                  ","arms"),
-                ("cf_J_ArmLow02_s_L,False,1,1,1,1 Lower Forearm Tone (Left)                   ","arms"),
-                ("cf_J_ArmLow02_s_R,False,1,1,1,1 Lower Forearm Tone (Left)                   ","arms"),
-                ("cf_J_ArmUp00_L,False,1,1,1,1 Overall Arm (Left)                            ", "arms"),
-                ("cf_J_ArmUp00_R,False,1,1,1,1 Overall Arm (Right)                           ", "arms"),
-                ("cf_J_ArmUp01_s_L,False,1,1,1,1 Upper Humerus (Left)                         ","arms"),
-                ("cf_J_ArmUp01_s_R,False,1,1,1,1 Lower Humerus (Right)                        ","arms"),
-                ("cf_J_ArmUp02_s_L,False,1,1,1,1 Upper Humerus (Left)                         ","arms"),
-                ("cf_J_ArmUp02_s_R,False,1,1,1,1 Lower Humerus (Right)                        ","arms"),
-                ("cf_J_ArmUp03_s_L,False,1,1,1,1 Upper Humerus (Left)                        ", "arms"),
-                ("cf_J_ArmUp03_s_R,False,1,1,1,1 Lower Humerus (Right)                       ", "arms"),
-                ("cf_J_Shoulder_L,False,1,1,1,1 Shoulder & Arm Scale (Left)                  ", "arms"),
-                ("cf_J_Shoulder_R,False,1,1,1,1 Shoulder & Arm Scale (Right)                 ", "arms"),
-                ("cf_J_Shoulder02_s_L,False,1,1,1,1 Shoulder Tone (Left)                     ", "arms"),
-                ("cf_J_Shoulder02_s_R,False,1,1,1,1 Shoulder Tone (Right)                    ", "arms"),
-                ("cf_J_ShoulderIK_L,False,1,1,1,1 Arm Length & Shoulder Elevation (Left)     ", "arms"),
-                ("cf_J_ShoulderIK_R,False,1,1,1,1 Arm Length & Shoulder Elevation (Right)    ", "arms"),
-
-        //Hands;
-                ("cf_j_hand_L"       , "hands"  ),
-                ("cf_s_hand_L"       , "hands"  ),
-                ("cf_hit_arm_L"      , "hands"  ),
-                //FINGERS
-                ("cf_j_thumb"        , "hands"  ),
-                ("cf_j_index"        , "hands"  ),
-                ("cf_j_middle"       , "hands"  ),
-                ("cf_j_ring"         , "hands"  ),
-                ("cf_j_little"       , "hands"  ),
-
-                //Hands             
-                ("cf_J_Hand_L,False,1,1,1,1 Hand & Wirst (Left)                     ","hands"),
-                ("cf_J_Hand_R,False,1,1,1,1 Hand & Wirst (Right)                    ","hands"),
-                ("cf_J_Hand_s_L,False,1,1,1,1 Hand (Left)                           ","hands"),
-                ("cf_J_Hand_s_R,False,1,1,1,1 Hand (Right)                          ","hands"),
-                ("cf_J_Hand_Wrist_s_L,False,1,1,1,1 Wirst (Left)                    ","hands"),
-                ("cf_J_Hand_Wrist_s_R,False,1,1,1,1 Wirst (Right)                   ","hands"),
-                                           
-        //Legs;
-                ("cf_j_waist01"      , "legs"  ),
-                ("cf_j_waist02"      , "legs"  ),
-                ("cf_j_thigh00_L"    , "legs"  ),
-                ("cf_s_thigh01_L"    , "legs"  ),
-                ("cf_s_thigh02_L"    , "legs"  ),
-                ("cf_s_thigh03_L"    , "legs"  ),
-                ("cf_hit_thigh01_L"  , "legs"  ),
-                ("cf_hit_thigh02_L"  , "legs"  ),
-                ("cf_j_leg01_L"      , "legs"  ),
-                ("cf_s_leg01_L"      , "legs"  ),
-                ("cf_s_leg02_L"      , "legs"  ),
-                ("cf_s_leg03_L"      , "legs"  ),
-                
-
-                //legs
-             
-                ("cf_hit_LegUp01_s_L,False,1,1,1,1 Hitbox - Thigh (Left)                     ", "legs"),
-                ("cf_hit_LegUp01_s_R,False,1,1,1,1 Hitbox - Thigh (Right)                    ", "legs"),
-                ("cf_J_Kosi01,False,1,1,1,1 Waist & Below                                    ", "legs"),
-                ("cf_J_Kosi01_s,False,1,1,1,1 Pelvis [Ignores Skirt]                         ", "legs"),
-                ("cf_J_Kosi02,False,1,1,1,1 Hips & Below                                     ", "legs"),
-                ("cf_J_Kosi02_s,False,1,1,1,1 Hips [Ignores Skirt]                           ", "legs"),
-                ("cf_J_Kosi03,False,1,1,1,1                                                  ", "legs"),
-                ("cf_J_Kosi03_s,False,1,1,1,1                                                ", "legs"),
-                ("cf_J_Kosi04_s,False,1,1,1,1                                                ", "legs"),
-                ("cf_J_LegDam_L,False,1,1,1,1                                                ", "legs"),
-                ( "cf_J_LegKnee_back_s_L,False,1,1,1,1 Back of Knee (Left)                    ","legs"),
-                ("cf_J_LegKnee_back_s_R,False,1,1,1,1 Back of Knee (Right)                   ", "legs"),
-                ("cf_J_LegKnee_dam_L,False,1,1,1,1 Front of Knee (Left)                      ", "legs"),
-                ("cf_J_LegKnee_dam_R,False,1,1,1,1 Front of Knee (Right)                     ", "legs"),
-                ("cf_J_LegKnee_low_s_L,False,1,1,1,1 Knee Tone (Left)                        ", "legs"),
-                ("cf_J_LegKnee_low_s_R,False,1,1,1,1 Knee Tone (Right)                       ", "legs"),
-                ("cf_J_LegLow01_L,False,1,1,1,1 Knees & Below                                ", "legs"),
-                ("cf_J_LegLow01_R,False,1,1,1,1 Knees & Below                                ", "legs"),
-                ("cf_J_LegLow01_s_L,False,1,1,1,1 Calf (Left)                                ", "legs"),
-                ("cf_J_LegLow01_s_R,False,1,1,1,1 Calf (Right)                               ", "legs"),
-                ("cf_J_LegLow02_s_L,False,1,1,1,1 Lower Calf (Left)                          ", "legs"),
-                ("cf_J_LegLow02_s_R,False,1,1,1,1 Lower Calf (Right)                         ", "legs"),
-                ("cf_J_LegLow03_s_L,False,1,1,1,1 Ankle (Left)                               ", "legs"),
-                ("cf_J_LegLow03_s_R,False,1,1,1,1 Ankle (Right)                              ", "legs"),
-                ("cf_J_LegLowDam_L,False,1,1,1,1                                             ", "legs"),
-                ("cf_J_LegLowRoll_L,False,1,1,1,1 Lower Leg Length (Left)                    ", "legs"),
-                ("cf_J_LegLowRoll_R,False,1,1,1,1 Lower Leg Length (Right)                   ", "legs"),
-                ("cf_J_LegUp_L,False,1,1,1,1                                                 ", "legs"),
-                ("cf_J_LegUp00_L,False,1,1,1,1 Overall Leg (Left)                            ", "legs"),
-                ("cf_J_LegUp00_R,False,1,1,1,1 Overall Leg (Right)                           ", "legs"),
-                ("cf_J_LegUp01_s_L,False,1,1,1,1 Upper Thigh (Left)                          ", "legs"),
-                ("cf_J_LegUp01_s_R,False,1,1,1,1 Upper Thigh (Right)                         ", "legs"),
-                ("cf_J_LegUp02_s_L,False,1,1,1,1 Lower Thigh (Left)                          ", "legs"),
-                ("cf_J_LegUp02_s_R,False,1,1,1,1 Lower Thigh (Right)                         ", "legs"),
-                ("cf_J_LegUp03_L,False,1,1,1,1 Knee (Left)                                   ", "legs"),
-                ("cf_J_LegUp03_R,False,1,1,1,1 Knee (Right)                                  ", "legs"),
-                ("cf_J_LegUp03_s_L,False,1,1,1,1 Above the Knee (Left)                       ", "legs"),
-                ("cf_J_LegUp03_s_R,False,1,1,1,1 Above the Knee (Right)                      ", "legs"),
-                ("cf_J_LegUpDam_L,False,1,1,1,1 Upper Hip (Left)                             ", "legs"),
-                ("cf_J_LegUpDam_R,False,1,1,1,1 Upper Hip (Right)                            ", "legs"),
-                ("cf_J_LegUpDam_s_L,False,1,1,1,1 Upper Hip (Left) [Not as good]             ", "legs"),
-                ("cf_J_LegUpDam_s_R,False,1,1,1,1 Upper Hip (Right) [Not as good]            ", "legs"),
-                ("cf_J_LegUpLow_R,False,1,1,1,1                                              ", "legs"),
-                ("cf_J_LegUpLow_s_L,False,1,1,1,1                                            ", "legs"),
-              
-
-        //Feet;
-                ("cf_j_foot_L"       , "feet"          ),
-                ("cf_j_leg03_L"      , "feet"          ),
-                ("cf_j_toes_L"       , "feet"          ),
-                                                                
-                 
-
-                //feet              
-                ("cf_J_Foot01_L,False,1,1,1,1 Foot & Ankle (Left)                            ","feet"),
-                ("cf_J_Foot01_R,False,1,1,1,1 Foot & Ankle (Right)                           ","feet"),
-                ("cf_J_Foot02_L,False,1,1,1,1 Foot (Left)                                    ","feet"),
-                ("cf_J_Foot02_R,False,1,1,1,1 Foot (Right)                                   ","feet"),
-                ("cf_J_Toes01_L,False,1,1,1,1 Toes (Left)                                    ","feet"),
-                ("cf_J_Toes01_R,False,1,1,1,1 Toes (Right)                                   ","feet"),
-                                                               
-        //Genitals;
-                ("cf_d_kokan"        , "genitals"           ),
-                ("cf_j_kokan"        , "genitals"           ),
-                ("cm_J_dan100_00"    , "genitals"           ),
-                ("cm_J_dan109_00"    , "genitals"           ),
-                ("cm_J_dan_f_L"      , "genitals"           ),
-                ("cf_j_ana"          , "genitals"           ),
-
-                   
-                //genitals
-                ("cf_J_Kokan,False,1,1,1,1 Pussy                                             ","genitals"),
-                ("cf_J_Ana,False,1,1,1,1 Anus                                                ","genitals"),
-                ("cm_J_dan_s,False,1,1,1,1 (Penis & Balls)                                   ","genitals"),
-                ("cm_J_dan100_00,False,1,1,1,1 (Penis)                                       ","genitals"),
-                ("cm_J_dan_f_top,False,1,1,1,1 (Balls)                                       ","genitals"),
-                ("cm_J_dan_f_L,False,1,1,1,1 (Left Nut)                                      ","genitals"),
-                ("cm_J_dan_f_R,False,1,1,1,1 (Right Nut)                                     ","genitals"),
-
-
-
-
-
-
-
-
-
-    };
-
-        void CharaReloaded(object m, CharaReloadEventArgs n)
+        void CharaReloaded(object o, CharaReloadEventArgs a)
         {
-            CharaMorpherController ctrl = n.ReloadedCharacter.GetComponent<CharaMorpherController>();
+            CharaMorpherController ctrl = a.ReloadedCharacter.GetComponent<CharaMorpherController>();
+
+            //initialLoad = true;
+
 
 #if KKSS
-            CurrentCoordinate.Subscribe((type) => { MorphChangeUpdate(); });
+            if(initLoadFinished == false)
+                ctrl.CurrentCoordinate.Subscribe((type) => { StartCoroutine(CoMorphUpdate()); });
 #endif
-            StartCoroutine(ctrl.CoCharaReload());
 
+            CharaMorpher_Core.Logger.LogDebug("Reloading Character");
+            StartCoroutine(ctrl.CoMorphReload());
+
+            // initialLoad = true;
+            // ctrl.UpdateMorphValues(false);
 
         }
+
+
 
         protected override void Awake()
         {
-            base.Awake();
+
             KKAPI.Chara.CharacterApi.CharacterReloaded += CharaReloaded;
+
+            //Make sure to call base version
+            base.Awake();
         }
 
-        IEnumerator CoCharaReload()
+
+        IEnumerator CoMorphUpdate()
         {
-            for(int a = 0; a < 4; ++a)//make sure to load last
+            for(int a = 0; a < 4; ++a)
                 yield return new WaitForEndOfFrame();
 
-            //  CharaMorpher_Core.Logger.LogDebug("Reloading After character loaded");
-            reloading = true;
+            MorphChangeUpdate();
+
+        }
+
+        IEnumerator CoMorphReload()
+        {
+            for(int a = 0; a < 4; ++a)
+                yield return new WaitForEndOfFrame();
+            CharaMorpher_Core.Logger.LogDebug("Reloading After character loaded");
             OnCharaReload(KoikatuAPI.GetCurrentGameMode());
 
-            for(int a = 0; a < 2; ++a)//let character base update
+            for(int a = 0; a < 4; ++a)
                 yield return new WaitForEndOfFrame();
 
-            //  CharaMorpher_Core.Logger.LogDebug("Morphing model...");
+            CharaMorpher_Core.Logger.LogDebug("Morphing model...");
             MorphChangeUpdate();
-            reloading = false;
 
+
+            reloading = false;
             initLoadFinished = true;
         }
-
-        IEnumerator CoStateChange()
-        {
-
-            for(int a = 0; a < 2; ++a)//let character base update
-                yield return new WaitForEndOfFrame();
-
-            //  CharaMorpher_Core.Logger.LogDebug("Morphing model...");
-            MorphChangeUpdate();
-
-        }
-
 
         protected override void OnDestroy()
         {
@@ -731,30 +424,24 @@ namespace CharaMorpher
         /// <inheritdoc />
         void OnCharaReload(GameMode currentGameMode)
         {
+            reloading = true;
             var cfg = CharaMorpher_Core.Instance.cfg;
-            var charaCtrl = ChaControl;
-            var boneCtrl = charaCtrl.GetComponent<BoneController>();
-
-
             if(!cfg.enableInGame.Value && currentGameMode == GameMode.MainGame) return;
             if(!reloading || ChaControl.sex != 1/*could allow it with both genders later*/)
                 return;
 
 
+            var charaCtrl = ChaControl;
+            var boneCtrl = charaCtrl.GetComponent<BoneController>();
 
             //TODO: Enter logic here...
-            //    CharaMorpher_Core.Logger.LogDebug("clear data");
+            CharaMorpher_Core.Logger.LogDebug("clear data");
             m_data1.Clear();
             m_data2.Clear();
 
-            //reset current modifiers
-            foreach(var mod in boneCtrl.Modifiers)
-                mod.Reset();
-            boneCtrl.NeedsFullRefresh = true;
-
 
             //Get picked character data
-            //   CharaMorpher_Core.Logger.LogDebug("replace data 1");
+            CharaMorpher_Core.Logger.LogDebug("replace data 1");
             m_data1.main.CopyAll(ChaControl.chaFile);//get all character data!!!          
             m_data1.abmx.Populate(this);
 
@@ -768,20 +455,20 @@ namespace CharaMorpher
                 lastCharDir = cfg.mergeCharDir.Value;
                 charData = new MorphData();
 
-                //    CharaMorpher_Core.Logger.LogDebug("load morph target");
+                CharaMorpher_Core.Logger.LogDebug("load morph target");
                 ChaFileControl.LoadCharaFile(cfg.mergeCharDir.Value, 255/*female; 0 male*/);
 
-                //   CharaMorpher_Core.Logger.LogDebug("copy morph target");
+                CharaMorpher_Core.Logger.LogDebug("copy morph target");
                 charData.main.CopyAll(ChaControl.chaFile);
                 charData.abmx.Populate(this);//Store Bonemod Extended Data
 
-                //   CharaMorpher_Core.Logger.LogDebug("reset original data");
+                CharaMorpher_Core.Logger.LogDebug("reset original data");
                 //Reset original character data
                 ChaControl.chaFile.CopyAll(m_data1.main);
                 //  initialLoad = true;
             }
 
-            //   CharaMorpher_Core.Logger.LogDebug("replace data 2");
+            CharaMorpher_Core.Logger.LogDebug("replace data 2");
             m_data2.Copy(charData);
 
 
@@ -789,18 +476,16 @@ namespace CharaMorpher
 
 
 
-            //  //CharaMorpher_Core.Logger.LogDebug("Morphing model...");
-            //  //Update the model
-            //  MorphChangeUpdate();
+            //CharaMorpher_Core.Logger.LogDebug("Morphing model...");
+            ////Update the model
+            //MorphChangeUpdate();
         }
-
-        /// <inheritdoc />
         protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
         {
-            if(initLoadFinished)//just making sure 
-                MorphChangeUpdate();
-        }
+            base.OnCoordinateBeingLoaded(coordinate);
 
+            StartCoroutine(CoMorphUpdate());
+        }
 
         //Taken from ABMX to get the data from card more easily 
         internal static List<BoneModifier> ReadBoneModifiers(PluginData data)
@@ -839,12 +524,26 @@ namespace CharaMorpher
         /// </summary>
         public void MorphChangeUpdate()
         {
+            if(m_data1.main != null)
+            {
+#if HS2
+                string storedID = m_data1.main.dataID, cardID = ChaControl.chaFile.dataID;
+#else
+                string storedID = m_data1.main.about.dataID, cardID = ChaControl.chaFile.about.dataID;
+#endif
+                // CharaMorpher_Core.Logger.LogDebug($"file is: {cardID}");
+                // CharaMorpher_Core.Logger.LogDebug($"stored file is: {storedID}");
+
+
+                if(cardID == null || cardID != storedID) return;
+            }
+            else return;
+
             var cfg = CharaMorpher_Core.Instance.cfg;
             var charaCtrl = ChaControl;
             var boneCtrl = charaCtrl.GetComponent<BoneController>();
 
-            //   CharaMorpher_Core.Logger.LogDebug("remove existing bone mods");
-            boneCtrl.Modifiers.Clear();
+
             //Merge results
             {
 
@@ -869,9 +568,7 @@ namespace CharaMorpher
                 m_data2.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
             }
 
-            bool reset = !cfg.enable.Value;
-            reset = KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame ? reset || !cfg.enableInGame.Value : reset;
-            UpdateMorphValues(reset);
+            UpdateMorphValues(!cfg.enable.Value);
         }
 
         private void UpdateMorphValues(bool reset)
@@ -914,6 +611,9 @@ namespace CharaMorpher
             CharaMorpher_Core.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
             CharaMorpher_Core.Logger.LogDebug($"data 2 face bones: {m_data2.abmx.face.Count}");
             CharaMorpher_Core.Logger.LogDebug($"chara bones: {boneCtrl.Modifiers.Count}");
+
+
+
             CharaMorpher_Core.Logger.LogDebug($"body parts: {m_data1.main.custom.body.shapeValueBody.Length}");
             CharaMorpher_Core.Logger.LogDebug($"face parts: {m_data1.main.custom.face.shapeValueFace.Length}");
 
@@ -932,13 +632,13 @@ namespace CharaMorpher
                     //Body
                     if(a < m_data1.abmx.body.Count)
                     {
-                        CharaMorpher_Core.Logger.LogDebug($"looking for values");
+                        //  CharaMorpher.Logger.LogDebug($"looking for values");
                         var bone1 = m_data1.abmx.body[a];
                         var bone2 = m_data2.abmx.body[a];
                         var current = boneCtrl.Modifiers.Find((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
                         int count = 0;//may use this in other mods
 
-                        CharaMorpher_Core.Logger.LogDebug($"found values");
+                        //  CharaMorpher.Logger.LogDebug($"found values");
                         CharaMorpher_Core.Logger.LogDebug($"current = {current.BoneName}");
 
                         float modVal = 0;
@@ -946,39 +646,35 @@ namespace CharaMorpher
                         //remove L/R from bone name
                         string content = bone1.BoneName.Trim().ToLower();
 
-                        //  CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
-                        var fingers = new string[]
-                       {
-                        "cf_j_thumb"   ,
-                        "cf_j_index"   ,
-                        "cf_j_middle"  ,
-                        "cf_j_ring"    ,
-                        "cf_j_little"  ,
-                       };
+                        string[] fingerNames = new[]
+                        {
+                            "cf_j_thumb",
+                            "cf_j_index",
+                            "cf_j_middle",
+                            "cf_j_ring",
+                            "cf_j_little"
+                        };
 
-
-                        CharaMorpher_Core.Logger.LogDebug($"Body bone{a}: {content}");
-                        if(fingers.ToList().FindIndex(k => content.Contains(k)) >= 0)
+                        if(fingerNames.ToList().FindIndex((k) => content.Contains(k)) >= 0)
                             modVal = controls.abmxHands;
                         else
                         {
 
-                            if(content.LastIndexOf("_") >= 0)
-                            {
+                            string ending1 = "";
+                            string ending2 = "";
+                            int end = content.LastIndexOf("_");
+                            int end2 = content.Substring(0, end).LastIndexOf("_");
+                            if(end >= 0)
+                                ending1 = content.Substring(content.LastIndexOf("_"));
+                            if(end2 >= 0)
+                                ending2 = content.Substring(end - (end - (end2)));
 
-                                string ending1 = ending1 = content.Substring(content.LastIndexOf("_"));
-                                string ending2 = "";
+                            CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
 
-                                int end = content.LastIndexOf("_"), end2 = (content.Substring(0, end).LastIndexOf("_"));
+                            if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
+                                content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
 
-                                if(end2 >= 0)
-                                    ending2 = content.Substring(end - (end - end2));
-
-
-                                if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
-                                    content = content.Substring(0, content.LastIndexOf(((ending2 == "_l_00" || ending2 == "_r_00") ? ending2 : ending1)));
-                                //  CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
-                            }
+                            CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
 
                             switch(bonecatagories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
                             {
@@ -1013,7 +709,7 @@ namespace CharaMorpher
                             }
                         }
 
-                        //  CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
+                        CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
                         foreach(var mod in current.CoordinateModifiers)
                         {
 
@@ -1044,7 +740,7 @@ namespace CharaMorpher
                             ++count;
                         }
 
-                        //  CharaMorpher_Core.Logger.LogDebug($"applying values");
+                        CharaMorpher_Core.Logger.LogDebug($"applying values");
                         current.Apply(boneCtrl.CurrentCoordinate.Value, null, KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame);
                     }
 
@@ -1060,24 +756,21 @@ namespace CharaMorpher
 
                         //remove L/R from bone name
                         string content = bone1.BoneName.Trim().ToLower();
+                        string ending1 = "";
+                        string ending2 = "";
+                        int end = content.LastIndexOf("_");
+                        int end2 = content.Substring(0, end).LastIndexOf("_");
+                        if(end >= 0)
+                            ending1 = content.Substring(content.LastIndexOf("_"));
+                        if(end2 >= 0)
+                            ending2 = content.Substring(end - (end - (end2)));
 
-                        if(content.LastIndexOf("_") >= 0)
-                        {
+                        CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
 
-                            string ending1 = ending1 = content.Substring(content.LastIndexOf("_"));
-                            string ending2 = "";
+                        if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
+                            content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
 
-                            int end = content.LastIndexOf("_"), end2 = (content.Substring(0, end).LastIndexOf("_"));
-
-                            if(end2 >= 0)
-                                ending2 = content.Substring(end - (end - end2));
-
-
-                            if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
-                                content = content.Substring(0, content.LastIndexOf(((ending2 == "_l_00" || ending2 == "_r_00") ? ending2 : ending1)));
-                            //  CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
-                        }
-
+                        CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
 
 
                         switch(bonecatagories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
@@ -1102,7 +795,7 @@ namespace CharaMorpher
                             break;
                         }
 
-                        CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
+                        //CharaMorpher.Logger.LogDebug($"Morphing Bone...");
                         foreach(var mod in current.CoordinateModifiers)
                         {
 
@@ -1138,7 +831,7 @@ namespace CharaMorpher
 
                 enable = reset ? 0 : 1;
 
-                //  CharaMorpher_Core.Logger.LogDebug($"updating body");
+                CharaMorpher_Core.Logger.LogDebug($"updating body");
                 //Body Shape
                 if(a < m_data1.main.custom.body.shapeValueBody.Length)
                 {
@@ -1171,14 +864,14 @@ namespace CharaMorpher
                         result = (m_data1.main.custom.body.shapeValueBody[a] +
                         enable * controls.body * (m_data2.main.custom.body.shapeValueBody[a] - m_data1.main.custom.body.shapeValueBody[a]));//lerp, may change it later
 
-                    //CharaMorpher_Core.Logger.LogDebug($"Loaded Body Part 1: {m_data1.main.custom.body.shapeValueBody[a]} at index {a}");
+                    CharaMorpher_Core.Logger.LogDebug($"Loaded Body Part 1: {m_data1.main.custom.body.shapeValueBody[a]} at index {a}");
                     //CharaMorpher.Logger.LogDebug($"Loaded Body Part 2: {m_data2.main.custom.body.shapeValueBody[a]} at index {a}");
 
                     //load values to character
                     charaCtrl.SetShapeBodyValue(a, result);
                 }
 
-                //  CharaMorpher_Core.Logger.LogDebug($"updating face");
+                CharaMorpher_Core.Logger.LogDebug($"updating face");
                 //Face Shape
                 if(a < m_data1.main.custom.face.shapeValueFace.Length)
                 {
@@ -1197,17 +890,18 @@ namespace CharaMorpher
                         result = (m_data1.main.custom.face.shapeValueFace[a] +
                           enable * controls.face * (m_data2.main.custom.face.shapeValueFace[a] - m_data1.main.custom.face.shapeValueFace[a]));
 
-                    //CharaMorpher_Core.Logger.LogDebug($"Loaded Face Part 1: {m_data1.main.custom.face.shapeValueFace[a]} at index {a}");
+                    CharaMorpher_Core.Logger.LogDebug($"Loaded Face Part 1: {m_data1.main.custom.face.shapeValueFace[a]} at index {a}");
                     //CharaMorpher.Logger.LogDebug($"Loaded Face Part 2: {m_data1.main.custom.face.shapeValueFace[a]}");
 
 
                     //load values to character
                     charaCtrl.SetShapeFaceValue(a, result);
                 }
-                //  CharaMorpher_Core.Logger.LogDebug("");
+                CharaMorpher_Core.Logger.LogDebug("");
             }
 
             charaCtrl.updateShape = true;
+            charaCtrl.updateBustSize = true;
             //   if(initialLoad || reset || !cfg.enableABMX.Value)
             //       boneCtrl.NeedsFullRefresh = true;
 
