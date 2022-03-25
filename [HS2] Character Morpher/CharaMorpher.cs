@@ -224,7 +224,13 @@ namespace CharaMorpher
                         foreach(CharaMorpherController ctrl in hnd.Instances)
                             ctrl.MorphChangeUpdate();
             };
-
+            cfg.enableInGame.SettingChanged += (m, n) =>
+            {
+                foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+                    if(hnd.ControllerType == typeof(CharaMorpherController))
+                        foreach(CharaMorpherController ctrl in hnd.Instances)
+                            ctrl.MorphChangeUpdate();
+            };
             cfg.enableABMX.SettingChanged += (m, n) =>
             {
                 foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)

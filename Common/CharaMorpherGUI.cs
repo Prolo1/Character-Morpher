@@ -40,16 +40,14 @@ namespace CharaMorpher
             var cfg = CharaMorpher_Core.Instance.cfg;
 
 #if HS2 || AI
-
-            MakerCategory category = new MakerCategory(MakerConstants.Parameter.CategoryName, "Character Morpher");
+            
+            MakerCategory peram = MakerConstants.Parameter.Type;
 #else
-         //   foreach(var cat in MakerConstants.BuiltInCategories)
-         //       CharaMorpher_Core.Logger.LogDebug(cat.CategoryName);
-
+            
             MakerCategory peram = MakerConstants.Parameter.Character;
-            MakerCategory category = new MakerCategory(peram.CategoryName, "Morph", int.MaxValue, "Chara Morph");
 #endif
 
+            MakerCategory category = new MakerCategory(peram.CategoryName, "Morph", int.MaxValue, "Chara Morph");
             e.AddSubCategory(category);
 
             //Enables
