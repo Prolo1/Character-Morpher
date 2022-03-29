@@ -1,6 +1,6 @@
 # Character Morpher
 ## Description
-This mod allows for the user to set a morph target and change any character to look like the the target (with a few sliders in character maker). As of now the changes in character maker are applied to every character (may change that later). It also only works on female cards, not actively planing on both genders (I might though)
+This mod allows for the user to set a morph target and change any character to look like the the target (with a few sliders in character maker). As of now the changes in character maker are applied to every character (may change that later). It also only works on female cards, not actively planning on both genders (I might though)
 
 ## Linked Mods
 The mod versions used are from the latest versions of [Better Repack](https://dl.betterrepack.com/public/)
