@@ -19,8 +19,8 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 * saving extended data to card w/o editing the character
 
 ## Example
-![example img](https://github.com/Prolo1/Example-images/blob/main/example%20chara%20morph%20v2.gif?raw=true)
-
+![example gif](https://github.com/Prolo1/Example-images/blob/main/example%20chara%20morph%20v2.gif?raw=true)
+![HS2 image](https://github.com/Prolo1/Example-images/blob/main/Screenshot%202022-03-29%20191817.png?raw=true)
 ## How To Use
 1. Open the mod settings
 2. Find "Character Morpher" and add the path to the character you want to use as a morph target
@@ -31,4 +31,4 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 
 ## Known Issues
 * changing morph values to far extremes may cause issues loading subsequent characters in maker. When this happens just close maker and open it back up (this isn't a problem in game since you cant use the sliders)
-* With KK[SS], trying to change OG face and body sliders will change values to original state, that's because the sliders don't change when values change internally so keep that in mind (using the character morpher sliders will turn it back)
+* With KK[SS], trying to change OG face and body sliders will change bust values to original state, that's because the sliders don't change when values change internally so keep that in mind (using the character morpher sliders will turn it back)
