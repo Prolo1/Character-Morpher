@@ -22,9 +22,8 @@ using AIChara;
 
  * morph body features
  * morph face features     
- * morph all body sections individually
- * morph ears individually
- * morph ABMX
+ * morph ABMX body features
+ * morph ABMX face features
 
   Planned:
                                            
