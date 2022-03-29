@@ -1,8 +1,6 @@
 # Character Morpher
 ## Description
-This mod allows for the user to set a morph target and change any character to look like the the target (with a few sliders in character maker). As of now the changes in character maker are applied to every character (may change that later). It also only works on female cards, not actively planning on both genders (I might though)\
-
-![example img](https://cdn.discordapp.com/attachments/897794665632395274/958438014508482660/ezgif-5-0834e76901.gif)
+This mod allows for the user to set a morph target and change any character to look like the target (with a few sliders in character maker). As of now the changes in character maker are applied to every character (may change that later). It also only works on female cards, not actively planning on both genders (I might though)
 
 ## Linked Mods
 The mod versions used are from the latest versions of [Better Repack](https://dl.betterrepack.com/public/)
@@ -17,8 +15,11 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 * morph ABMX face features
 
 ## Planed
-* adding more sliders overtime (i.e. skin colour, voice... etc.)
+* adding more sliders over time (i.e. skin colour, voice... etc.)
 * saving extended data to card w/o editing the character
+
+## Example
+![example img](https://github.com/Prolo1/Example-images/blob/main/example%20chara%20morph%20v2.gif?raw=true)
 
 ## How To Use
 1. Open the mod settings
@@ -29,5 +30,5 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 69. Enjoy!
 
 ## Known Issues
-* changing morph values to far extremes may cause issues loading subsiquant characters in maker. When this happens just close maker and open it back up (this isn't a problem in game since you cant use the sliders)
-* With KK[SS], trying to change OG face and body sliders will change values to original state, that's because the sliders don't chage when values change internally so keep that in mind (using the character morpher sliders will turn it back)
+* changing morph values to far extremes may cause issues loading subsequent characters in maker. When this happens just close maker and open it back up (this isn't a problem in game since you cant use the sliders)
+* With KK[SS], trying to change OG face and body sliders will change values to original state, that's because the sliders don't change when values change internally so keep that in mind (using the character morpher sliders will turn it back)
