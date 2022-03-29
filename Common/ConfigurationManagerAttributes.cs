@@ -1,4 +1,4 @@
-﻿namespace HS2_CharaMorpher
+﻿namespace CharaMorpher
 {
 
 /// <summary>
