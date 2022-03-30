@@ -20,6 +20,7 @@ namespace CharaMorpher
     {
         private static class Hooks
         {
+
             [HarmonyPostfix]
             [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.UpdateClothesStateAll))]
             [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStateAll))]
