@@ -21,7 +21,7 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 * Morph ABMX body features
 * Morph ABMX face features
 
-## Planed
+## Planned
 * Adding more sliders over time (i.e. skin colour, voice... etc.)
 * Saving extended data to card w/o editing the character
 
