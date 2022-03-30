@@ -5,28 +5,36 @@ This mod allows for the user to set a morph target and change any character to l
 ## Linked Mods
 The mod versions used are from the latest versions of [Better Repack](https://dl.betterrepack.com/public/)
 * [Illusion API](https://github.com/IllusionMods/IllusionModdingAPI)
-* [ABMX](https://github.com/ManlyMarco/ABMX)
+* [ABMX](https://github.com/ManlyMarco/ABMX) (this mod basically made it all possible)
 * [BepisPlugins](https://github.com/IllusionMods/BepisPlugins)
 
+## Setup
+1. Download [Better Repack](https://dl.betterrepack.com/public/) or add all linked mods to your game
+2. Download the latest update of [this mod](https://github.com/Prolo1/Character-Morpher/releases/latest/) for your game
+3. Extract the zip file
+4. Place the extracted "BepinEx" folder into the main directory of your game (where the game .exe is)
+5. Run
+
 ## Features
-* morph body features
-* morph face features     
-* morph ABMX body features
-* morph ABMX face features
+* Morph body features
+* Morph face features     
+* Morph ABMX body features
+* Morph ABMX face features
 
 ## Planed
-* adding more sliders over time (i.e. skin colour, voice... etc.)
-* saving extended data to card w/o editing the character
+* Adding more sliders over time (i.e. skin colour, voice... etc.)
+* Saving extended data to card w/o editing the character
 
 ## Example
 ![example gif](https://github.com/Prolo1/Example-images/blob/main/example%20chara%20morph%20v2.gif?raw=true)
 ![HS2 image](https://github.com/Prolo1/Example-images/blob/main/Screenshot%202022-03-29%20191817.png?raw=true)
+
 ## How To Use
 1. Open the mod settings
 2. Find "Character Morpher" and add the path to the character you want to use as a morph target
 3. Open up character maker (in game or from main menu)
-4. go to "Chara Morph" under personality settings
-5. use the sliders to morph different aspects of the character
+4. Go to "Chara Morph" under personality settings
+5. Use the sliders to morph different aspects of the character
 69. Enjoy!
 
 ## Known Issues
