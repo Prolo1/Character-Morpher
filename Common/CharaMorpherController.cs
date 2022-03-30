@@ -354,8 +354,7 @@ namespace CharaMorpher
         #endregion
 #elif HS2 || AI
         #region AIBones
-
-             {           
+         {           
                 //Torso
                 ("cf_J_Spine00,False,1,1,1,1                                                 ", "torso"),
                 ("cf_J_Spine00_s,False,1,1,1,1                                               ", "torso"),
@@ -490,8 +489,8 @@ namespace CharaMorpher
                 ("cm_J_dan_f_L,False,1,1,1,1 (Left Nut)                                      ","genitals"),
                 ("cm_J_dan_f_R,False,1,1,1,1 (Right Nut)                                     ","genitals"),
 
-                //legs
              
+                //legs
                 ("cf_hit_LegUp01_s_L,False,1,1,1,1 Hitbox - Thigh (Left)                     ", "legs"),
                 ("cf_hit_LegUp01_s_R,False,1,1,1,1 Hitbox - Thigh (Right)                    ", "legs"),
                 ("cf_J_Kosi01,False,1,1,1,1 Waist & Below                                    ", "legs"),
@@ -705,15 +704,13 @@ namespace CharaMorpher
         {
             for(int a = 0; a < 3; ++a)
                 yield return new WaitForEndOfFrame();
+
             reloading = true;
             CharaMorpher_Core.Logger.LogDebug("Reloading After character loaded");
             OnCharaReload(KoikatuAPI.GetCurrentGameMode());
 
-            for(int a = 0; a < 2; ++a)
-                yield return new WaitForEndOfFrame();
-
-            CharaMorpher_Core.Logger.LogDebug("Morphing model...");
-            MorphChangeUpdate();
+            //  CharaMorpher_Core.Logger.LogDebug("Morphing model...");
+            //  MorphChangeUpdate();
 
 
             reloading = false;
@@ -739,33 +736,8 @@ namespace CharaMorpher
         void OnCharaReload(GameMode currentGameMode)
         {
 
-            var boneCtrl = ChaControl.GetComponent<BoneController>();
-
-#if HS2 || AI
-            string storedID = m_data1.main.dataID, cardID = ChaControl.chaFile.dataID;
-            //CopyAll will not copy this data in hs2
-            if(!initLoadFinished)
-                m_data1.main.dataID = ChaControl.chaFile.dataID;
-#else
-            string storedID = m_data1.main.about.dataID, cardID = ChaControl.chaFile.about.dataID;
-#endif
-
-            // CharaMorpher_Core.Logger.LogDebug($"file is: {cardID}");
-            // CharaMorpher_Core.Logger.LogDebug($"stored file is: {storedID}");
-
-
-            // // if(cardID == null || cardID != storedID)
-            // foreach(var data in boneCtrl.Modifiers)
-            //     data.Reset();
-
-            //boneCtrl.NeedsFullRefresh = true;
-            //boneCtrl.NeedsBaselineUpdate = true;
-
-
             var cfg = CharaMorpher_Core.Instance.cfg;
-            //   if(!cfg.enableInGame.Value && currentGameMode == GameMode.MainGame) return;
-            if(!reloading || ChaControl.sex != 1/*could allow it with both genders later*/)
-                return;
+            var boneCtrl = ChaControl.GetComponent<BoneController>();
 
             //clear original data
             CharaMorpher_Core.Logger.LogDebug("clear data");
@@ -775,6 +747,7 @@ namespace CharaMorpher
             //store picked character data
             CharaMorpher_Core.Logger.LogDebug("replace data 1");
             m_data1.main.CopyAll(ChaControl.chaFile);//get all character data!!!
+
 #if HS2 || AI
             //CopyAll will not copy this data in hs2
             m_data1.main.dataID = ChaControl.chaFile.dataID;
@@ -801,20 +774,19 @@ namespace CharaMorpher
                 CharaMorpher_Core.Logger.LogDebug("reset original data");
                 //Reset original character data
                 ChaControl.chaFile.CopyAll(m_data1.main);
-                //  initialLoad = true;
             }
+
+            if(ChaControl.sex != 1/*could allow it with both genders later*/)
+                return;
+
 
             CharaMorpher_Core.Logger.LogDebug("replace data 2");
             m_data2.Copy(charData);
 
 
-
-
-
-
             //CharaMorpher_Core.Logger.LogDebug("Morphing model...");
             ////Update the model
-            //MorphChangeUpdate();
+            MorphChangeUpdate();
         }
         protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
         {
@@ -983,6 +955,13 @@ namespace CharaMorpher
 
                         string[] fingerNames = new[]
                         {
+                            //HS2
+                            "cf_J_Hand_Thumb",
+                            "cf_J_Hand_Index",
+                            "cf_J_Hand_Middle",
+                            "cf_J_Hand_Ring",
+                            "cf_J_Hand_Little",
+                            //KK
                             "cf_j_thumb",
                             "cf_j_index",
                             "cf_j_middle",
