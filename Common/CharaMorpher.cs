@@ -13,7 +13,7 @@ using KKAPI.Chara;
 using KKAPI.Maker;
 using KKAPI.Studio;
 using Unity.Jobs;
-
+using KKAPI;
 #if HS2
 
 using AIChara;
@@ -341,7 +341,24 @@ namespace CharaMorpher
 #endif
             };
 
-            cfg.enable.SettingChanged += (m, n) =>
+
+
+            cfg.charDir.SettingChanged += (m, n) =>
+            {
+                foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+                    if(hnd.ControllerType == typeof(CharaMorpherController))
+                        foreach(CharaMorpherController ctrl in hnd.Instances)
+                            ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode());
+            };
+            cfg.imageName.SettingChanged += (m, n) =>
+            {
+                foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+                    if(hnd.ControllerType == typeof(CharaMorpherController))
+                        foreach(CharaMorpherController ctrl in hnd.Instances)
+                            ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode());
+            };
+
+           cfg.enable.SettingChanged += (m, n) =>
             {
                 foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
                     if(hnd.ControllerType == typeof(CharaMorpherController))

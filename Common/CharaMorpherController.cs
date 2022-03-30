@@ -744,7 +744,7 @@ namespace CharaMorpher
         }
 
         /// <inheritdoc />
-        void OnCharaReload(GameMode currentGameMode)
+       public void OnCharaReload(GameMode currentGameMode)
         {
 
             var cfg = CharaMorpher_Core.Instance.cfg;
