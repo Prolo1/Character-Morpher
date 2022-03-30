@@ -10,6 +10,8 @@ using KKAPI.Studio;
 using KKAPI;
 using KKABMX;
 using KKABMX.Core;
+using UnityEngine;
+using UnityEngine.UI;
 #if HS2||AI
 using AIChara;
 #endif
@@ -31,15 +33,33 @@ namespace CharaMorpher
             {
 
                 var ctrl = __instance.GetComponent<CharaMorpherController>();
-                
+
                 {
                     CharaMorpher_Core.Logger.LogDebug("The hook gets called");
-                   // CharaMorpher_Core.Logger.LogDebug("remove existing bone mods");
+                    // CharaMorpher_Core.Logger.LogDebug("remove existing bone mods");
 
                     ctrl.MorphChangeUpdate();
                 }
             }
 
+//#if HS2
+            [HarmonyPrefix]
+            [HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
+            static void OnSaveLoadClick(Button __instance)
+            {
+                //reset character to default before saving or loading character 
+                var ctrler = __instance.gameObject;
+                if(ctrler.name.ToLower().Contains("overwrite")|| ctrler.name.ToLower().Contains("save"))
+                    foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+                        if(hnd.ControllerType == typeof(CharaMorpherController))
+                            foreach(CharaMorpherController ctrl in hnd.Instances)
+                            {
+                                CharaMorpher.CharaMorpher_Core.Logger.LogDebug("The Overwrite Button was called!!!");
+                                ctrl.MorphChangeUpdate();
+                                ctrl.UpdateMorphValues(true);
+                            }
+            }
+//#endif
 
             //   [HarmonyPrefix]
             //    [HarmonyPatch(typeof(MPCharCtrl), nameof(MPCharCtrl.OnClickRoot), typeof(int))]

@@ -76,7 +76,8 @@ namespace CharaMorpher
             //Main
             public ConfigEntry<bool> enable { set; get; }
             public ConfigEntry<bool> enableInGame { set; get; }
-            public ConfigEntry<string> mergeCharDir { set; get; }
+            public ConfigEntry<string> charDir { set; get; }
+            public ConfigEntry<string> imageName { set; get; }
             public ConfigEntry<uint> sliderExtents { set; get; }
             //public ConfigEntry<uint> awaitTime { set; get; }
 
@@ -104,26 +105,28 @@ namespace CharaMorpher
 
             int index = 0;//easier to input index order values
 
+           string femalepath =UnityEngine.Application.dataPath+ "/../UserData/chara/female/";
+
             cfg = new MyConfig
             {
                 enable = Config.Bind("_Main_", "Enable", true, new ConfigDescription("Allows the plugin to run (may need to reload if results are not changing)", null, new ConfigurationManagerAttributes { Order = --index })),
                 enableInGame = Config.Bind("_Main_", "Enable in Game", true, new ConfigDescription("Allows the plugin to run while in main game", null, new ConfigurationManagerAttributes { Order = --index })),
-                enableABMX = Config.Bind("_Main_", "Enable ABMX", true, new ConfigDescription("Allows the plugin to run (may need to reload if results are not changing)", null, new ConfigurationManagerAttributes { Order = --index })),
-                mergeCharDir = Config.Bind("_Main_", "Character Location", new ChaFileControl().ConvertCharaFilePath("../navi/navi.png", 255), new ConfigDescription("Template character", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
+                enableABMX = Config.Bind("_Main_", "Enable ABMX", true, new ConfigDescription("Allows ABMX to be affected (may need to reload scene if results become wonky)", null, new ConfigurationManagerAttributes { Order = --index })),
+                charDir = Config.Bind("_Main_", "Directory Path", new ChaFileControl().ConvertCharaFilePath(femalepath, 255), new ConfigDescription("Directory where character is stored", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
+                imageName = Config.Bind("_Main_", "Card Name", new ChaFileControl().ConvertCharaFilePath("", 255), new ConfigDescription("The image used to morph", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
                 sliderExtents = Config.Bind("_Main_", "Slider Extents", 200u, new ConfigDescription("How far the slider values go above default (e.i. setting value to 10 gives values -10 -> 110)", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true })),
-                //awaitTime =     Config.Bind("_Main_", "await", 200u, new ConfigDescription("How far the slider values go above default (e.i. setting value to 10 gives values -10 -> 110)", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true })),
-
+               
                 //you don't need to see this in game
                 defaults = new List<ConfigEntry<float>>{
-                    Config.Bind("Defaults", "Body  Default" , 75f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = index = 0, Browsable=false })),
-                    Config.Bind("Defaults", "Head  Default" , 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable=false })),
-                    Config.Bind("Defaults", "Boobs Default", 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
-                    Config.Bind("Defaults", "Butt  Default" , 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable=false })),
-                    Config.Bind("Defaults", "Torso Default", 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
-                    Config.Bind("Defaults", "Arms  Default" , 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable=false })),
-                    Config.Bind("Defaults", "Legs  Default" , 55f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable=false })),
+                    Config.Bind("Defaults", "Body  Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = index = 0, Browsable=false })),
+                    Config.Bind("Defaults", "Head  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable=false })),
+                    Config.Bind("Defaults", "Boobs Default", 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
+                    Config.Bind("Defaults", "Butt  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable=false })),
+                    Config.Bind("Defaults", "Torso Default", 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
+                    Config.Bind("Defaults", "Arms  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable=false })),
+                    Config.Bind("Defaults", "Legs  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index, Browsable=false })),
 
-                    Config.Bind("Defaults", "Face  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
+                    Config.Bind("Defaults", "Face  Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
                     Config.Bind("Defaults", "Ears  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
                     Config.Bind("Defaults", "Eyes  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
                     Config.Bind("Defaults", "Mouth Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),

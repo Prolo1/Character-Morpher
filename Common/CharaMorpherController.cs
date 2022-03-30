@@ -732,6 +732,17 @@ namespace CharaMorpher
             base.OnDestroy();
         }
 
+        string MakeDirPath(string dir)
+        {
+            dir = dir.Replace('\\', '/');
+            dir = dir.Replace("//", "/");
+            if((dir.LastIndexOf('.') <= dir.LastIndexOf('/'))
+                && dir.Last() != '/')
+                dir += '/';
+
+            return dir;
+        }
+
         /// <inheritdoc />
         void OnCharaReload(GameMode currentGameMode)
         {
@@ -755,17 +766,20 @@ namespace CharaMorpher
             m_data1.abmx.Populate(this);
 
 
+            string path = MakeDirPath(cfg.charDir.Value) + cfg.imageName.Value;
+            // CharaMorpher_Core.Logger.LogDebug($"image path: {path}");
+
             //Get referenced character data (only needs to be loaded once)
             if(charData == null ||
-                lastCharDir != cfg.mergeCharDir.Value ||
-                System.IO.File.GetLastWriteTime(cfg.mergeCharDir.Value).Ticks != lastDT.Ticks)
+                lastCharDir != path ||
+                System.IO.File.GetLastWriteTime(path).Ticks != lastDT.Ticks)
             {
-                lastDT = System.IO.File.GetLastWriteTime(cfg.mergeCharDir.Value);
-                lastCharDir = cfg.mergeCharDir.Value;
+                lastDT = System.IO.File.GetLastWriteTime(path);
+                lastCharDir = path;
                 charData = new MorphData();
 
                 CharaMorpher_Core.Logger.LogDebug("load morph target");
-                ChaFileControl.LoadCharaFile(cfg.mergeCharDir.Value, 255/*female; 0 male*/);
+                ChaFileControl.LoadCharaFile(path, 255/*female; 0 male*/);
 
                 CharaMorpher_Core.Logger.LogDebug("copy morph target");
                 charData.main.CopyAll(ChaControl.chaFile);
@@ -774,11 +788,15 @@ namespace CharaMorpher
                 CharaMorpher_Core.Logger.LogDebug("reset original data");
                 //Reset original character data
                 ChaControl.chaFile.CopyAll(m_data1.main);
+
+#if HS2 || AI
+                //CopyAll will not copy this data in hs2
+                ChaControl.chaFile.dataID = m_data1.main.dataID;
+#endif
             }
 
             if(ChaControl.sex != 1/*could allow it with both genders later*/)
                 return;
-
 
             CharaMorpher_Core.Logger.LogDebug("replace data 2");
             m_data2.Copy(charData);
@@ -788,6 +806,7 @@ namespace CharaMorpher
             ////Update the model
             MorphChangeUpdate();
         }
+
         protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
         {
             base.OnCoordinateBeingLoaded(coordinate);
@@ -847,6 +866,9 @@ namespace CharaMorpher
             }
             else return;
 
+            if(ChaControl.sex != 1/*could allow it with both genders later*/)
+                return;
+
             var cfg = CharaMorpher_Core.Instance.cfg;
             var charaCtrl = ChaControl;
             var boneCtrl = charaCtrl.GetComponent<BoneController>();
@@ -881,7 +903,7 @@ namespace CharaMorpher
             UpdateMorphValues(reset);
         }
 
-        private void UpdateMorphValues(bool reset)
+        public void UpdateMorphValues(bool reset)
         {
             var cfg = CharaMorpher_Core.Instance.cfg;
             var charaCtrl = ChaControl;
@@ -907,10 +929,10 @@ namespace CharaMorpher
                 charaCtrl.ChangeNipKind();
                 charaCtrl.ChangeNipScale();
 #elif KKSS
-                charaCtrl.ChangeSettingNip();
                 charaCtrl.ChangeSettingAreolaSize();
                 charaCtrl.ChangeSettingNipColor();
                 charaCtrl.ChangeSettingNipGlossPower();
+                charaCtrl.ChangeSettingNip();
 #endif
 
                 charaCtrl.UpdateBustSoftnessAndGravity();
@@ -969,7 +991,7 @@ namespace CharaMorpher
                             "cf_j_little"
                         };
 
-                        if(fingerNames.ToList().FindIndex((k) => content.Contains(k)) >= 0)
+                        if(fingerNames.ToList().FindIndex((k) => content.Contains(k.Trim().ToLower())) >= 0)
                             modVal = controls.abmxHands;
                         else
                         {
