@@ -667,7 +667,7 @@ namespace CharaMorpher
 
         IEnumerator CoMorphReload()
         {
-            for(int a = 0; a < 6; ++a)
+            for(int a = 0; a < 10; ++a)
                 yield return new WaitForEndOfFrame();
 
 
@@ -773,21 +773,24 @@ namespace CharaMorpher
 
         protected override void OnReload(GameMode currentGameMode)
         {
-            CharaMorpher_Core.Logger.LogDebug("System Is reloading...");
+            CharaMorpher_Core.Logger.LogDebug("Character start reloading...");
             reloading = true;
-          //only use coroutine here
+            //only use coroutine here
+            StopAllCoroutines();
             StartCoroutine(CoMorphReload());
         }
 
         ///<inheritdoc/>
         protected override void OnCardBeingSaved(GameMode currentGameMode)
         {
-            StopAllCoroutines();
+
+            StopCoroutine(CoMorphUpdate());
             StartCoroutine(CoMorphUpdate());
         }
 
         protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
         {
+            StopCoroutine(CoMorphUpdate());
             StartCoroutine(CoMorphUpdate());
         }
 
@@ -939,7 +942,7 @@ namespace CharaMorpher
                     //Body
                     if(a < m_data1.abmx.body.Count)
                     {
-                        CharaMorpher_Core.Logger.LogDebug($"looking for body values");
+                        //  CharaMorpher_Core.Logger.LogDebug($"looking for body values");
                         var bone1 = m_data1.abmx.body[a];
                         var bone2 = m_data2.abmx.body[a];
                         var current = boneCtrl.Modifiers.Find((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
@@ -1026,7 +1029,7 @@ namespace CharaMorpher
                         }
 
                         int count = 0;//may use this in other mods
-                        CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
+                                      //  CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
                         foreach(var mod in current.CoordinateModifiers)
                         {
 
@@ -1059,14 +1062,14 @@ namespace CharaMorpher
                             ++count;
                         }
 
-                        CharaMorpher_Core.Logger.LogDebug($"applying values");
+                        //   CharaMorpher_Core.Logger.LogDebug($"applying values");
                         current.Apply(boneCtrl.CurrentCoordinate.Value, null, KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame);
                     }
 
                     //face
                     if(a < m_data1.abmx.face.Count)
                     {
-                        CharaMorpher_Core.Logger.LogDebug($"looking for face values");
+                        //   CharaMorpher_Core.Logger.LogDebug($"looking for face values");
                         var bone1 = m_data1.abmx.face[a];
                         var bone2 = m_data2.abmx.face[a];
                         var current = boneCtrl.Modifiers.Find((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
@@ -1118,7 +1121,7 @@ namespace CharaMorpher
                         }
 
                         int count = 0;
-                        CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
+                        // CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
                         foreach(var mod in current.CoordinateModifiers)
                         {
 
@@ -1148,7 +1151,7 @@ namespace CharaMorpher
                             ++count;
                         }
 
-                        CharaMorpher_Core.Logger.LogDebug($"applying values");
+                        //  CharaMorpher_Core.Logger.LogDebug($"applying values");
                         current.Apply(boneCtrl.CurrentCoordinate.Value, null, KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame);
                     }
                 }
