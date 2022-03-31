@@ -665,53 +665,12 @@ namespace CharaMorpher
 #endif
              ;
 
-
-
-        void CharaReloaded(object o, CharaReloadEventArgs a)
-        {
-            CharaMorpherController ctrl = a.ReloadedCharacter.GetComponent<CharaMorpherController>();
-
-            //initialLoad = true;
-
-
-#if KKSS
-
-            if(!initLoadFinished)
-                ctrl.CurrentCoordinate.Subscribe((type) => { StartCoroutine(CoMorphUpdate()); });
-#endif
-           
-            CharaMorpher_Core.Logger.LogDebug("Reloading Character");
-            StartCoroutine(ctrl.CoMorphReload());
-
-            // initialLoad = true;
-            // ctrl.UpdateMorphValues(false);
-
-        }
-
-        /// <summary>
-        /// made for internal use
-        /// </summary>
-        public void resetLoading()
-        {
-            reloading = false;
-        }
-
-        protected override void Awake()
-        {
-
-            KKAPI.Chara.CharacterApi.CharacterReloaded += CharaReloaded;
-
-            //Make sure to call base version
-            base.Awake();
-        }
-
-
         IEnumerator CoMorphReload()
         {
             for(int a = 0; a < 6; ++a)
                 yield return new WaitForEndOfFrame();
 
-            reloading = true;
+
             CharaMorpher_Core.Logger.LogDebug("Reloading After character loaded");
             OnCharaReload(KoikatuAPI.GetCurrentGameMode());
 
@@ -733,11 +692,6 @@ namespace CharaMorpher
 
         }
 
-        protected override void OnDestroy()
-        {
-            KKAPI.Chara.CharacterApi.CharacterReloaded -= CharaReloaded;
-            base.OnDestroy();
-        }
 
         string MakeDirPath(string dir)
         {
@@ -750,11 +704,11 @@ namespace CharaMorpher
             return dir;
         }
 
-       
+
         ///<inheritdoc/>
         public void OnCharaReload(GameMode currentGameMode)
         {
-            
+
 
             var cfg = CharaMorpher_Core.Instance.cfg;
             var boneCtrl = ChaControl.GetComponent<BoneController>();
@@ -819,20 +773,21 @@ namespace CharaMorpher
 
         protected override void OnReload(GameMode currentGameMode)
         {
-            base.OnReload(currentGameMode);
-            OnCharaReload(currentGameMode);
+            CharaMorpher_Core.Logger.LogDebug("System Is reloading...");
+            reloading = true;
+          //only use coroutine here
+            StartCoroutine(CoMorphReload());
         }
 
         ///<inheritdoc/>
         protected override void OnCardBeingSaved(GameMode currentGameMode)
         {
+            StopAllCoroutines();
             StartCoroutine(CoMorphUpdate());
         }
 
         protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
         {
-            base.OnCoordinateBeingLoaded(coordinate);
-
             StartCoroutine(CoMorphUpdate());
         }
 
@@ -984,11 +939,10 @@ namespace CharaMorpher
                     //Body
                     if(a < m_data1.abmx.body.Count)
                     {
-                        //  CharaMorpher.Logger.LogDebug($"looking for values");
+                        CharaMorpher_Core.Logger.LogDebug($"looking for body values");
                         var bone1 = m_data1.abmx.body[a];
                         var bone2 = m_data2.abmx.body[a];
                         var current = boneCtrl.Modifiers.Find((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
-                        int count = 0;//may use this in other mods
 
                         //  CharaMorpher.Logger.LogDebug($"found values");
                         //    CharaMorpher_Core.Logger.LogDebug($"current = {current.BoneName}");
@@ -1071,22 +1025,25 @@ namespace CharaMorpher
                             }
                         }
 
-                        // CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
+                        int count = 0;//may use this in other mods
+                        CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
                         foreach(var mod in current.CoordinateModifiers)
                         {
 
                             //  CharaMorpher_Core.Logger.LogDebug($"in for loop");
                             var inRange = count < bone2.CoordinateModifiers.Length;
-                            mod.PositionModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[count].PositionModifier, bone2.CoordinateModifiers[inRange ? count : 0].PositionModifier,
+
+
+                            mod.PositionModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange ? count : 0].PositionModifier, bone2.CoordinateModifiers[inRange ? count : 0].PositionModifier,
                                 enable * controls.body * controls.abmxBody * modVal);
 
-                            mod.RotationModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[count].RotationModifier, bone2.CoordinateModifiers[inRange ? count : 0].RotationModifier,
+                            mod.RotationModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange ? count : 0].RotationModifier, bone2.CoordinateModifiers[inRange ? count : 0].RotationModifier,
                                 enable * controls.body * controls.abmxBody * modVal);
 
-                            mod.ScaleModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[count].ScaleModifier, bone2.CoordinateModifiers[inRange ? count : 0].ScaleModifier,
+                            mod.ScaleModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange ? count : 0].ScaleModifier, bone2.CoordinateModifiers[inRange ? count : 0].ScaleModifier,
                                 enable * controls.body * controls.abmxBody * modVal);
 
-                            mod.LengthModifier = Mathf.LerpUnclamped(bone1.CoordinateModifiers[count].LengthModifier, bone2.CoordinateModifiers[inRange ? count : 0].LengthModifier,
+                            mod.LengthModifier = Mathf.LerpUnclamped(bone1.CoordinateModifiers[inRange ? count : 0].LengthModifier, bone2.CoordinateModifiers[inRange ? count : 0].LengthModifier,
                                 enable * controls.body * controls.abmxBody * modVal);
 
                             //   CharaMorpher_Core.Logger.LogDebug($"updated values");
@@ -1102,17 +1059,17 @@ namespace CharaMorpher
                             ++count;
                         }
 
-                        // CharaMorpher_Core.Logger.LogDebug($"applying values");
+                        CharaMorpher_Core.Logger.LogDebug($"applying values");
                         current.Apply(boneCtrl.CurrentCoordinate.Value, null, KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame);
                     }
 
                     //face
                     if(a < m_data1.abmx.face.Count)
                     {
+                        CharaMorpher_Core.Logger.LogDebug($"looking for face values");
                         var bone1 = m_data1.abmx.face[a];
                         var bone2 = m_data2.abmx.face[a];
                         var current = boneCtrl.Modifiers.Find((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
-                        int count = 0;
 
                         float modVal = 0;
 
@@ -1160,22 +1117,23 @@ namespace CharaMorpher
                             break;
                         }
 
-                        //CharaMorpher.Logger.LogDebug($"Morphing Bone...");
+                        int count = 0;
+                        CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
                         foreach(var mod in current.CoordinateModifiers)
                         {
 
                             var inRange = count < bone2.CoordinateModifiers.Length;
 
-                            mod.PositionModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[count].PositionModifier, bone2.CoordinateModifiers[inRange ? count : 0].PositionModifier,
+                            mod.PositionModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange ? count : 0].PositionModifier, bone2.CoordinateModifiers[inRange ? count : 0].PositionModifier,
                                 enable * controls.face * controls.abmxHead * modVal);
 
-                            mod.RotationModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[count].RotationModifier, bone2.CoordinateModifiers[inRange ? count : 0].RotationModifier,
+                            mod.RotationModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange ? count : 0].RotationModifier, bone2.CoordinateModifiers[inRange ? count : 0].RotationModifier,
                                 enable * controls.face * controls.abmxHead * modVal);
 
-                            mod.ScaleModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[count].ScaleModifier, bone2.CoordinateModifiers[inRange ? count : 0].ScaleModifier,
+                            mod.ScaleModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange ? count : 0].ScaleModifier, bone2.CoordinateModifiers[inRange ? count : 0].ScaleModifier,
                                 enable * controls.face * controls.abmxHead * modVal);
 
-                            mod.LengthModifier = Mathf.LerpUnclamped(bone1.CoordinateModifiers[count].LengthModifier, bone2.CoordinateModifiers[inRange ? count : 0].LengthModifier,
+                            mod.LengthModifier = Mathf.LerpUnclamped(bone1.CoordinateModifiers[inRange ? count : 0].LengthModifier, bone2.CoordinateModifiers[inRange ? count : 0].LengthModifier,
                                 enable * controls.face * controls.abmxHead * modVal);
 
                             if(count == 0)
@@ -1190,6 +1148,7 @@ namespace CharaMorpher
                             ++count;
                         }
 
+                        CharaMorpher_Core.Logger.LogDebug($"applying values");
                         current.Apply(boneCtrl.CurrentCoordinate.Value, null, KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame);
                     }
                 }
@@ -1296,6 +1255,8 @@ namespace CharaMorpher
                     string name = bone.BoneName;
 
                     bone1.Add(new BoneModifier(name));
+                    if(bone.IsCoordinateSpecific())
+                        bone1.Last().MakeCoordinateSpecific(bone.CoordinateModifiers.Length);
                 }
             }
         }
@@ -1317,7 +1278,8 @@ namespace CharaMorpher
                     string name = bone.BoneName;
 
                     bone1.AddModifier(new BoneModifier(name));
-
+                    if(bone.IsCoordinateSpecific())
+                        bone1.Modifiers.Last().MakeCoordinateSpecific(bone.CoordinateModifiers.Length);
                 }
             }
         }
