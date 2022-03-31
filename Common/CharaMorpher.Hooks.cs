@@ -33,7 +33,7 @@ namespace CharaMorpher
             {
 
                 var ctrl = __instance.GetComponent<CharaMorpherController>();
-
+                if(!ctrl.reloading)
                 {
                     CharaMorpher_Core.Logger.LogDebug("The hook gets called");
                     // CharaMorpher_Core.Logger.LogDebug("remove existing bone mods");
@@ -42,24 +42,47 @@ namespace CharaMorpher
                 }
             }
 
-//#if HS2
+          
             [HarmonyPrefix]
             [HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
             static void OnSaveLoadClick(Button __instance)
             {
                 //reset character to default before saving or loading character 
                 var ctrler = __instance.gameObject;
+#if HS2
                 if(ctrler.name.ToLower().Contains("overwrite")|| ctrler.name.ToLower().Contains("save"))
+#elif KKSS
+                if(ctrler.name.ToLower().Contains("override") || ctrler.name.ToLower().Contains("save") || ctrler.name.ToLower().Contains("load"))
+#endif
+                    foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+                        if(hnd.ControllerType == typeof(CharaMorpherController))
+                            foreach(CharaMorpherController ctrl in hnd.Instances)
+                            {
+                                CharaMorpher.CharaMorpher_Core.Logger.LogDebug("The Overwrite Button was called!!!");
+                                ctrl.MorphChangeUpdate(true);
+                            }
+            }
+
+            [HarmonyPrefix]
+            [HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
+            static void OnExitSaveClick(Button __instance)
+            {
+                var ctrler = __instance.gameObject;
+#if HS2
+                if(ctrler.name.ToLower().Contains("?!?+"))
+#elif KKSS
+                if(ctrler.name.ToLower().Contains("exit") /*|| ctrler.name.ToLower().Contains("save") || ctrler.name.ToLower().Contains("load")*/)
+#endif
                     foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
                         if(hnd.ControllerType == typeof(CharaMorpherController))
                             foreach(CharaMorpherController ctrl in hnd.Instances)
                             {
                                 CharaMorpher.CharaMorpher_Core.Logger.LogDebug("The Overwrite Button was called!!!");
                                 ctrl.MorphChangeUpdate();
-                                ctrl.UpdateMorphValues(true);
                             }
             }
-//#endif
+
+            //#endif
 
             //   [HarmonyPrefix]
             //    [HarmonyPatch(typeof(MPCharCtrl), nameof(MPCharCtrl.OnClickRoot), typeof(int))]

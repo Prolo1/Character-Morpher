@@ -351,9 +351,9 @@ namespace CharaMorpher
                 ("cm_J_dan_f_L"      , "genitals"           ),
                 ("cf_j_ana"          , "genitals"           ),
              }
-        #endregion
+             #endregion
 #elif HS2 || AI
-        #region AIBones
+             #region AIBones
          {           
                 //Torso
                 ("cf_J_Spine00,False,1,1,1,1                                                 ", "torso"),
@@ -679,7 +679,7 @@ namespace CharaMorpher
             if(!initLoadFinished)
                 ctrl.CurrentCoordinate.Subscribe((type) => { StartCoroutine(CoMorphUpdate()); });
 #endif
-
+            reloading = true;
             CharaMorpher_Core.Logger.LogDebug("Reloading Character");
             StartCoroutine(ctrl.CoMorphReload());
 
@@ -688,7 +688,13 @@ namespace CharaMorpher
 
         }
 
+        /// <summary>
+        /// made for internal use
+        /// </summary>
+        public void resetLastCharacter()
+        {
 
+        }
 
         protected override void Awake()
         {
@@ -702,15 +708,15 @@ namespace CharaMorpher
 
         IEnumerator CoMorphReload()
         {
-            for(int a = 0; a < 3; ++a)
+            for(int a = 0; a < 6; ++a)
                 yield return new WaitForEndOfFrame();
 
             reloading = true;
             CharaMorpher_Core.Logger.LogDebug("Reloading After character loaded");
             OnCharaReload(KoikatuAPI.GetCurrentGameMode());
 
-            //  CharaMorpher_Core.Logger.LogDebug("Morphing model...");
-            //  MorphChangeUpdate();
+            CharaMorpher_Core.Logger.LogDebug("Morphing model...");
+            MorphChangeUpdate();
 
 
             reloading = false;
@@ -719,7 +725,7 @@ namespace CharaMorpher
 
         IEnumerator CoMorphUpdate()
         {
-            for(int a = 0; a < 4; ++a)
+            for(int a = 0; a < 6; ++a)
                 yield return new WaitForEndOfFrame();
 
             MorphChangeUpdate();
@@ -743,8 +749,8 @@ namespace CharaMorpher
             return dir;
         }
 
-        /// <inheritdoc />
-       public void OnCharaReload(GameMode currentGameMode)
+        ///<inheritdoc/>
+        public void OnCharaReload(GameMode currentGameMode)
         {
 
             var cfg = CharaMorpher_Core.Instance.cfg;
@@ -763,6 +769,7 @@ namespace CharaMorpher
             //CopyAll will not copy this data in hs2
             m_data1.main.dataID = ChaControl.chaFile.dataID;
 #endif
+
             m_data1.abmx.Populate(this);
 
 
@@ -804,7 +811,13 @@ namespace CharaMorpher
 
             //CharaMorpher_Core.Logger.LogDebug("Morphing model...");
             ////Update the model
-            MorphChangeUpdate();
+            MorphChangeUpdate(true);
+        }
+
+        ///<inheritdoc/>
+        protected override void OnCardBeingSaved(GameMode currentGameMode)
+        {
+            StartCoroutine(CoMorphUpdate());
         }
 
         protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
@@ -849,7 +862,8 @@ namespace CharaMorpher
         /// <summary>
         /// Update bones/shapes whenever a change is made to the sliders
         /// </summary>
-        public void MorphChangeUpdate()
+        /// <param name="forceReset: ">reset regardless of other perimeters</param>
+        public void MorphChangeUpdate(bool forceReset = false)
         {
             if(m_data1.main != null)
             {
@@ -900,7 +914,7 @@ namespace CharaMorpher
 
             bool reset = !cfg.enable.Value;
             reset = KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame ? reset || !cfg.enableInGame.Value : reset;
-            UpdateMorphValues(reset);
+            UpdateMorphValues(forceReset ? true : reset);
         }
 
         public void UpdateMorphValues(bool reset)
@@ -1299,12 +1313,7 @@ namespace CharaMorpher
             }
         }
 
-        /// <inheritdoc />
-        protected override void OnCardBeingSaved(GameMode currentGameMode)
-        {
-            //Nothing to implement :<
-            //  throw new NotImplementedException();
-        }
+
 
 
     }

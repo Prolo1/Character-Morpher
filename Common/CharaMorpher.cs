@@ -112,8 +112,8 @@ namespace CharaMorpher
                 enable = Config.Bind("_Main_", "Enable", true, new ConfigDescription("Allows the plugin to run (may need to reload if results are not changing)", null, new ConfigurationManagerAttributes { Order = --index })),
                 enableInGame = Config.Bind("_Main_", "Enable in Game", true, new ConfigDescription("Allows the plugin to run while in main game", null, new ConfigurationManagerAttributes { Order = --index })),
                 enableABMX = Config.Bind("_Main_", "Enable ABMX", true, new ConfigDescription("Allows ABMX to be affected (may need to reload scene if results become wonky)", null, new ConfigurationManagerAttributes { Order = --index })),
-                charDir = Config.Bind("_Main_", "Directory Path", new ChaFileControl().ConvertCharaFilePath(femalepath, 255), new ConfigDescription("Directory where character is stored", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
-                imageName = Config.Bind("_Main_", "Card Name", new ChaFileControl().ConvertCharaFilePath("", 255), new ConfigDescription("The image used to morph", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
+                charDir = Config.Bind("_Main_", "Directory Path", femalepath, new ConfigDescription("Directory where character is stored", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
+                imageName = Config.Bind("_Main_", "Card Name", "sample.png", new ConfigDescription("The image used to morph", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
                 sliderExtents = Config.Bind("_Main_", "Slider Extents", 200u, new ConfigDescription("How far the slider values go above default (e.i. setting value to 10 gives values -10 -> 110)", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true })),
                
                 //you don't need to see this in game
@@ -348,17 +348,23 @@ namespace CharaMorpher
                 foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
                     if(hnd.ControllerType == typeof(CharaMorpherController))
                         foreach(CharaMorpherController ctrl in hnd.Instances)
+                        {
                             ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode());
+                            ctrl.MorphChangeUpdate();
+                        }
             };
             cfg.imageName.SettingChanged += (m, n) =>
             {
                 foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
                     if(hnd.ControllerType == typeof(CharaMorpherController))
                         foreach(CharaMorpherController ctrl in hnd.Instances)
+                        {
                             ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode());
+                            ctrl.MorphChangeUpdate();
+                        }
             };
 
-           cfg.enable.SettingChanged += (m, n) =>
+            cfg.enable.SettingChanged += (m, n) =>
             {
                 foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
                     if(hnd.ControllerType == typeof(CharaMorpherController))
