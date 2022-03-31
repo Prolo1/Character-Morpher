@@ -40,7 +40,7 @@ namespace CharaMorpher
             var cfg = CharaMorpher_Core.Instance.cfg;
 
 #if HS2 || AI
-            
+
             MakerCategory peram = MakerConstants.Parameter.Type;
 #else
             
@@ -61,6 +61,11 @@ namespace CharaMorpher
             enableabmx.BindToFunctionController<CharaMorpherController, bool>(
                 (control) => cfg.enableABMX.Value,
                 (control, val) => { cfg.enableABMX.Value = val; for(int a = abmxIndex; a < sliders.Count; ++a) sliders[a].ControlObject.SetActive(cfg.enable.Value && val); });
+            
+            var saveWithMorph = e.AddControl(new MakerToggle(category, "Enable Save With Morph", cfg.saveWithMorph.Value, CharaMorpher_Core.Instance));
+            saveWithMorph.BindToFunctionController<CharaMorpherController, bool>(
+                (control) => cfg.saveWithMorph.Value,
+                (control, val) => { cfg.saveWithMorph.Value = val; });
 
 
             e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
