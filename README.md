@@ -38,5 +38,5 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 69. Enjoy!
 
 ## Known Issues
-* changing morph values to far extremes may cause issues loading subsequent characters in maker. When this happens just close maker and open it back up (this isn't a problem in game since you cant use the sliders)
-* With KK[SS], trying to change OG face and body sliders will change bust values to original state, that's because the sliders don't change when values change internally so keep that in mind (using the character morpher sliders will turn it back)
+* ~~changing morph values to far extremes may cause issues loading subsequent characters in maker. When this happens just close maker and open it back up (this isn't a problem in game since you cant use the sliders)~~ (Fixed this to the best of my knowlage)
+* With KK[SS], trying to change OG face and body sliders change bust values to original state, that's because the original sliders don't change when values change internally so keep that in mind (using the character morpher sliders will turn it back)
