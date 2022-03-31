@@ -728,6 +728,7 @@ namespace CharaMorpher
             for(int a = 0; a < 6; ++a)
                 yield return new WaitForEndOfFrame();
 
+            CharaMorpher.CharaMorpher_Core.Logger.LogDebug("Updating after card save");
             MorphChangeUpdate();
 
         }

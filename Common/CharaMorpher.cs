@@ -76,6 +76,7 @@ namespace CharaMorpher
             //Main
             public ConfigEntry<bool> enable { set; get; }
             public ConfigEntry<bool> enableInGame { set; get; }
+            public ConfigEntry<bool> saveWithMorph { set; get; }
             public ConfigEntry<string> charDir { set; get; }
             public ConfigEntry<string> imageName { set; get; }
             public ConfigEntry<uint> sliderExtents { set; get; }
@@ -111,6 +112,7 @@ namespace CharaMorpher
             {
                 enable = Config.Bind("_Main_", "Enable", true, new ConfigDescription("Allows the plugin to run (may need to reload if results are not changing)", null, new ConfigurationManagerAttributes { Order = --index })),
                 enableInGame = Config.Bind("_Main_", "Enable in Game", true, new ConfigDescription("Allows the plugin to run while in main game", null, new ConfigurationManagerAttributes { Order = --index })),
+                saveWithMorph = Config.Bind("_Main_", "Save With Morph", false, new ConfigDescription("Allows the card to save as seen in maker (must be set before saving)", null, new ConfigurationManagerAttributes { Order = --index })),
                 enableABMX = Config.Bind("_Main_", "Enable ABMX", true, new ConfigDescription("Allows ABMX to be affected (may need to reload scene if results become wonky)", null, new ConfigurationManagerAttributes { Order = --index })),
                 charDir = Config.Bind("_Main_", "Directory Path", femalepath, new ConfigDescription("Directory where character is stored", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
                 imageName = Config.Bind("_Main_", "Card Name", "sample.png", new ConfigDescription("The image used to morph", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
