@@ -106,7 +106,7 @@ namespace CharaMorpher
 
             int index = 0;//easier to input index order values
 
-           string femalepath =UnityEngine.Application.dataPath+ "/../UserData/chara/female/";
+            string femalepath = UnityEngine.Application.dataPath + "/../UserData/chara/female/";
 
             cfg = new MyConfig
             {
@@ -117,7 +117,7 @@ namespace CharaMorpher
                 charDir = Config.Bind("_Main_", "Directory Path", femalepath, new ConfigDescription("Directory where character is stored", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
                 imageName = Config.Bind("_Main_", "Card Name", "sample.png", new ConfigDescription("The image used to morph", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
                 sliderExtents = Config.Bind("_Main_", "Slider Extents", 200u, new ConfigDescription("How far the slider values go above default (e.i. setting value to 10 gives values -10 -> 110)", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true })),
-               
+
                 //you don't need to see this in game
                 defaults = new List<ConfigEntry<float>>{
                     Config.Bind("Defaults", "Body  Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = index = 0, Browsable=false })),

@@ -353,7 +353,7 @@ namespace CharaMorpher
              }
              #endregion
 #elif HS2 || AI
-             #region AIBones
+        #region AIBones
          {           
                 //Torso
                 ("cf_J_Spine00,False,1,1,1,1                                                 ", "torso"),
@@ -679,7 +679,7 @@ namespace CharaMorpher
             if(!initLoadFinished)
                 ctrl.CurrentCoordinate.Subscribe((type) => { StartCoroutine(CoMorphUpdate()); });
 #endif
-            reloading = true;
+           
             CharaMorpher_Core.Logger.LogDebug("Reloading Character");
             StartCoroutine(ctrl.CoMorphReload());
 
@@ -691,9 +691,9 @@ namespace CharaMorpher
         /// <summary>
         /// made for internal use
         /// </summary>
-        public void resetLastCharacter()
+        public void resetLoading()
         {
-
+            reloading = false;
         }
 
         protected override void Awake()
@@ -750,9 +750,11 @@ namespace CharaMorpher
             return dir;
         }
 
+       
         ///<inheritdoc/>
         public void OnCharaReload(GameMode currentGameMode)
         {
+            
 
             var cfg = CharaMorpher_Core.Instance.cfg;
             var boneCtrl = ChaControl.GetComponent<BoneController>();
@@ -813,6 +815,12 @@ namespace CharaMorpher
             //CharaMorpher_Core.Logger.LogDebug("Morphing model...");
             ////Update the model
             MorphChangeUpdate(true);
+        }
+
+        protected override void OnReload(GameMode currentGameMode)
+        {
+            base.OnReload(currentGameMode);
+            OnCharaReload(currentGameMode);
         }
 
         ///<inheritdoc/>
