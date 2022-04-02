@@ -7,7 +7,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "[KKSS] Character Morpher", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "[HS2] Character Morpher", "[HS2] Character Morpher\[HS2] Character Morpher.csproj", "{E96314CF-3D68-4A08-94E7-DD86D7BFA157}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Common", "Common\Common.shproj", "{F835505B-0492-45C9-A446-C4BF82473CEE}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Common\Common.projitems*{15bb6c66-5b78-4eaa-b02d-99b0fe257f55}*SharedItemsImports = 4
+		Common\Common.projitems*{e96314cf-3d68-4a08-94e7-dd86d7bfa157}*SharedItemsImports = 4
+		Common\Common.projitems*{f835505b-0492-45c9-a446-c4bf82473cee}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
