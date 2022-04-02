@@ -29,6 +29,10 @@ namespace CharaMorpher
             [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState))]
             [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStateNext))]
             [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStatePrev))]
+#if kkss
+            [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.ChangeCoordinateType))]
+            [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.ChangeCoordinateTypeAndReload))]
+#endif
             static void clothsStateUpdate(ChaControl __instance)
             {
                 var ctrl = __instance.GetComponent<CharaMorpherController>();
@@ -45,12 +49,12 @@ namespace CharaMorpher
                     }
                     else
 #endif
-                    if(CharaMorpher_Core.Instance.cfg.enable.Value)
-                        if(!ctrl.reloading)
-                        {
-                            CharaMorpher_Core.Logger.LogDebug("The hook gets called");
-                            ctrl.MorphChangeUpdate();
-                        }
+                if(CharaMorpher_Core.Instance.cfg.enable.Value)
+                    if(!ctrl.reloading)
+                    {
+                        CharaMorpher_Core.Logger.LogDebug("The hook gets called");
+                        ctrl.StartCoroutine(ctrl.CoMorphUpdate(1));
+                    }
             }
 
 
@@ -59,6 +63,7 @@ namespace CharaMorpher
             static void OnButtonClick(Button __instance)
             {
                 //  CharaMorpher.CharaMorpher_Core.Logger.LogDebug($"Button Name: {ctrler.name.ToLower()}");
+                if(KoikatuAPI.GetCurrentGameMode() != GameMode.Maker) return;
                 OnSaveLoadClick(__instance);
                 OnExitSaveClick(__instance);
             }
@@ -73,12 +78,13 @@ namespace CharaMorpher
                 if(ctrler.transform.parent.parent.GetComponentInParent<CharaCustom.CustomCharaWindow>())
                     if(ctrler.name.ToLower().Contains("overwrite") || ctrler.name.ToLower().Contains("save"))
 #elif KKSS
-                if(ctrler.name.ToLower().Contains("override") || ctrler.name.ToLower().Contains("save") 
+                if(ctrler.name.ToLower().Contains("override") || ctrler.name.ToLower().Contains("save")
                     || ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
 #endif
 
-                        if(!CharaMorpher_Core.Instance.cfg.saveWithMorph.Value)
-                            if(CharaMorpher_Core.Instance.cfg.enable.Value)
+                    if(!CharaMorpher_Core.Instance.cfg.saveWithMorph.Value)
+                        if(CharaMorpher_Core.Instance.cfg.enable.Value)
+                            if((KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame) ? CharaMorpher_Core.Instance.cfg.enableInGame.Value : true)
                                 foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
                                     if(hnd.ControllerType == typeof(CharaMorpherController))
                                         foreach(CharaMorpherController ctrl in hnd.Instances)
@@ -97,14 +103,16 @@ namespace CharaMorpher
 #elif KKSS
                 if(ctrler.name.ToLower().Contains("exit") || ctrler.name.ToLower().Contains("no") /*|| ctrler.name.ToLower().Contains("load")*/)
 #endif
-                    if(CharaMorpher_Core.Instance.cfg.enable.Value)
-                        foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
-                            if(hnd.ControllerType == typeof(CharaMorpherController))
-                                foreach(CharaMorpherController ctrl in hnd.Instances)
-                                {
-                                    CharaMorpher.CharaMorpher_Core.Logger.LogDebug("The Overwrite Button was called!!!");
-                                    ctrl.MorphChangeUpdate();
-                                }
+                    if(!CharaMorpher_Core.Instance.cfg.saveWithMorph.Value)
+                        if(CharaMorpher_Core.Instance.cfg.enable.Value)
+                             if((KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame) ? CharaMorpher_Core.Instance.cfg.enableInGame.Value : true)
+                                foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+                                    if(hnd.ControllerType == typeof(CharaMorpherController))
+                                        foreach(CharaMorpherController ctrl in hnd.Instances)
+                                        {
+                                            CharaMorpher.CharaMorpher_Core.Logger.LogDebug("The Overwrite Button was called!!!");
+                                            ctrl.MorphChangeUpdate();
+                                        }
             }
         }
     }

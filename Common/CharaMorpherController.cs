@@ -353,7 +353,7 @@ namespace CharaMorpher
              }
              #endregion
 #elif HS2 || AI
-        #region AIBones
+             #region AIBones
          {           
                 //Torso
                 ("cf_J_Spine00,False,1,1,1,1                                                 ", "torso"),
@@ -682,9 +682,9 @@ namespace CharaMorpher
             initLoadFinished = true;
         }
 
-        IEnumerator CoMorphUpdate()
+        public IEnumerator CoMorphUpdate(int delayFrames = 6)
         {
-            for(int a = 0; a < 6; ++a)
+            for(int a = 0; a < delayFrames; ++a)
                 yield return new WaitForEndOfFrame();
 
             CharaMorpher.CharaMorpher_Core.Logger.LogDebug("Updating after card save");
@@ -780,17 +780,24 @@ namespace CharaMorpher
             StartCoroutine(CoMorphReload());
         }
 
+        List<IEnumerator> coUpdates = new List<IEnumerator>();
+
         ///<inheritdoc/>
         protected override void OnCardBeingSaved(GameMode currentGameMode)
         {
-
-            StopCoroutine(CoMorphUpdate());
+            // foreach(var update in coUpdates)
+            //     StopCoroutine(update);
+            //
+            // coUpdates.Add(CoMorphUpdate());
             StartCoroutine(CoMorphUpdate());
         }
 
         protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
         {
-            StopCoroutine(CoMorphUpdate());
+            // foreach(var update in coUpdates)
+            //     StopCoroutine(update);
+            //
+            // coUpdates.Add(CoMorphUpdate());
             StartCoroutine(CoMorphUpdate());
         }
 
@@ -1227,7 +1234,10 @@ namespace CharaMorpher
                 //  CharaMorpher_Core.Logger.LogDebug("");
             }
 
-            charaCtrl.updateShape = true;
+           
+            //charaCtrl.updateShape = true;
+            charaCtrl.updateShapeBody = true;
+            charaCtrl.updateShapeFace = true;
             charaCtrl.updateBustSize = true;
             //   if(initialLoad || reset || !cfg.enableABMX.Value)
             //       boneCtrl.NeedsFullRefresh = true;
@@ -1237,6 +1247,7 @@ namespace CharaMorpher
 #if KKSS
             charaCtrl.ChangeSettingBodyDetail();
             charaCtrl.ChangeSettingFaceDetail();
+            charaCtrl.ChangeSettingNip();
 #endif
 
             // initialLoad = false;
