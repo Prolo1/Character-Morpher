@@ -1,3 +1,6 @@
+[![Latest release](https://img.shields.io/github/release/Prolo1/Character-Morpher.svg?style=flat)](https://github.com/Prolo1/Character-Morpher/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Prolo1/Character-Morpher/total.svg?style=flat)](https://github.com/Prolo1/Character-Morpher/releases)
+
 # Character Morpher
 ## Description
 This mod allows for the user to set a morph target and change any character to look like the target (with a few sliders in character maker). As of now the changes in character maker are applied to every character (may change that later). It also only works on female cards, not actively planning on both genders (I might though)
@@ -25,10 +28,6 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 * Adding more sliders over time (i.e. skin colour, voice... etc.)
 * Saving extended data to card w/o editing the character
 
-## Example
-![example gif](https://github.com/Prolo1/Example-images/blob/main/example%20chara%20morph%20v2.gif?raw=true)
-![HS2 image](https://github.com/Prolo1/Example-images/blob/main/Screenshot%202022-03-29%20191817.png?raw=true)
-
 ## How To Use
 1. Open the mod settings
 2. Find "Character Morpher" and add the path to the character you want to use as a morph target
@@ -36,6 +35,10 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 4. Go to "Chara Morph" under personality settings
 5. Use the sliders to morph different aspects of the character
 69. Enjoy!
+
+## Example
+![example gif](https://github.com/Prolo1/Example-images/blob/main/example%20chara%20morph%20v2.gif?raw=true)
+![HS2 image](https://github.com/Prolo1/Example-images/blob/main/Screenshot%202022-03-29%20191817.png?raw=true)
 
 ## Known Issues
 * ~~changing morph values to far extremes may cause issues loading subsequent characters in maker. When this happens just close maker and open it back up (this isn't a problem in game since you cant use the sliders)~~ (Fixed this to the best of my knowlage)
