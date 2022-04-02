@@ -12,6 +12,8 @@
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -22,6 +24,7 @@
     <DefineConstants>TRACE;DEBUG;KKSS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -31,16 +34,19 @@
     <DefineConstants>TRACE;KKSS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="0Harmony">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\0Harmony.dll</HintPath>
+    <Reference Include="0Harmony, Version=2.5.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\lib\net35\0Harmony.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Accessibility" />
     <Reference Include="AmplifyColor">
@@ -49,14 +55,17 @@
     <Reference Include="AmplifyOcclusion">
       <HintPath>..\..\..\[KKSS] Plugins\AmplifyOcclusion.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\..\[KKSS] Plugins\Assembly-CSharp.dll</HintPath>
+    <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.Assembly-CSharp.2021.9.17\lib\net46\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>..\..\..\[KKSS] Plugins\Assembly-CSharp-firstpass.dll</HintPath>
+    <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.Assembly-CSharp-firstpass.2021.9.17\lib\net46\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="BepInEx">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\BepInEx.dll</HintPath>
+    <Reference Include="BepInEx, Version=5.4.15.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.BepInEx.5.4.15\lib\net35\BepInEx.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="BepInEx.Harmony">
       <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\BepInEx.Harmony.dll</HintPath>
@@ -103,11 +112,13 @@
     <Reference Include="Ionic.Zip">
       <HintPath>..\..\..\[KKSS] Plugins\Ionic.Zip.dll</HintPath>
     </Reference>
-    <Reference Include="KKSABMX">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\plugins\KKSABMX.dll</HintPath>
+    <Reference Include="KKSABMX, Version=4.4.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ABMX.KKSABMX.4.4.6\lib\net46\KKSABMX.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="KKSAPI">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\plugins\KKSAPI.dll</HintPath>
+    <Reference Include="KKSAPI, Version=1.31.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionModdingAPI.KKSAPI.1.31.2\lib\net46\KKSAPI.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="KKSPE">
       <HintPath>..\..\..\[KKSS] Plugins\BepInEx\plugins\KKSPE.dll</HintPath>
@@ -115,8 +126,9 @@
     <Reference Include="KKSUS">
       <HintPath>..\..\..\[KKSS] Plugins\BepInEx\plugins\KKSUS.dll</HintPath>
     </Reference>
-    <Reference Include="KKS_ExtensibleSaveFormat">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\plugins\KKS_BepisPlugins\KKS_ExtensibleSaveFormat.dll</HintPath>
+    <Reference Include="KKS_ExtensibleSaveFormat, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExtensibleSaveFormat.KoikatsuSunshine.18.0.1\lib\net46\KKS_ExtensibleSaveFormat.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Mono.Cecil">
       <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\Mono.Cecil.dll</HintPath>
@@ -142,11 +154,13 @@
     <Reference Include="Mono.WebBrowser">
       <HintPath>..\..\..\[KKSS] Plugins\Mono.WebBrowser.dll</HintPath>
     </Reference>
-    <Reference Include="MonoMod.RuntimeDetour">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\MonoMod.RuntimeDetour.dll</HintPath>
+    <Reference Include="MonoMod.RuntimeDetour, Version=21.8.5.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.BepInEx.MonoMod.21.8.5.1\lib\net35\MonoMod.RuntimeDetour.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="MonoMod.Utils">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\MonoMod.Utils.dll</HintPath>
+    <Reference Include="MonoMod.Utils, Version=21.8.5.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.BepInEx.MonoMod.21.8.5.1\lib\net35\MonoMod.Utils.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="netstandard" />
     <Reference Include="Novell.Directory.Ldap">
@@ -167,8 +181,9 @@
     <Reference Include="Sirenix.OdinInspector.CompatibilityLayer">
       <HintPath>..\..\..\[KKSS] Plugins\Sirenix.OdinInspector.CompatibilityLayer.dll</HintPath>
     </Reference>
-    <Reference Include="Sirenix.Serialization">
-      <HintPath>..\..\..\[KKSS] Plugins\Sirenix.Serialization.dll</HintPath>
+    <Reference Include="Sirenix.Serialization, Version=2.1.13.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.2019.4.9\lib\net46\Sirenix.Serialization.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Sirenix.Serialization.Config">
       <HintPath>..\..\..\[KKSS] Plugins\Sirenix.Serialization.Config.dll</HintPath>
@@ -177,23 +192,29 @@
       <HintPath>..\..\..\[KKSS] Plugins\Sirenix.Utilities.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="UniRx">
-      <HintPath>..\..\..\[KKSS] Plugins\UniRx.dll</HintPath>
+    <Reference Include="UniRx, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UniRx.2021.9.17\lib\net46\UniRx.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="UniTask">
-      <HintPath>..\..\..\[KKSS] Plugins\UniTask.dll</HintPath>
+    <Reference Include="UniTask, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UniTask.2021.9.17\lib\net46\UniTask.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="UniTask.Addressables">
-      <HintPath>..\..\..\[KKSS] Plugins\UniTask.Addressables.dll</HintPath>
+    <Reference Include="UniTask.Addressables, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UniTask.2021.9.17\lib\net46\UniTask.Addressables.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="UniTask.DOTween">
-      <HintPath>..\..\..\[KKSS] Plugins\UniTask.DOTween.dll</HintPath>
+    <Reference Include="UniTask.DOTween, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UniTask.2021.9.17\lib\net46\UniTask.DOTween.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="UniTask.Linq">
-      <HintPath>..\..\..\[KKSS] Plugins\UniTask.Linq.dll</HintPath>
+    <Reference Include="UniTask.Linq, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UniTask.2021.9.17\lib\net46\UniTask.Linq.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="UniTask.TextMeshPro">
-      <HintPath>..\..\..\[KKSS] Plugins\UniTask.TextMeshPro.dll</HintPath>
+    <Reference Include="UniTask.TextMeshPro, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UniTask.2021.9.17\lib\net46\UniTask.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Unity.Addressables">
       <HintPath>..\..\..\[KKSS] Plugins\Unity.Addressables.dll</HintPath>
@@ -240,14 +261,16 @@
     <Reference Include="Unity.ScriptableBuildPipeline">
       <HintPath>..\..\..\[KKSS] Plugins\Unity.ScriptableBuildPipeline.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.TextMeshPro">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.TextMeshPro.dll</HintPath>
+    <Reference Include="Unity.TextMeshPro, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.Unity.TextMeshPro.2019.4.9\lib\net46\Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Unity.Timeline">
       <HintPath>..\..\..\[KKSS] Plugins\Unity.Timeline.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.dll</HintPath>
+    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.2019.4.9\lib\net46\UnityEngine.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.AccessibilityModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.AccessibilityModule.dll</HintPath>
@@ -258,8 +281,9 @@
     <Reference Include="UnityEngine.AndroidJNIModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.AndroidJNIModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.AnimationModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.AnimationModule.dll</HintPath>
+    <Reference Include="UnityEngine.AnimationModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.AnimationModule.2019.4.9\lib\net46\UnityEngine.AnimationModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.ARModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.ARModule.dll</HintPath>
@@ -267,8 +291,9 @@
     <Reference Include="UnityEngine.AssetBundleModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.AssetBundleModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.AudioModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.AudioModule.dll</HintPath>
+    <Reference Include="UnityEngine.AudioModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.AudioModule.2019.4.9\lib\net46\UnityEngine.AudioModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.ClothModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.ClothModule.dll</HintPath>
@@ -279,8 +304,9 @@
     <Reference Include="UnityEngine.ClusterRendererModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.ClusterRendererModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.CoreModule.dll</HintPath>
+    <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.2019.4.9\lib\net46\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CrashReportingModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.CrashReportingModule.dll</HintPath>
@@ -300,14 +326,17 @@
     <Reference Include="UnityEngine.HotReloadModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.HotReloadModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.ImageConversionModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.ImageConversionModule.dll</HintPath>
+    <Reference Include="UnityEngine.ImageConversionModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.ImageConversionModule.2019.4.9\lib\net46\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.IMGUIModule.dll</HintPath>
+    <Reference Include="UnityEngine.IMGUIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.IMGUIModule.2019.4.9\lib\net46\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.InputLegacyModule.dll</HintPath>
+    <Reference Include="UnityEngine.InputLegacyModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.InputLegacyModule.2019.4.9\lib\net46\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.InputModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.InputModule.dll</HintPath>
@@ -327,8 +356,9 @@
     <Reference Include="UnityEngine.Physics2DModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.Physics2DModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.PhysicsModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.PhysicsModule.dll</HintPath>
+    <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.PhysicsModule.2019.4.9\lib\net46\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.ProfilerModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.ProfilerModule.dll</HintPath>
@@ -363,8 +393,9 @@
     <Reference Include="UnityEngine.TextCoreModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.TextCoreModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.TextRenderingModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.TextRenderingModule.dll</HintPath>
+    <Reference Include="UnityEngine.TextRenderingModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.TextRenderingModule.2019.4.9\lib\net46\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.TilemapModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.TilemapModule.dll</HintPath>
@@ -372,14 +403,16 @@
     <Reference Include="UnityEngine.TLSModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.TLSModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UI.dll</HintPath>
+    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.UI.2019.4.9\lib\net46\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.UIElementsModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UIElementsModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.UIModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UIModule.dll</HintPath>
+    <Reference Include="UnityEngine.UIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.UIModule.2019.4.9\lib\net46\UnityEngine.UIModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.UmbraModule">
       <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UmbraModule.dll</HintPath>
@@ -432,6 +465,10 @@
     <Reference Include="Vectrosity">
       <HintPath>..\..\..\[KKSS] Plugins\Vectrosity.dll</HintPath>
     </Reference>
+    <Reference Include="XUnity.AutoTranslator.Plugin.Core, Version=4.18.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\lib\net46\XUnity.AutoTranslator.Plugin.Core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="XUnity.Common">
       <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\XUnity.Common.dll</HintPath>
     </Reference>
@@ -458,4 +495,45 @@
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\build\IllusionLibs.BepInEx.Harmony.targets" Condition="Exists('..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\build\IllusionLibs.BepInEx.Harmony.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\build\IllusionLibs.BepInEx.Harmony.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\build\IllusionLibs.BepInEx.Harmony.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.Assembly-CSharp-firstpass.2021.9.17\build\IllusionLibs.KoikatsuSunshine.Assembly-CSharp-firstpass.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.Assembly-CSharp-firstpass.2021.9.17\build\IllusionLibs.KoikatsuSunshine.Assembly-CSharp-firstpass.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.UniRx.2021.9.17\build\IllusionLibs.KoikatsuSunshine.UniRx.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.UniRx.2021.9.17\build\IllusionLibs.KoikatsuSunshine.UniRx.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.UniTask.2021.9.17\build\IllusionLibs.KoikatsuSunshine.UniTask.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.UniTask.2021.9.17\build\IllusionLibs.KoikatsuSunshine.UniTask.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.Assembly-CSharp.2021.9.17\build\IllusionLibs.KoikatsuSunshine.Assembly-CSharp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.Assembly-CSharp.2021.9.17\build\IllusionLibs.KoikatsuSunshine.Assembly-CSharp.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.IMGUIModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.IMGUIModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.IMGUIModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.IMGUIModule.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.InputLegacyModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.InputLegacyModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.InputLegacyModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.InputLegacyModule.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.UI.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.UI.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.UI.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.UI.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.UIModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.UIModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.UIModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.UIModule.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.BepInEx.MonoMod.21.8.5.1\build\IllusionLibs.BepInEx.MonoMod.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.BepInEx.MonoMod.21.8.5.1\build\IllusionLibs.BepInEx.MonoMod.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.Unity.TextMeshPro.2019.4.9\build\IllusionLibs.KoikatsuSunshine.Unity.TextMeshPro.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.Unity.TextMeshPro.2019.4.9\build\IllusionLibs.KoikatsuSunshine.Unity.TextMeshPro.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.AnimationModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.AnimationModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.AnimationModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.AnimationModule.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.AudioModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.AudioModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.AudioModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.AudioModule.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.ImageConversionModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.ImageConversionModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.ImageConversionModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.ImageConversionModule.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.PhysicsModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.PhysicsModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.PhysicsModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.PhysicsModule.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.TextRenderingModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.TextRenderingModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.TextRenderingModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.TextRenderingModule.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets'))" />
+  </Target>
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.Assembly-CSharp-firstpass.2021.9.17\build\IllusionLibs.KoikatsuSunshine.Assembly-CSharp-firstpass.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.Assembly-CSharp-firstpass.2021.9.17\build\IllusionLibs.KoikatsuSunshine.Assembly-CSharp-firstpass.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.UniRx.2021.9.17\build\IllusionLibs.KoikatsuSunshine.UniRx.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.UniRx.2021.9.17\build\IllusionLibs.KoikatsuSunshine.UniRx.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.UniTask.2021.9.17\build\IllusionLibs.KoikatsuSunshine.UniTask.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.UniTask.2021.9.17\build\IllusionLibs.KoikatsuSunshine.UniTask.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.Assembly-CSharp.2021.9.17\build\IllusionLibs.KoikatsuSunshine.Assembly-CSharp.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.Assembly-CSharp.2021.9.17\build\IllusionLibs.KoikatsuSunshine.Assembly-CSharp.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.IMGUIModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.IMGUIModule.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.IMGUIModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.IMGUIModule.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.InputLegacyModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.InputLegacyModule.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.InputLegacyModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.InputLegacyModule.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.UI.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.UI.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.UI.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.UI.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.UIModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.UIModule.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.UIModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.UIModule.targets')" />
+  <Import Project="..\packages\IllusionLibs.BepInEx.MonoMod.21.8.5.1\build\IllusionLibs.BepInEx.MonoMod.targets" Condition="Exists('..\packages\IllusionLibs.BepInEx.MonoMod.21.8.5.1\build\IllusionLibs.BepInEx.MonoMod.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.Unity.TextMeshPro.2019.4.9\build\IllusionLibs.KoikatsuSunshine.Unity.TextMeshPro.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.Unity.TextMeshPro.2019.4.9\build\IllusionLibs.KoikatsuSunshine.Unity.TextMeshPro.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.AnimationModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.AnimationModule.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.AnimationModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.AnimationModule.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.AudioModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.AudioModule.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.AudioModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.AudioModule.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.ImageConversionModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.ImageConversionModule.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.ImageConversionModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.ImageConversionModule.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.PhysicsModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.PhysicsModule.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.PhysicsModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.PhysicsModule.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.TextRenderingModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.TextRenderingModule.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.TextRenderingModule.2019.4.9\build\IllusionLibs.KoikatsuSunshine.UnityEngine.TextRenderingModule.targets')" />
+  <Import Project="..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets" Condition="Exists('..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets')" />
 </Project>
