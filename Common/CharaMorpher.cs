@@ -1,18 +1,20 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+//using System.Threading.Tasks;
 
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+//using BepInEx.Preloader.Patching;
 using ExtensibleSaveFormat;
 using HarmonyLib;
 using KKAPI.Chara;
 using KKAPI.Maker;
 using KKAPI.Studio;
-using Unity.Jobs;
+
 using KKAPI;
 #if HS2
 
@@ -31,8 +33,8 @@ using AIChara;
 
   Planned:
                                            
- * Save morph changes to card
- * Make an in-game version affecting all but male character(s)
+ * Save morph changes to card (w/o changing card)
+ * Make an in-game version affect all but male character[s] (maybe)
 ************************************************/
 
 
@@ -43,7 +45,6 @@ namespace CharaMorpher
 
     // Specify this as a plugin that gets loaded by BepInEx
     [BepInPlugin(GUID, ModName, Version)]
-
     // Tell BepInEx that we need KKAPI to run, and that we need the latest version of it.
     // Check documentation of KoikatuAPI.VersionConst for more info.
     [BepInDependency(KKAPI.KoikatuAPI.GUID, KKAPI.KoikatuAPI.VersionConst)]
@@ -106,14 +107,15 @@ namespace CharaMorpher
 
             int index = 0;//easier to input index order values
 
-            string femalepath = UnityEngine.Application.dataPath + "/../UserData/chara/female/";
+            string femalepath = Path.Combine(Paths.GameRootPath, "UserData/chara/female/");
+#if true
 
-            cfg = new MyConfig
+			cfg = new MyConfig
             {
                 enable = Config.Bind("_Main_", "Enable", true, new ConfigDescription("Allows the plugin to run (may need to reload if results are not changing)", null, new ConfigurationManagerAttributes { Order = --index })),
+                enableABMX = Config.Bind("_Main_", "Enable ABMX", true, new ConfigDescription("Allows ABMX to be affected (may need to reload card if results become wonky)", null, new ConfigurationManagerAttributes { Order = --index })),
                 enableInGame = Config.Bind("_Main_", "Enable in Game", true, new ConfigDescription("Allows the plugin to run while in main game", null, new ConfigurationManagerAttributes { Order = --index })),
                 saveWithMorph = Config.Bind("_Main_", "Save With Morph", true, new ConfigDescription("Allows the card to save as seen in maker (must be set before saving, if false card is set to default values)", null, new ConfigurationManagerAttributes { Order = --index })),
-                enableABMX = Config.Bind("_Main_", "Enable ABMX", true, new ConfigDescription("Allows ABMX to be affected (may need to reload card if results become wonky)", null, new ConfigurationManagerAttributes { Order = --index })),
                 charDir = Config.Bind("_Main_", "Directory Path", femalepath, new ConfigDescription("Directory where character is stored", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
                 imageName = Config.Bind("_Main_", "Card Name", "sample.png", new ConfigDescription("The character card used to morph", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
                 sliderExtents = Config.Bind("_Main_", "Slider Extents", 200u, new ConfigDescription("How far the slider values go above default (e.i. setting value to 10 gives values -10 -> 110)", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true })),
@@ -153,6 +155,7 @@ namespace CharaMorpher
                 },
 
                 headIndex = Config.Bind("Adv1 Head", "Head Index", 1, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true })),
+
                 brestIndex = new List<ConfigEntry<int>>
 #if HS2
                 {
@@ -166,7 +169,7 @@ namespace CharaMorpher
                     Config.Bind("Adv2 Brest", $"Brest Index {++index}", 9, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
                     Config.Bind("Adv2 Brest", $"Brest Index {++index}", 10, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
                 },
-#elif KKSS
+#elif KKS || KK
 {
                     Config.Bind("Adv2 Brest", $"Brest Index {index=1}", 4, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })),
                     Config.Bind("Adv2 Brest", $"Brest Index {++index}", 5, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
@@ -191,7 +194,7 @@ namespace CharaMorpher
                     Config.Bind("Adv3 Torso", $"Torso Index {++index}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv3 Torso", $"Torso Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                   },
-#elif KKSS
+#elif KKS || KK
 {
                     Config.Bind("Adv3 Torso", $"Torso Index {index=1}", 14, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv3 Torso", $"Torso Index {++index}", 15, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -214,7 +217,7 @@ namespace CharaMorpher
                     Config.Bind("Adv4 Arm", $"Arm Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
                     Config.Bind("Adv4 Arm", $"Arm Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
                   },
-#elif KKSS
+#elif KKS || KK
  {
                     Config.Bind("Adv4 Arm", $"Arm Index {index=1}", 37, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv4 Arm", $"Arm Index {++index}", 38, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -233,7 +236,7 @@ namespace CharaMorpher
                     Config.Bind("Adv5 Butt", $"Butt Index {++index}", 23, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv5 Butt", $"Butt Index {++index}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                   },
-#elif KKSS
+#elif KKS || KK
  {
                     Config.Bind("Adv5 Butt", $"Butt Index {index=1}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
                     Config.Bind("Adv5 Butt", $"Butt Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -247,7 +250,7 @@ namespace CharaMorpher
                     Config.Bind("Adv6 Leg", $"Leg Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv6 Leg", $"Leg Index {++index}", 28, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                   },
-#elif KKSS
+#elif KKS || KK
 {
                     Config.Bind("Adv6 Leg", $"Leg Index {index=1}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv6 Leg", $"Leg Index {++index}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -271,7 +274,7 @@ namespace CharaMorpher
                     Config.Bind("Adv7 Ear", $"Ear Index {++index}", 57, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv7 Ear", $"Ear Index {++index}", 58, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                 },
-#elif KKSS
+#elif KKS || KK
  {
                     Config.Bind("Adv7 Ear", $"Ear Index {index=1}", 47, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv7 Ear", $"Ear Index {++index}", 48, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -297,7 +300,7 @@ namespace CharaMorpher
                     Config.Bind("Adv8 Eye", $"Eye Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv8 Eye", $"Eye Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                 },
-#elif KKSS
+#elif KKS || KK
 {
                     Config.Bind("Adv8 Eye", $"Eye Index {index=1}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv8 Eye", $"Eye Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -331,7 +334,7 @@ namespace CharaMorpher
                     Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 52, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 53, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                },
-#elif KKSS
+#elif KKS || KK
  {
                     Config.Bind("Adv9 Mouth", $"Mouth Index {index=1}", 41, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 42, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -388,6 +391,7 @@ namespace CharaMorpher
                             ctrl.MorphChangeUpdate();
             };
 
+#endif
 
             if(StudioAPI.InsideStudio) return;
 
@@ -400,8 +404,6 @@ namespace CharaMorpher
 
             CharaMorpherGUI.Initialize();
             Harmony.CreateAndPatchAll(typeof(Hooks), GUID);
-
-
 
 
         }

@@ -2,7 +2,7 @@
 using System.IO;
 using BepInEx;
 using BepInEx.Configuration;
-using ConfigurationManager.Utilities;
+//using ConfigurationManager.Utilities;
 using BepInEx.Logging;
 using HarmonyLib;
 using KKAPI.Chara;
@@ -24,15 +24,12 @@ namespace CharaMorpher
         private static class Hooks
         {
             [HarmonyPostfix]
-            [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.UpdateClothesStateAll))]
+           // [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.UpdateClothesStateAll))]
             [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStateAll))]
             [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState))]
-            [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStateNext))]
-            [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStatePrev))]
-#if kkss
-            [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.ChangeCoordinateType))]
-            [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.ChangeCoordinateTypeAndReload))]
-#endif
+          //  [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStateNext))]
+          //  [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStatePrev))]
+
             static void clothsStateUpdate(ChaControl __instance)
             {
                 var ctrl = __instance.GetComponent<CharaMorpherController>();
@@ -77,7 +74,7 @@ namespace CharaMorpher
 #if HS2
                 if(ctrler.transform.parent.parent.GetComponentInParent<CharaCustom.CustomCharaWindow>())
                     if(ctrler.name.ToLower().Contains("overwrite") || ctrler.name.ToLower().Contains("save"))
-#elif KKSS
+#elif KKS || KK
                 if(ctrler.name.ToLower().Contains("override") || ctrler.name.ToLower().Contains("save")
                     || ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
 #endif
@@ -100,7 +97,7 @@ namespace CharaMorpher
                 var ctrler = __instance.gameObject;
 #if HS2
                 if(ctrler.name.ToLower().Contains("no") || (ctrler.name.ToLower().Contains("exit")))
-#elif KKSS
+#elif KKS || KK
                 if(ctrler.name.ToLower().Contains("exit") || ctrler.name.ToLower().Contains("no") /*|| ctrler.name.ToLower().Contains("load")*/)
 #endif
                     if(!CharaMorpher_Core.Instance.cfg.saveWithMorph.Value)

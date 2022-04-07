@@ -6,14 +6,15 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>KKSS_Character_Morpher</RootNamespace>
-    <AssemblyName>[KKSS] Character Morpher</AssemblyName>
+    <RootNamespace>KKS_Character_Morpher</RootNamespace>
+    <AssemblyName>[KKS] Character Morpher</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -24,17 +25,18 @@
     <DefineConstants>TRACE;DEBUG;KKSS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>[KKSS] Character Morpher\BepInEx\plugins\Prolo\</OutputPath>
-    <DefineConstants>TRACE;KKSS</DefineConstants>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Builds\[KKS] Character Morpher\BepInEx\plugins\Prolo\</OutputPath>
+    <DefineConstants>TRACE;KKS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <DocumentationFile>..\Builds\[KKS] Character Morpher\BepInEx\plugins\Prolo\[KKS] Character Morpher.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
@@ -49,12 +51,6 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Accessibility" />
-    <Reference Include="AmplifyColor">
-      <HintPath>..\..\..\[KKSS] Plugins\AmplifyColor.dll</HintPath>
-    </Reference>
-    <Reference Include="AmplifyOcclusion">
-      <HintPath>..\..\..\[KKSS] Plugins\AmplifyOcclusion.dll</HintPath>
-    </Reference>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.Assembly-CSharp.2021.9.17\lib\net46\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
@@ -67,92 +63,17 @@
       <HintPath>..\packages\IllusionLibs.BepInEx.5.4.15\lib\net35\BepInEx.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="BepInEx.Harmony">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\BepInEx.Harmony.dll</HintPath>
-    </Reference>
-    <Reference Include="BepInEx.Preloader">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\BepInEx.Preloader.dll</HintPath>
-    </Reference>
-    <Reference Include="Cinemachine">
-      <HintPath>..\..\..\[KKSS] Plugins\Cinemachine.dll</HintPath>
-    </Reference>
-    <Reference Include="Coffee.UIParticle">
-      <HintPath>..\..\..\[KKSS] Plugins\Coffee.UIParticle.dll</HintPath>
-    </Reference>
-    <Reference Include="Coffee.UnmaskForUGUI">
-      <HintPath>..\..\..\[KKSS] Plugins\Coffee.UnmaskForUGUI.dll</HintPath>
-    </Reference>
-    <Reference Include="ConfigurationManager">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\plugins\ConfigurationManager.dll</HintPath>
-    </Reference>
-    <Reference Include="DOTween">
-      <HintPath>..\..\..\[KKSS] Plugins\DOTween.dll</HintPath>
-    </Reference>
-    <Reference Include="HarmonyXInterop">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\HarmonyXInterop.dll</HintPath>
-    </Reference>
-    <Reference Include="I18N">
-      <HintPath>..\..\..\[KKSS] Plugins\I18N.dll</HintPath>
-    </Reference>
-    <Reference Include="I18N.CJK">
-      <HintPath>..\..\..\[KKSS] Plugins\I18N.CJK.dll</HintPath>
-    </Reference>
-    <Reference Include="I18N.MidEast">
-      <HintPath>..\..\..\[KKSS] Plugins\I18N.MidEast.dll</HintPath>
-    </Reference>
-    <Reference Include="I18N.Other">
-      <HintPath>..\..\..\[KKSS] Plugins\I18N.Other.dll</HintPath>
-    </Reference>
-    <Reference Include="I18N.Rare">
-      <HintPath>..\..\..\[KKSS] Plugins\I18N.Rare.dll</HintPath>
-    </Reference>
-    <Reference Include="I18N.West">
-      <HintPath>..\..\..\[KKSS] Plugins\I18N.West.dll</HintPath>
-    </Reference>
-    <Reference Include="Ionic.Zip">
-      <HintPath>..\..\..\[KKSS] Plugins\Ionic.Zip.dll</HintPath>
-    </Reference>
-    <Reference Include="KKSABMX, Version=4.4.6.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\ABMX.KKSABMX.4.4.6\lib\net46\KKSABMX.dll</HintPath>
+    <Reference Include="KKSABMX, Version=4.4.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ABMX.KKSABMX.4.4.5\lib\net46\KKSABMX.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="KKSAPI, Version=1.31.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionModdingAPI.KKSAPI.1.31.2\lib\net46\KKSAPI.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="KKSPE">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\plugins\KKSPE.dll</HintPath>
-    </Reference>
-    <Reference Include="KKSUS">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\plugins\KKSUS.dll</HintPath>
-    </Reference>
     <Reference Include="KKS_ExtensibleSaveFormat, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\ExtensibleSaveFormat.KoikatsuSunshine.18.0.1\lib\net46\KKS_ExtensibleSaveFormat.dll</HintPath>
+      <HintPath>..\packages\ExtensibleSaveFormat.KoikatsuSunshine.16.9.2\lib\net46\KKS_ExtensibleSaveFormat.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="Mono.Cecil">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\Mono.Cecil.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Cecil.Mdb">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\Mono.Cecil.Mdb.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Cecil.Pdb">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\Mono.Cecil.Pdb.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Cecil.Rocks">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\Mono.Cecil.Rocks.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Data.Sqlite">
-      <HintPath>..\..\..\[KKSS] Plugins\Mono.Data.Sqlite.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Posix">
-      <HintPath>..\..\..\[KKSS] Plugins\Mono.Posix.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Security">
-      <HintPath>..\..\..\[KKSS] Plugins\Mono.Security.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.WebBrowser">
-      <HintPath>..\..\..\[KKSS] Plugins\Mono.WebBrowser.dll</HintPath>
     </Reference>
     <Reference Include="MonoMod.RuntimeDetour, Version=21.8.5.1, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.BepInEx.MonoMod.21.8.5.1\lib\net35\MonoMod.RuntimeDetour.dll</HintPath>
@@ -163,33 +84,9 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="netstandard" />
-    <Reference Include="Novell.Directory.Ldap">
-      <HintPath>..\..\..\[KKSS] Plugins\Novell.Directory.Ldap.dll</HintPath>
-    </Reference>
-    <Reference Include="Obi">
-      <HintPath>..\..\..\[KKSS] Plugins\Obi.dll</HintPath>
-    </Reference>
-    <Reference Include="QHierarchyNullable">
-      <HintPath>..\..\..\[KKSS] Plugins\QHierarchyNullable.dll</HintPath>
-    </Reference>
-    <Reference Include="QHierarchyRuntime">
-      <HintPath>..\..\..\[KKSS] Plugins\QHierarchyRuntime.dll</HintPath>
-    </Reference>
-    <Reference Include="Sirenix.OdinInspector.Attributes">
-      <HintPath>..\..\..\[KKSS] Plugins\Sirenix.OdinInspector.Attributes.dll</HintPath>
-    </Reference>
-    <Reference Include="Sirenix.OdinInspector.CompatibilityLayer">
-      <HintPath>..\..\..\[KKSS] Plugins\Sirenix.OdinInspector.CompatibilityLayer.dll</HintPath>
-    </Reference>
     <Reference Include="Sirenix.Serialization, Version=2.1.13.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.2019.4.9\lib\net46\Sirenix.Serialization.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="Sirenix.Serialization.Config">
-      <HintPath>..\..\..\[KKSS] Plugins\Sirenix.Serialization.Config.dll</HintPath>
-    </Reference>
-    <Reference Include="Sirenix.Utilities">
-      <HintPath>..\..\..\[KKSS] Plugins\Sirenix.Utilities.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="UniRx, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -216,115 +113,25 @@
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UniTask.2021.9.17\lib\net46\UniTask.TextMeshPro.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Unity.Addressables">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.Addressables.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.Burst">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.Burst.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.Burst.Unsafe">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.Burst.Unsafe.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.Mathematics">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.Mathematics.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.MemoryProfiler">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.MemoryProfiler.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.PlayableGraphVisualizer">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.PlayableGraphVisualizer.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.Postprocessing.Runtime">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.Postprocessing.Runtime.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.ProBuilder">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.ProBuilder.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.ProBuilder.KdTree">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.ProBuilder.KdTree.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.ProBuilder.Poly2Tri">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.ProBuilder.Poly2Tri.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.ProBuilder.Stl">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.ProBuilder.Stl.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.Recorder">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.Recorder.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.Recorder.Base">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.Recorder.Base.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.ResourceManager">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.ResourceManager.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.ScriptableBuildPipeline">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.ScriptableBuildPipeline.dll</HintPath>
-    </Reference>
     <Reference Include="Unity.TextMeshPro, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.Unity.TextMeshPro.2019.4.9\lib\net46\Unity.TextMeshPro.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="Unity.Timeline">
-      <HintPath>..\..\..\[KKSS] Plugins\Unity.Timeline.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.2019.4.9\lib\net46\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.AccessibilityModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.AccessibilityModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.AIModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.AIModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.AndroidJNIModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.AndroidJNIModule.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine.AnimationModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.AnimationModule.2019.4.9\lib\net46\UnityEngine.AnimationModule.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.ARModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.ARModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.AssetBundleModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.AssetBundleModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AudioModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.AudioModule.2019.4.9\lib\net46\UnityEngine.AudioModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.ClothModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.ClothModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.ClusterInputModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.ClusterInputModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.ClusterRendererModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.ClusterRendererModule.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.CoreModule.2019.4.9\lib\net46\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.CrashReportingModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.CrashReportingModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.DirectorModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.DirectorModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.DSPGraphModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.DSPGraphModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.GameCenterModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.GameCenterModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.GridModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.GridModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.HotReloadModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.HotReloadModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.ImageConversionModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.ImageConversionModule.2019.4.9\lib\net46\UnityEngine.ImageConversionModule.dll</HintPath>
@@ -338,142 +145,25 @@
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.InputLegacyModule.2019.4.9\lib\net46\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.InputModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.InputModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.JSONSerializeModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.JSONSerializeModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.LocalizationModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.LocalizationModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.ParticleSystemModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.ParticleSystemModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.PerformanceReportingModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.PerformanceReportingModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.Physics2DModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.Physics2DModule.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.PhysicsModule.2019.4.9\lib\net46\UnityEngine.PhysicsModule.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.ProfilerModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.ProfilerModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.ScreenCaptureModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.ScreenCaptureModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.SharedInternalsModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.SharedInternalsModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.SpriteMaskModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.SpriteMaskModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.SpriteShapeModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.SpriteShapeModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.StreamingModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.StreamingModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.SubstanceModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.SubstanceModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.SubsystemsModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.SubsystemsModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.TerrainModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.TerrainModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.TerrainPhysicsModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.TerrainPhysicsModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.TextCoreModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.TextCoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.TextRenderingModule.2019.4.9\lib\net46\UnityEngine.TextRenderingModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.TilemapModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.TilemapModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.TLSModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.TLSModule.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.UI.2019.4.9\lib\net46\UnityEngine.UI.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.UIElementsModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UIElementsModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.KoikatsuSunshine.UnityEngine.UIModule.2019.4.9\lib\net46\UnityEngine.UIModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.UmbraModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UmbraModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UNETModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UNETModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityAnalyticsModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UnityAnalyticsModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityConnectModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UnityConnectModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityTestProtocolModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UnityTestProtocolModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestAssetBundleModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UnityWebRequestAssetBundleModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestAudioModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UnityWebRequestModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestTextureModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UnityWebRequestTextureModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestWWWModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.VehiclesModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.VehiclesModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.VFXModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.VFXModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.VideoModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.VideoModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.VRModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.VRModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.WindModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.WindModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.XRModule">
-      <HintPath>..\..\..\[KKSS] Plugins\UnityEngine.XRModule.dll</HintPath>
-    </Reference>
-    <Reference Include="Vectrosity">
-      <HintPath>..\..\..\[KKSS] Plugins\Vectrosity.dll</HintPath>
-    </Reference>
     <Reference Include="XUnity.AutoTranslator.Plugin.Core, Version=4.18.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\lib\net46\XUnity.AutoTranslator.Plugin.Core.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="XUnity.Common">
-      <HintPath>..\..\..\[KKSS] Plugins\BepInEx\core\XUnity.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="ZString">
-      <HintPath>..\..\..\[KKSS] Plugins\ZString.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

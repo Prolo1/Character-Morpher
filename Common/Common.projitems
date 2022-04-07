@@ -6,7 +6,7 @@
     <SharedGUID>f835505b-0492-45c9-a446-c4bf82473cee</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>Common</Import_RootNamespace>
+    <Import_RootNamespace>CharaMorpher</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)CharaMorpher.cs" />
