@@ -42,4 +42,7 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 
 ## Known Issues
 * ~~changing morph values to far extremes may cause issues loading subsequent characters in maker. When this happens just close maker and open it back up (this isn't a problem in game since you cant use the sliders)~~ (Fixed this to the best of my knowlage)
-* With KK[SS], trying to change OG face and body sliders change bust values to original state, that's because the original sliders don't change when values change internally so keep that in mind (using the character morpher sliders will turn it back)
+* With KK[S], trying to change OG face and body sliders change bust values to original state, that's because the original sliders don't change when values change internally so keep that in mind (using the character morpher sliders will turn it back)
+
+## Issues / Requests ?
+Want to request a new feature or report a bug you found? Add your request / issue to the [GitIssues](https://github.com/Prolo1/Character-Morpher/issues) page and I'll see what I can do  
