@@ -11,9 +11,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "[KK] Character Morpher", "[
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "[KKS] Character Morpher", "[KKS] Character Morpher\[KKS] Character Morpher.csproj", "{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "[AI] Character Morpher", "[AI] Character Morpher\[AI] Character Morpher.csproj", "{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Common\Common.projitems*{15bb6c66-5b78-4eaa-b02d-99b0fe257f55}*SharedItemsImports = 4
+		Common\Common.projitems*{5297f533-ae0e-4a80-83b5-a4acc5758cb4}*SharedItemsImports = 4
 		Common\Common.projitems*{676b828f-de2d-4f54-9b96-3a965ebd2042}*SharedItemsImports = 4
 		Common\Common.projitems*{e96314cf-3d68-4a08-94e7-dd86d7bfa157}*SharedItemsImports = 4
 		Common\Common.projitems*{f835505b-0492-45c9-a446-c4bf82473cee}*SharedItemsImports = 13
@@ -35,6 +38,10 @@ Global
 		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

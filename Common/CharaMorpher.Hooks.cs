@@ -14,7 +14,7 @@ using UnityEngine;
 using UnityEngine.UI;
 #if HS2||AI
 using AIChara;
-using HS2;
+//using HS2;
 #endif
 
 namespace CharaMorpher

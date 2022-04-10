@@ -157,7 +157,7 @@ namespace CharaMorpher
                 headIndex = Config.Bind("Adv1 Head", "Head Index", 1, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true })),
 
                 brestIndex = new List<ConfigEntry<int>>
-#if HS2
+#if HS2 || AI
                 {
                     Config.Bind("Adv2 Brest", $"Brest Index {index=1}", 2, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
                     Config.Bind("Adv2 Brest", $"Brest Index {++index}", 3, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
@@ -184,7 +184,7 @@ namespace CharaMorpher
                    },
 #endif
                 torsoIndex = new List<ConfigEntry<int>>
-#if HS2
+#if HS2 || AI
                 {
                     Config.Bind("Adv3 Torso", $"Torso Index {index=1}", 14, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv3 Torso", $"Torso Index {++index}", 15, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -209,7 +209,7 @@ namespace CharaMorpher
                   },
 #endif
                 armIndex = new List<ConfigEntry<int>>
-#if HS2
+#if HS2 || AI
                 {
                     Config.Bind("Adv4 Arm", $"Arm Index {index=1}", 12, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv4 Arm", $"Arm Index {++index}", 13, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
@@ -229,7 +229,7 @@ namespace CharaMorpher
                   },
 #endif
                 buttIndex = new List<ConfigEntry<int>>
-#if HS2
+#if HS2 || AI
                 {
                     Config.Bind("Adv5 Butt", $"Butt Index {index=1}", 21, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv5 Butt", $"Butt Index {++index}", 22, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -243,7 +243,7 @@ namespace CharaMorpher
                   },
 #endif
                 legIndex = new List<ConfigEntry<int>>
-#if HS2
+#if HS2 || AI
                 {
                     Config.Bind("Adv6 Leg", $"Leg Index {index=1}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
                     Config.Bind("Adv6 Leg", $"Leg Index {++index}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -266,7 +266,7 @@ namespace CharaMorpher
                   },
 #endif
                 earIndex = new List<ConfigEntry<int>>
-#if HS2
+#if HS2 || AI
                 {
                     Config.Bind("Adv7 Ear", $"Ear Index {index=1}", 54, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv7 Ear", $"Ear Index {++index}", 55, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -284,7 +284,7 @@ namespace CharaMorpher
                 },
 #endif
                 eyeIndex = new List<ConfigEntry<int>>
-#if HS2
+#if HS2 || AI
                 {
                     Config.Bind("Adv8 Eye", $"Eye Index {index=1}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv8 Eye", $"Eye Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -324,7 +324,7 @@ namespace CharaMorpher
                 },
 #endif
                 mouthIndex = new List<ConfigEntry<int>>
-#if HS2
+#if HS2 || AI
                 {
                     Config.Bind("Adv9 Mouth", $"Mouth Index {index=1}", 47, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
                     Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 48, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),

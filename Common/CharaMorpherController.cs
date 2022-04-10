@@ -10,13 +10,14 @@ using System.Text;
 
 using KKAPI;
 using KKAPI.Chara;
-#if HS2
+#if HS2 || AI
 using AIChara;
 #endif
 
 
 using KKABMX.Core;
 using ExtensibleSaveFormat;
+
 
 using UnityEngine;
 
@@ -84,6 +85,7 @@ namespace CharaMorpher
 					};
 				}
 			}
+			
 			public ChaFile main = new ChaFile();
 			public AMBXSections abmx = new AMBXSections();
 #if KK
@@ -128,8 +130,8 @@ namespace CharaMorpher
 #endif
 				main.CopyAll(data.ChaFileControl);
 				abmx.Populate(data);
-#if HS2
-                string  cardID = data.ChaControl.chaFile.dataID;
+#if HS2 || AI
+				string cardID = data.ChaControl.chaFile.dataID;
 #elif KKS
 				string cardID = data.ChaControl.chaFile.about.dataID;
 #elif KK //not sure if this will work
@@ -734,7 +736,6 @@ namespace CharaMorpher
 		public void OnCharaReload(GameMode currentGameMode)
 		{
 
-
 			var cfg = CharaMorpher_Core.Instance.cfg;
 			var boneCtrl = ChaControl.GetComponent<BoneController>();
 
@@ -872,8 +873,8 @@ namespace CharaMorpher
 			{
 
 
-#if HS2
-                string storedID = m_data1.id, cardID = ChaControl.chaFile.dataID;
+#if HS2 || AI
+				string storedID = m_data1.id, cardID = ChaControl.chaFile.dataID;
 #elif KKS
 				string storedID = m_data1.id, cardID = ChaControl.chaFile.about.dataID;
 #elif KK//not sure if this will work (it didn't)
