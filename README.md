@@ -45,4 +45,4 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 * With KK[S], trying to change OG face and body sliders change bust values to original state, that's because the original sliders don't change when values change internally so keep that in mind (using the character morpher sliders will turn it back)
 
 ## Issues / Requests ?
-Want to request a new feature or report a bug you found? Add your request / issue to the [GitIssues](https://github.com/Prolo1/Character-Morpher/issues) page and I'll see what I can do  
+Want to request a new feature or report a bug you found? Add your request / issue to the [Git Issues](https://github.com/Prolo1/Character-Morpher/issues) page and I'll see what I can do  
