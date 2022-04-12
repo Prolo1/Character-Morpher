@@ -5,23 +5,20 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-//using System.Threading.Tasks;
-
 
 using KKAPI;
 using KKAPI.Chara;
+using KKABMX.Core;
+using ExtensibleSaveFormat;
 #if HS2 || AI
 using AIChara;
 #endif
 
-
-using KKABMX.Core;
-using ExtensibleSaveFormat;
-
-
 using UnityEngine;
 
-namespace CharaMorpher
+
+
+namespace Character_Morpher
 {
 	public class CharaMorpherController : CharaCustomFunctionController
 	{
@@ -40,7 +37,7 @@ namespace CharaMorpher
 
 					//Store Bonemod Extended Data
 					{//helps get rid of data sooner
-						var data = boneCtrl.GetExtendedData();
+						var data = boneCtrl?.GetExtendedData();
 						var newModifiers = ReadBoneModifiers(data);
 						body = new List<BoneModifier>(newModifiers);
 						face = new List<BoneModifier>(newModifiers);
@@ -55,7 +52,8 @@ namespace CharaMorpher
 						body.RemoveAll(x => headBones.Contains(x.BoneName));
 
 
-						var bodyBones = new HashSet<string>(charaCtrl.objBodyBone.transform.parent.parent.GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
+						var bodyBones = new HashSet<string>(charaCtrl.objBodyBone.transform.parent.parent.
+							GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
 						face.RemoveAll(x => bodyBones.Contains(x.BoneName));
 
 						//CharaMorpher.Logger.LogDebug($"Head root: {headRoot.name}");
@@ -71,21 +69,21 @@ namespace CharaMorpher
 
 				public void Clear()
 				{
-					body.Clear();
-					face.Clear();
-					other.Clear();
+					body?.Clear();
+					face?.Clear();
+					other?.Clear();
 				}
 				public AMBXSections Copy()
 				{
 					return new AMBXSections()
 					{
-						body = new List<BoneModifier>(body),
-						face = new List<BoneModifier>(face),
-						other = new List<BoneModifier>(other)
+						body = new List<BoneModifier>(body ?? new List<BoneModifier>()),
+						face = new List<BoneModifier>(face ?? new List<BoneModifier>()),
+						other = new List<BoneModifier>(other ?? new List<BoneModifier>())
 					};
 				}
 			}
-			
+
 			public ChaFile main = new ChaFile();
 			public AMBXSections abmx = new AMBXSections();
 #if KK
@@ -233,7 +231,7 @@ namespace CharaMorpher
 		public static readonly List<(string, string)> bonecatagories = new List<(string, string)>()
 #endif
 #if KK || KKS
-#region KKBones
+		#region KKBones
 		{
              //ABMX
         
@@ -692,47 +690,42 @@ namespace CharaMorpher
 #endif
 			 ;
 
-		IEnumerator CoMorphReload()
+		IEnumerator CoMorphReload(int delayFrames = 10)
 		{
-			for(int a = 0; a < 10; ++a)
+			for(int a = 0; a < delayFrames; ++a)
 				yield return new WaitForEndOfFrame();
+
 			reloading = true;//just in-case
 
 			CharaMorpher_Core.Logger.LogDebug("Reloading After character loaded");
 			OnCharaReload(KoikatuAPI.GetCurrentGameMode());
 
 			CharaMorpher_Core.Logger.LogDebug("Morphing model...");
-			MorphChangeUpdate();
+			StartCoroutine(CoMorphUpdate(0));
 
 
 			reloading = false;
 			initLoadFinished = true;
+			yield return new WaitForEndOfFrame();
 		}
 
-		public IEnumerator CoMorphUpdate(int delayFrames = 6)
+		public IEnumerator CoMorphUpdate(int delayFrames = 6, bool forcereset = false)
 		{
 			for(int a = 0; a < delayFrames; ++a)
 				yield return new WaitForEndOfFrame();
 
-			CharaMorpher.CharaMorpher_Core.Logger.LogDebug("Updating after card save");
-			MorphChangeUpdate();
+			CharaMorpher_Core.Logger.LogDebug("Updating after card save/load");
+			MorphChangeUpdate(forcereset);
 
+			yield return new WaitForEndOfFrame();
 		}
 
+		private string MakeDirPath(string path) => CharaMorpher_Core.MakeDirPath(path);
 
-		string MakeDirPath(string dir)
-		{
-			dir = dir.Replace('\\', '/');
-			dir = dir.Replace("//", "/");
-			if((dir.LastIndexOf('.') <= dir.LastIndexOf('/'))
-				&& dir.Last() != '/')
-				dir += '/';
-
-			return dir;
-		}
-
-
-		///<inheritdoc/>
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="currentGameMode"></param>
 		public void OnCharaReload(GameMode currentGameMode)
 		{
 
@@ -750,40 +743,42 @@ namespace CharaMorpher
 
 			//create path to morph target
 			string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
+
 			// CharaMorpher_Core.Logger.LogDebug($"image path: {path}");
 
 			//Get referenced character data (only needs to be loaded once)
-			if(charData == null ||
-				lastCharDir != path ||
-				System.IO.File.GetLastWriteTime(path).Ticks != lastDT.Ticks)
-			{
-				lastDT = System.IO.File.GetLastWriteTime(path);
-				lastCharDir = path;
-				charData = new MorphData();
+			if(File.Exists(path))
+				if(charData == null ||
+					lastCharDir != path ||
+					System.IO.File.GetLastWriteTime(path).Ticks != lastDT.Ticks)
+				{
+					lastDT = System.IO.File.GetLastWriteTime(path);
+					lastCharDir = path;
+					charData = new MorphData();
 
-				CharaMorpher_Core.Logger.LogDebug("load morph target");
-				ChaFileControl.LoadCharaFile(path/*, 255 female; 0 male*/);
+					CharaMorpher_Core.Logger.LogDebug("load morph target");
+					ChaFileControl.LoadCharaFile(path/*, 255 female; 0 male*/);
 
-				CharaMorpher_Core.Logger.LogDebug("copy morph target");
-				charData.Copy(this);
+					CharaMorpher_Core.Logger.LogDebug("copy morph target");
+					charData.Copy(this);
 
-				CharaMorpher_Core.Logger.LogDebug("reset original data");
-				//Reset original character data
-				ChaControl.chaFile.CopyAll(m_data1.main);
+					CharaMorpher_Core.Logger.LogDebug("reset original data");
+					//Reset original character data
+					ChaControl.chaFile.CopyAll(m_data1.main);
 
 #if HS2 || AI
-                //CopyAll will not copy this data in hs2
+                //CopyAll will not copy this data in hs2/ai
                 ChaControl.chaFile.dataID = m_data1.main.dataID;
 #endif
-				//  ChaControl.chaID = m_data1.id;//just in-case
-			}
 
-			if(ChaControl.sex != 1/*could allow it with both genders later*/)
+				}
+
+			if(currentGameMode == GameMode.MainGame && ChaControl.sex != 1/*could allow it with both genders later (allowed in maker as of now)*/)
 				return;
 
 			CharaMorpher_Core.Logger.LogDebug("replace data 2");
-			m_data2.Copy(charData);
-
+			if(charData != null)
+				m_data2.Copy(charData);
 
 			//CharaMorpher_Core.Logger.LogDebug("Morphing model...");
 			////Update the model
@@ -791,7 +786,7 @@ namespace CharaMorpher
 		}
 
 		/// <inheritdoc/>
-		protected override void OnReload(GameMode currentGameMode,bool keepState)
+		protected override void OnReload(GameMode currentGameMode, bool keepState)
 		{
 			if(keepState) return;
 
@@ -809,24 +804,16 @@ namespace CharaMorpher
 
 		}
 
-		List<IEnumerator> coUpdates = new List<IEnumerator>();
-
 		///<inheritdoc/>
 		protected override void OnCardBeingSaved(GameMode currentGameMode)
 		{
-			// foreach(var update in coUpdates)
-			//     StopCoroutine(update);
-			//
-			// coUpdates.Add(CoMorphUpdate());
-			StartCoroutine(CoMorphUpdate());
+			//if(CharaMorpher_Core.Instance.cfg.saveWithMorph.Value) return;			
+			StartCoroutine(CoMorphReload(6));
 		}
 
+		/// <inheritdoc/> 
 		protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
 		{
-			// foreach(var update in coUpdates)
-			//     StopCoroutine(update);
-			//
-			// coUpdates.Add(CoMorphUpdate());
 			StartCoroutine(CoMorphUpdate());
 		}
 
@@ -877,54 +864,53 @@ namespace CharaMorpher
 				string storedID = m_data1.id, cardID = ChaControl.chaFile.dataID;
 #elif KKS
 				string storedID = m_data1.id, cardID = ChaControl.chaFile.about.dataID;
-#elif KK//not sure if this will work (it didn't)
+#elif KK //not sure if this will work (it didn't but it's just an optimization)
 				int storedID = m_data1.id, cardID = ChaControl.chaID;
 #endif
-				CharaMorpher_Core.Logger.LogDebug($"file is: {cardID}");
-				CharaMorpher_Core.Logger.LogDebug($"stored file is: {storedID}");
+				//	CharaMorpher_Core.Logger.LogDebug($"file is: {cardID}");
+				//	CharaMorpher_Core.Logger.LogDebug($"stored file is: {storedID}");
 
 				if(cardID == null || cardID != storedID) return;
 			}
 
 
-			if(ChaControl.sex != 1/*could allow it with both genders later*/)
+			if(KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame && ChaControl.sex != 1/*could allow it with both genders later (allowed in maker as of now)*/)
 				return;
 
 			var cfg = CharaMorpher_Core.Instance.cfg;
 			var charaCtrl = ChaControl;
 			var boneCtrl = charaCtrl.GetComponent<BoneController>();
 
+			#region Merge results
 
-			//Merge results
-			{
+			//add non-existent bones to other lists
 
-				//add non-existent bones to other lists
+			//Body
+			BoneModifierMatching(ref m_data1.abmx.body, ref m_data2.abmx.body);
+			BoneModifierMatching(ref m_data2.abmx.body, ref m_data1.abmx.body);
 
-				//Body
-				BoneModifierMatching(ref m_data1.abmx.body, ref m_data2.abmx.body);
-				BoneModifierMatching(ref m_data2.abmx.body, ref m_data1.abmx.body);
+			//Face
+			BoneModifierMatching(ref m_data1.abmx.face, ref m_data2.abmx.face);
+			BoneModifierMatching(ref m_data2.abmx.face, ref m_data1.abmx.face);
 
-				//Face
-				BoneModifierMatching(ref m_data1.abmx.face, ref m_data2.abmx.face);
-				BoneModifierMatching(ref m_data2.abmx.face, ref m_data1.abmx.face);
+			//current body
+			BoneModifierMatching(ref boneCtrl, m_data1.abmx.body);
+			BoneModifierMatching(ref boneCtrl, m_data1.abmx.face);
 
-				//current body
-				BoneModifierMatching(ref boneCtrl, m_data1.abmx.body);
-				BoneModifierMatching(ref boneCtrl, m_data1.abmx.face);
+			//sort list
+			m_data1.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+			m_data2.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+			m_data1.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+			m_data2.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
 
-				//sort list
-				m_data1.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
-				m_data2.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
-				m_data1.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
-				m_data2.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
-			}
+			#endregion
 
 			bool reset = !cfg.enable.Value;
 			reset = KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame ? reset || !cfg.enableInGame.Value : reset;
 			UpdateMorphValues(forceReset ? true : reset);
 		}
 
-		public void UpdateMorphValues(bool reset)
+		private void UpdateMorphValues(bool reset)
 		{
 			var cfg = CharaMorpher_Core.Instance.cfg;
 			var charaCtrl = ChaControl;
@@ -1109,6 +1095,7 @@ namespace CharaMorpher
 					//   CharaMorpher_Core.Logger.LogDebug($"applying values");
 					current.Apply(boneCtrl.CurrentCoordinate.Value, null, KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame);
 				}
+
 				//face
 				if(a < m_data1.abmx.face.Count)
 				{
@@ -1295,8 +1282,9 @@ namespace CharaMorpher
 					//load values to character
 					charaCtrl.SetShapeFaceValue(a, result);
 				}
-				//  CharaMorpher_Core.Logger.LogDebug("");
 				#endregion
+
+				//  CharaMorpher_Core.Logger.LogDebug("");
 			}
 
 
@@ -1304,14 +1292,12 @@ namespace CharaMorpher
 			charaCtrl.updateShapeBody = true;
 			charaCtrl.updateShapeFace = true;
 			charaCtrl.updateBustSize = true;
-			//   if(initialLoad || reset || !cfg.enableABMX.Value)
-			//       boneCtrl.NeedsFullRefresh = true;
 
-			// boneCtrl.NeedsBaselineUpdate = true;
+
 
 #if KKS || KK
-			charaCtrl.ChangeSettingBodyDetail();
-			charaCtrl.ChangeSettingFaceDetail();
+			//charaCtrl.ChangeSettingBodyDetail();
+			//charaCtrl.ChangeSettingFaceDetail();
 			charaCtrl.ChangeSettingNip();
 #endif
 
@@ -1362,9 +1348,6 @@ namespace CharaMorpher
 				}
 			}
 		}
-
-
-
 
 	}
 

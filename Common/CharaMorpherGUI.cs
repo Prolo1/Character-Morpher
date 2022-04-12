@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,39 +15,37 @@ using KKAPI.Utilities;
 using KKAPI.Maker;
 using KKAPI.Maker.UI;
 using KKAPI.Chara;
+using UniRx;
 
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
+using ADV.Commands.Base;
+using BepInEx;
+using System.Runtime.InteropServices;
 
-
-namespace CharaMorpher
+namespace Character_Morpher
 {
 	class CharaMorpherGUI
 	{
+		public class NewImageEvent : UnityEvent<string> { }
 
-		internal static void Initialize()
-		{
-			MakerAPI.RegisterCustomSubCategories += AddCharaMorpherMenu;
-		}
-
+		internal static void Initialize() =>
+				MakerAPI.RegisterCustomSubCategories += AddCharaMorpherMenu;
 
 		static int abmxIndex = 0;
 		static List<MakerSlider> sliders = new List<MakerSlider>();
 		private static void AddCharaMorpherMenu(object sender, RegisterSubCategoriesEvent e)
 		{
-			if(MakerAPI.GetMakerSex() != 1) return;
-
+			//if(MakerAPI.GetMakerSex() != 1) return;//lets try it out in male maker
 
 			var cfg = CharaMorpher_Core.Instance.cfg;
 
 #if HS2 || AI
-
 			MakerCategory peram = MakerConstants.Parameter.Type;
 #else
-
 			MakerCategory peram = MakerConstants.Parameter.Character;
 #endif
-
 			MakerCategory category = new MakerCategory(peram.CategoryName, "Morph", int.MaxValue, "Chara Morph");
 			e.AddSubCategory(category);
 
@@ -73,6 +72,8 @@ namespace CharaMorpher
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 			#endregion
+
+			ImageControls(e, category, CharaMorpher_Core.Instance);
 
 			#region Sliders
 
@@ -235,51 +236,114 @@ namespace CharaMorpher
 
 			#region Init Slider Visibility
 
+			CharaMorpher_Core.Logger.LogDebug($"Setting initial activity p1");
 			for(int a = 0; a < sliders.Count; ++a)
-				sliders[a].ControlObject.SetActive(cfg.enable.Value);
+				sliders?[a]?.ControlObject?.SetActive(cfg.enable.Value);
 
+			CharaMorpher_Core.Logger.LogDebug($"Setting initial activity p2");
 			for(int a = abmxIndex; a < sliders.Count; ++a)
-				sliders[a].ControlObject.SetActive(cfg.enable.Value && cfg.enableABMX.Value);
+				sliders?[a]?.ControlObject?.SetActive(cfg.enable.Value && cfg.enableABMX.Value);
 			#endregion
 
 			#region Save/Load Buttons
-			var saveDefaultsButton = e.AddControl(new MakerButton("Save Default", category, CharaMorpher_Core.Instance));
-			saveDefaultsButton.OnClick.AddListener(
-				() =>
-				{
-					int count = 0;
-					foreach(var def in cfg.defaults)
-						def.Value = sliders[count++].Value * 100f;
-				});
 
-			var loadDefaultsButton = e.AddControl(new MakerButton("Load Default", category, CharaMorpher_Core.Instance));
-			loadDefaultsButton.OnClick.AddListener(
+			CharaMorpher_Core.Logger.LogDebug($"Adding buttons");
+			e.AddControl(new MakerButton("Save Default", category, CharaMorpher_Core.Instance))
+			   .OnClick.AddListener(
 			   () =>
 			   {
 				   int count = 0;
-				   foreach(var slider in sliders)
-					   slider.Value = cfg.defaults[count++].Value * .01f;
+				   foreach(var def in cfg.defaults)
+					   def.Value = sliders[count++].Value * 100f;
 			   });
+
+			e.AddControl(new MakerButton("Load Default", category, CharaMorpher_Core.Instance))
+			   .OnClick.AddListener(
+			  () =>
+			  {
+				  int count = 0;
+				  foreach(var slider in sliders)
+					  slider.Value = cfg.defaults[count++].Value * .01f;
+			  });
+			CharaMorpher_Core.Logger.LogDebug($"Finished adding buttons");
+			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
+			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 			#endregion
+
 		}
 
-		private void OpenFolder(string folderPath)
+
+		private static void ImageControls(RegisterSubCategoriesEvent e, MakerCategory category, BepInEx.BaseUnityPlugin owner)
 		{
-			if(Directory.Exists(folderPath))
+			var cfg = CharaMorpher_Core.Instance.cfg;
+
+
+			Texture2D createTexture(string path) =>
+			File.ReadAllBytes(path)?.LoadTexture(TextureFormat.RGBA32);
+
+			var img = e.AddControl(new MakerImage(null, category, owner)
+			{ Height = 200, Width = 150, Texture = createTexture(Path.Combine(cfg.charDir.Value, cfg.imageName.Value)), });
+			IEnumerator SetTextureCo(string path)
 			{
-				ProcessStartInfo startInfo = new ProcessStartInfo
-				{
-					Arguments = folderPath,
-					FileName = "explorer.exe",
+				for(int a = 0; a < 4; ++a)
+					yield return null;
 
-				};
-
-				Process.Start(startInfo);
+				CharaMorpher_Core.Logger.LogDebug($"The SetTextureCo was called");
+				img.Texture = createTexture(path);
 			}
-			else
+
+			CharaMorpher_Core.OnNewTargetImage.AddListener(
+				path =>
+				{
+					CharaMorpher_Core.Logger.LogDebug($"Calling OnNewTargetImage callback");
+					CharaMorpher_Core.Instance.StartCoroutine(SetTextureCo(path));
+				});
+
+			var button = e.AddControl(new MakerButton($"Set New Image Target", category, owner));
+			button.OnClick.AddListener(() =>
 			{
-				//Error here
+				ForeGrounder.SetCurrentForground();
+
+				OpenFileDialog.Show(
+				strings => OnFileAccept(strings),
+				"Set Lookup Texture",
+				OverlayDirectory,
+				FileFilter,
+				FileExt);
+			});
+			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
+			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
+		}
+
+		private static void OnFileAccept(string[] strings)
+		{
+			CharaMorpher_Core.Logger.LogDebug($"Enters accept");
+			if(strings == null || strings.Length == 0) return;
+			var texPath = strings[0];
+			CharaMorpher_Core.Logger.LogDebug($"texture path: {Path.Combine(Path.GetDirectoryName(texPath), Path.GetFileName(texPath))}");
+
+			if(string.IsNullOrEmpty(texPath)) return;
+
+			CharaMorpher_Core.Instance.cfg.charDir.Value = Path.GetDirectoryName(texPath);
+			CharaMorpher_Core.Instance.cfg.imageName.Value = Path.GetFileName(texPath);
+
+			ForeGrounder.RevertForground();
+			CharaMorpher_Core.Logger.LogDebug($"Exit accept");
+		}
+
+		public const string FileExt = ".png";
+		public const string FileFilter = "Character Images (*.png)|*.png|All files|*.*";
+
+		private static readonly string _defaultOverlayDirectory = Path.Combine(BepInEx.Paths.GameRootPath, "UserData/chara");
+		public static string OverlayDirectory
+		{
+			get
+			{
+				var path = CharaMorpher_Core.MakeDirPath(CharaMorpher_Core.Instance.cfg.charDir.Value);
+				return Directory.Exists(path) ? path : _defaultOverlayDirectory;
 			}
 		}
+
+
 	}
 }

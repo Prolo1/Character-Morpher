@@ -1,4 +1,4 @@
-﻿namespace CharaMorpher
+﻿namespace Character_Morpher
 {
 
 /// <summary>
