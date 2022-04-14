@@ -29,29 +29,36 @@ namespace Character_Morpher
 			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState))]
 			//  [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStateNext))]
 			//  [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStatePrev))]
-
+#if !(HS2 || AI)
+			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.ChangeCoordinateType),
+				new Type[] { typeof(ChaFileDefine.CoordinateType), typeof(bool) })]
+#endif
 			static void clothsStateUpdate(ChaControl __instance)
 			{
 				var ctrl = __instance.GetComponent<CharaMorpherController>();
-#if HS2
-                var saveWindow = GameObject.FindObjectOfType<CharaCustom.CharaCustom>();
-                CharaCustom.CvsCaptureMenu capture = null;
-                if(saveWindow)
-                    capture = saveWindow.GetComponentInChildren<CharaCustom.CvsCaptureMenu>();
-                if(capture)
-                    if(capture.isActiveAndEnabled)
-                    {
-                        void donothing() { CharaMorpher_Core.Logger.LogDebug("I see nothing, I hear nothing, I DO NOTHING!!!!"); };
-                        donothing();//this is very helpful
-                    }
-                    else
+#if HS2 || AI
+				var saveWindow = GameObject.FindObjectOfType<CharaCustom.CharaCustom>();
+				CharaCustom.CvsCaptureMenu capture = null;
+				if(saveWindow)
+					capture = saveWindow.GetComponentInChildren<CharaCustom.CvsCaptureMenu>();
+				if(capture)
+					if(capture.isActiveAndEnabled)
+					{
+						void donothing() { CharaMorpher_Core.Logger.LogDebug("I see nothing, I hear nothing, I DO NOTHING!!!!"); };
+						donothing();//this is very helpful
+					}
+					else
 #endif
 				if(Instance.cfg.enable.Value)
-					if(!ctrl.reloading)
-					{
-						Logger.LogDebug("The hook gets called");
-						ctrl.StartCoroutine(ctrl.CoMorphUpdate(1));
-					}
+					if(ctrl)
+						if(!ctrl.reloading)
+						{
+							Logger.LogDebug("The hook gets called");
+							//ctrl.MorphChangeUpdate(true);
+							//ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode(),true);
+							//	ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode(), true);
+							ctrl.StartCoroutine(ctrl.CoMorphUpdate(4));
+						}
 			}
 
 
@@ -60,7 +67,6 @@ namespace Character_Morpher
 			static void OnButtonClick(Button __instance)
 			{
 				//  CharaMorpher.CharaMorpher_Core.Logger.LogDebug($"Button Name: {ctrler.name.ToLower()}");
-				
 
 				if(KoikatuAPI.GetCurrentGameMode() != GameMode.Maker) return;
 
@@ -72,20 +78,20 @@ namespace Character_Morpher
 			static void OnSaveLoadClick(Button __instance)
 			{
 
-				//reset character to default before saving or loading character 
 				var ctrler = __instance.gameObject;
-#if HS2
-                if(ctrler.transform.parent.parent.GetComponentInParent<CharaCustom.CustomCharaWindow>())
-                    if(ctrler.name.ToLower().Contains("overwrite") || ctrler.name.ToLower().Contains("save"))
+				//reset character to default before saving or loading character 
+#if HS2 || AI
+				if(ctrler.transform.parent.parent.GetComponentInParent<CharaCustom.CustomCharaWindow>())
+					if(ctrler.name.ToLower().Contains("overwrite") || ctrler.name.ToLower().Contains("save"))
 #elif KKS || KK
 				if(ctrler.name.ToLower().Contains("override") || ctrler.name.ToLower().Contains("save")
 					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
 #endif
 
-					if(!Instance.cfg.saveWithMorph.Value)
-						if(Instance.cfg.enable.Value)
+					if(Instance.cfg.enable.Value)
+						if(!Instance.cfg.saveWithMorph.Value)
 							if((KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame) ? Instance.cfg.enableInGame.Value : true)
-								foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+								foreach(var hnd in CharacterApi.RegisteredHandlers)
 									if(hnd.ControllerType == typeof(CharaMorpherController))
 										foreach(CharaMorpherController ctrl in hnd.Instances)
 										{
@@ -98,20 +104,20 @@ namespace Character_Morpher
 			{
 				//Set character back to normal if save was canceled
 				var ctrler = __instance.gameObject;
-#if HS2
-                if(ctrler.name.ToLower().Contains("no") || (ctrler.name.ToLower().Contains("exit")))
+#if HS2 || AI
+				if(ctrler.name.ToLower().Contains("exit") || ctrler.name.ToLower().Contains("no"))
 #elif KKS || KK
-				if(ctrler.name.ToLower().Contains("exit") || ctrler.name.ToLower().Contains("no") /*|| ctrler.name.ToLower().Contains("load")*/)
+				if(ctrler.name.ToLower().Contains("exit") || ctrler.name.ToLower().Contains("no"))
 #endif
-					if(!Instance.cfg.saveWithMorph.Value)
-						if(Instance.cfg.enable.Value)
+					if(Instance.cfg.enable.Value)
+						if(!Instance.cfg.saveWithMorph.Value)
 							if((KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame) ? Instance.cfg.enableInGame.Value : true)
-								foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+								foreach(var hnd in CharacterApi.RegisteredHandlers)
 									if(hnd.ControllerType == typeof(CharaMorpherController))
 										foreach(CharaMorpherController ctrl in hnd.Instances)
 										{
-											Logger.LogDebug("The Overwrite Button was called!!!");
-											ctrl.MorphChangeUpdate();
+											Logger.LogDebug("The Exiting Button was called!!!");
+											ctrl.StartCoroutine(ctrl.CoMorphUpdate(4));
 										}
 			}
 		}

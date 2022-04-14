@@ -37,11 +37,12 @@ using AIChara;
  * morph face features     
  * morph ABMX body features
  * morph ABMX face features
+ * Make an in-game version affect all but male character[s] (maybe)
+ * added easy file search for morph target in maker
 
   Planned:
                                            
  * Save morph changes to card (w/o changing card)
- * Make an in-game version affect all but male character[s] (maybe)
 ************************************************/
 
 
@@ -367,7 +368,8 @@ namespace Character_Morpher
 							ctrl.MorphChangeUpdate();
 						}
 				string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
-				OnNewTargetImage.Invoke(path);
+				if(File.Exists(path))
+					OnNewTargetImage.Invoke(path);
 
 			};
 
@@ -381,7 +383,8 @@ namespace Character_Morpher
 							ctrl.MorphChangeUpdate();
 						}
 				string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
-				OnNewTargetImage.Invoke(path);
+				if(File.Exists(path)) 
+					OnNewTargetImage.Invoke(path);
 			};
 
 			cfg.enable.SettingChanged += (m, n) =>

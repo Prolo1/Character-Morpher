@@ -688,36 +688,45 @@ namespace Character_Morpher
               }
 		#endregion
 #endif
-			 ;
+;
 
-		IEnumerator CoMorphReload(int delayFrames = 10)
+		public IEnumerator CoMorphReload(int delayFrames = 10, bool abmxOnly = false)
 		{
-			for(int a = 0; a < delayFrames; ++a)
-				yield return new WaitForEndOfFrame();
-
 			reloading = true;//just in-case
+			for(int a = 0; a < delayFrames; ++a)
+				yield return null;
 
 			CharaMorpher_Core.Logger.LogDebug("Reloading After character loaded");
-			OnCharaReload(KoikatuAPI.GetCurrentGameMode());
+			OnCharaReload(KoikatuAPI.GetCurrentGameMode(), abmxOnly);
 
 			CharaMorpher_Core.Logger.LogDebug("Morphing model...");
-			StartCoroutine(CoMorphUpdate(0));
 
+			StartCoroutine(CoMorphUpdate(0));
 
 			reloading = false;
 			initLoadFinished = true;
-			yield return new WaitForEndOfFrame();
+			yield return null;
 		}
 
 		public IEnumerator CoMorphUpdate(int delayFrames = 6, bool forcereset = false)
 		{
 			for(int a = 0; a < delayFrames; ++a)
-				yield return new WaitForEndOfFrame();
+				yield return null;
 
-			CharaMorpher_Core.Logger.LogDebug("Updating after card save/load");
+			CharaMorpher_Core.Logger.LogDebug("Updating morph values after card save/load");
 			MorphChangeUpdate(forcereset);
 
-			yield return new WaitForEndOfFrame();
+			yield return null;
+		}
+		public IEnumerator CoMorphAfterABMX(bool forcereset = false)
+		{
+			var boneCtrl = ChaControl.GetComponent<BoneController>();
+			while(boneCtrl && boneCtrl.NeedsFullRefresh && boneCtrl.NeedsBaselineUpdate) yield return null;
+
+			CharaMorpher_Core.Logger.LogDebug("Updating morph values after ABMX");
+			MorphChangeUpdate(forcereset);
+
+			yield return null;
 		}
 
 		private string MakeDirPath(string path) => CharaMorpher_Core.MakeDirPath(path);
@@ -726,20 +735,26 @@ namespace Character_Morpher
 		/// 
 		/// </summary>
 		/// <param name="currentGameMode"></param>
-		public void OnCharaReload(GameMode currentGameMode)
+		public void OnCharaReload(GameMode currentGameMode, bool abmxOnly = false)
 		{
 
 			var cfg = CharaMorpher_Core.Instance.cfg;
 			var boneCtrl = ChaControl.GetComponent<BoneController>();
 
-			//clear original data
-			CharaMorpher_Core.Logger.LogDebug("clear data");
-			m_data1.Clear();
-			m_data2.Clear();
+			if(!abmxOnly)
+			{
+				//clear original data
+				CharaMorpher_Core.Logger.LogDebug("clear data");
+				m_data1.Clear();
+				m_data2.Clear();
+			}
 
 			//store picked character data
 			CharaMorpher_Core.Logger.LogDebug("replace data 1");
-			m_data1.Copy(this);//get all character data!!!
+			if(abmxOnly)
+				m_data1.abmx.Populate(this);
+			else
+				m_data1.Copy(this); //get all character data!!!
 
 			//create path to morph target
 			string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
@@ -750,9 +765,9 @@ namespace Character_Morpher
 			if(File.Exists(path))
 				if(charData == null ||
 					lastCharDir != path ||
-					System.IO.File.GetLastWriteTime(path).Ticks != lastDT.Ticks)
+					File.GetLastWriteTime(path).Ticks != lastDT.Ticks)
 				{
-					lastDT = System.IO.File.GetLastWriteTime(path);
+					lastDT = File.GetLastWriteTime(path);
 					lastCharDir = path;
 					charData = new MorphData();
 
@@ -778,11 +793,16 @@ namespace Character_Morpher
 
 			CharaMorpher_Core.Logger.LogDebug("replace data 2");
 			if(charData != null)
-				m_data2.Copy(charData);
+				if(abmxOnly)
+					m_data2.abmx = charData.abmx.Copy();
+				else
+					m_data2.Copy(charData);
 
 			//CharaMorpher_Core.Logger.LogDebug("Morphing model...");
 			////Update the model
+			boneCtrl.NeedsFullRefresh = true;
 			MorphChangeUpdate(true);
+
 		}
 
 		/// <inheritdoc/>
@@ -807,8 +827,13 @@ namespace Character_Morpher
 		///<inheritdoc/>
 		protected override void OnCardBeingSaved(GameMode currentGameMode)
 		{
-			//if(CharaMorpher_Core.Instance.cfg.saveWithMorph.Value) return;			
-			StartCoroutine(CoMorphReload(6));
+			if(!CharaMorpher_Core.Instance.cfg.saveWithMorph.Value)
+			{
+				reloading = true;//just in-case
+				StartCoroutine(CoMorphReload(6));
+			}
+			else
+				StartCoroutine(CoMorphUpdate(6));
 		}
 
 		/// <inheritdoc/> 
@@ -1288,7 +1313,7 @@ namespace Character_Morpher
 			}
 
 
-			//charaCtrl.updateShape = true;
+			charaCtrl.updateShape = true;
 			charaCtrl.updateShapeBody = true;
 			charaCtrl.updateShapeFace = true;
 			charaCtrl.updateBustSize = true;
