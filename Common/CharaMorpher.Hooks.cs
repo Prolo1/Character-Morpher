@@ -54,10 +54,7 @@ namespace Character_Morpher
 						if(!ctrl.reloading)
 						{
 							Logger.LogDebug("The hook gets called");
-							//ctrl.MorphChangeUpdate(true);
-							//ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode(),true);
-							//	ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode(), true);
-							ctrl.StartCoroutine(ctrl.CoMorphUpdate(4));
+							ctrl.StartCoroutine(ctrl.CoMorphUpdate(1));
 						}
 			}
 
@@ -79,6 +76,7 @@ namespace Character_Morpher
 			{
 
 				var ctrler = __instance.gameObject;
+				if(!ctrler || ctrler.name.IsNullOrEmpty()) return;
 				//reset character to default before saving or loading character 
 #if HS2 || AI
 				if(ctrler.transform.parent.parent.GetComponentInParent<CharaCustom.CustomCharaWindow>())
@@ -104,6 +102,7 @@ namespace Character_Morpher
 			{
 				//Set character back to normal if save was canceled
 				var ctrler = __instance.gameObject;
+				if(!ctrler || ctrler.name.IsNullOrEmpty()) return;
 #if HS2 || AI
 				if(ctrler.name.ToLower().Contains("exit") || ctrler.name.ToLower().Contains("no"))
 #elif KKS || KK
@@ -117,7 +116,7 @@ namespace Character_Morpher
 										foreach(CharaMorpherController ctrl in hnd.Instances)
 										{
 											Logger.LogDebug("The Exiting Button was called!!!");
-											ctrl.StartCoroutine(ctrl.CoMorphUpdate(4));
+											ctrl.MorphChangeUpdate();
 										}
 			}
 		}
