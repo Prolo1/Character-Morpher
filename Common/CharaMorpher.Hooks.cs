@@ -54,7 +54,8 @@ namespace Character_Morpher
 						if(!ctrl.reloading)
 						{
 							Logger.LogDebug("The hook gets called");
-							ctrl.StartCoroutine(ctrl.CoMorphUpdate(1));
+							Instance.StopAllCoroutines();
+							Instance.StartCoroutine(ctrl.CoMorphUpdate(0));
 						}
 			}
 
@@ -94,6 +95,7 @@ namespace Character_Morpher
 										foreach(CharaMorpherController ctrl in hnd.Instances)
 										{
 											Logger.LogDebug("The Overwrite Button was called!!!");
+											Instance.StopAllCoroutines();
 											ctrl.MorphChangeUpdate(true);
 										}
 			}
@@ -116,6 +118,7 @@ namespace Character_Morpher
 										foreach(CharaMorpherController ctrl in hnd.Instances)
 										{
 											Logger.LogDebug("The Exiting Button was called!!!");
+											Instance.StopAllCoroutines();
 											ctrl.MorphChangeUpdate();
 										}
 			}

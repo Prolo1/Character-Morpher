@@ -37,7 +37,7 @@ using AIChara;
  * morph face features     
  * morph ABMX body features
  * morph ABMX face features
- * Make an in-game version affect all but male character[s] (maybe)
+ * Make an in-game version affect all but male character[s]
  * added easy file search for morph target in maker
 
   Planned:
@@ -363,88 +363,71 @@ namespace Character_Morpher
 			cfg.charDir.SettingChanged += (m, n) =>
 			{
 
-				foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+				foreach(var hnd in CharacterApi.RegisteredHandlers)
 					if(hnd.ControllerType == typeof(CharaMorpherController))
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
-							try
-							{
-								ctrl?.StopAllCoroutines();
-								ctrl?.StartCoroutine(ctrl.CoMorphReload(abmxOnly: true));
-								//ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode(),true);
-								//ctrl.MorphChangeUpdate();
-							}
-							catch(Exception e) { Logger.LogError($"Failed to reload all characters: {e}"); }
+							StopAllCoroutines();
+							StartCoroutine(ctrl?.CoMorphReload(abmxOnly: true));
 						}
+
 				string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
 				if(File.Exists(path))
 					OnNewTargetImage.Invoke(path);
-
 			};
-
 			cfg.imageName.SettingChanged += (m, n) =>
 			{
-				foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+				foreach(var hnd in CharacterApi.RegisteredHandlers)
 					if(hnd.ControllerType == typeof(CharaMorpherController))
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
-							try
-							{
-								ctrl?.StopAllCoroutines();
-								ctrl?.StartCoroutine(ctrl.CoMorphReload(abmxOnly: true));
-								//ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode(),true);
-								//ctrl.MorphChangeUpdate();
-							}
-							catch(Exception e) { Logger.LogError($"Failed to reload all characters: {e}"); }
+							StopAllCoroutines();
+							StartCoroutine(ctrl?.CoMorphReload(abmxOnly: true));
 						}
 				string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
 				if(File.Exists(path))
 					OnNewTargetImage.Invoke(path);
-
 			};
 
 			cfg.enable.SettingChanged += (m, n) =>
 			{
-				foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+				foreach(var hnd in CharacterApi.RegisteredHandlers)
 					if(hnd.ControllerType == typeof(CharaMorpherController))
 						foreach(CharaMorpherController ctrl in hnd.Instances)
-							try
-							{
-								ctrl?.StartCoroutine(ctrl.CoMorphUpdate(3));
-							}
-							catch(Exception e) { Logger.LogError($"Failed to reload all characters: {e}"); }
-
+						{
+							StopAllCoroutines();
+							StartCoroutine(ctrl?.CoMorphUpdate(3, forceChange: true));
+						}
 			};
 			cfg.enableInGame.SettingChanged += (m, n) =>
 			{
-				foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+				foreach(var hnd in CharacterApi.RegisteredHandlers)
 					if(hnd.ControllerType == typeof(CharaMorpherController))
 						foreach(CharaMorpherController ctrl in hnd.Instances)
-							try
-							{
-								ctrl?.StartCoroutine(ctrl.CoMorphUpdate(3));
-							}
-							catch(Exception e) { Logger.LogError($"Failed to reload all characters: {e}"); }
+						{
+							StopAllCoroutines();
+							StartCoroutine(ctrl?.CoMorphUpdate(3, forceChange: true));
+						}
 			};
 			cfg.enableABMX.SettingChanged += (m, n) =>
 			{
-				foreach(var hnd in KKAPI.Chara.CharacterApi.RegisteredHandlers)
+				foreach(var hnd in CharacterApi.RegisteredHandlers)
 					if(hnd.ControllerType == typeof(CharaMorpherController))
 						foreach(CharaMorpherController ctrl in hnd.Instances)
-							try
-							{
-								ctrl?.StartCoroutine(ctrl.CoMorphUpdate(3));
-							}
-							catch(Exception e) { Logger.LogError($"Failed to reload all characters: {e}"); }
+						{
+							StopAllCoroutines();
+							StartCoroutine(ctrl?.CoMorphUpdate(3, forceChange: true));
+						}
 			};
 
 
 			if(StudioAPI.InsideStudio) return;
-
-			// Register your logic that depends on a character.
-			// A new instance of this component will be added to ALL characters in the game.
-			// The GUID will be used as the ID of the extended data saved to character
-			// cards, scenes and game saves, so make sure it's unique and do not change it!
+			/*
+				Register your logic that depends on a character.
+				A new instance of this component will be added to ALL characters in the game.
+				The GUID will be used as the ID of the extended data saved to character
+				cards, scenes and game saves, so make sure it's unique and do not change it!
+			 */
 			CharacterApi.RegisterExtraBehaviour<CharaMorpherController>(GUID);
 
 
@@ -454,21 +437,6 @@ namespace Character_Morpher
 
 		}
 
-		//bool imageChanged = false;
-		void Update()
-		{
-			//if(imageChanged)
-			//{
-			//	string path = Path.Combine(cfg.charDir.Value, cfg.imageName.Value);
-			//	CharaMorpher_Core.Logger.LogDebug($"new image path: {path}");
-			//	if(Directory.Exists(path))
-			//		CharaMorpher_Core.Logger.LogDebug($"path exists");
-			//
-			//	CharaMorpherGUI.SetPreviewImage(Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value)));
-			//	imageChanged = false;
-			//}
-
-		}
 
 		/// <summary>
 		/// makes sure a path fallows the format "this/is/a/path" and not "this\is\a\path" or similar
@@ -510,7 +478,7 @@ namespace Character_Morpher
 		}
 
 		/// <summary>
-		/// reverts back to last window specified by SetCurrentProcess
+		/// reverts back to last window specified by SetCurrentForground
 		/// </summary>
 		public static void RevertForground()
 		{
