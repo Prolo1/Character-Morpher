@@ -368,7 +368,8 @@ namespace Character_Morpher
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
 							StopAllCoroutines();
-							StartCoroutine(ctrl?.CoMorphReload(abmxOnly: true));
+							StartCoroutine(ctrl?.CoMorphTargetUpdate());
+						///	StartCoroutine(ctrl?.CoMorphReload(abmxOnly: true));
 						}
 
 				string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
@@ -382,7 +383,8 @@ namespace Character_Morpher
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
 							StopAllCoroutines();
-							StartCoroutine(ctrl?.CoMorphReload(abmxOnly: true));
+							StartCoroutine(ctrl?.CoMorphTargetUpdate());
+						///	StartCoroutine(ctrl?.CoMorphReload(abmxOnly: true));
 						}
 				string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
 				if(File.Exists(path))
@@ -395,8 +397,8 @@ namespace Character_Morpher
 					if(hnd.ControllerType == typeof(CharaMorpherController))
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
-							StopAllCoroutines();
-							StartCoroutine(ctrl?.CoMorphUpdate(3, forceChange: true));
+						//	StopAllCoroutines();
+							StartCoroutine(ctrl?.CoMorphUpdate(3));
 						}
 			};
 			cfg.enableInGame.SettingChanged += (m, n) =>
@@ -405,8 +407,8 @@ namespace Character_Morpher
 					if(hnd.ControllerType == typeof(CharaMorpherController))
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
-							StopAllCoroutines();
-							StartCoroutine(ctrl?.CoMorphUpdate(3, forceChange: true));
+						//	StopAllCoroutines();
+							StartCoroutine(ctrl?.CoMorphUpdate(3));
 						}
 			};
 			cfg.enableABMX.SettingChanged += (m, n) =>
@@ -415,8 +417,8 @@ namespace Character_Morpher
 					if(hnd.ControllerType == typeof(CharaMorpherController))
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
-							StopAllCoroutines();
-							StartCoroutine(ctrl?.CoMorphUpdate(3, forceChange: true));
+						//	StopAllCoroutines();
+							StartCoroutine(ctrl?.CoMorphUpdate(3));
 						}
 			};
 

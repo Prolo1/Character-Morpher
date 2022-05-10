@@ -24,16 +24,18 @@ namespace Character_Morpher
 		private static class Hooks
 		{
 			[HarmonyPostfix]
-			// [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.UpdateClothesStateAll))]
-			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStateAll))]
-			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState))]
-			//  [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStateNext))]
-			//  [HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStatePrev))]
+			[
+				HarmonyPatch(typeof(ChaControl), nameof(ChaControl.UpdateClothesStateAll)),
+				HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStateAll)),
+				HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState)),
+				HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStateNext)),
+				HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStatePrev))
+			]
 #if !(HS2 || AI)
 			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.ChangeCoordinateType),
 				new Type[] { typeof(ChaFileDefine.CoordinateType), typeof(bool) })]
 #endif
-			static void clothsStateUpdate(ChaControl __instance)
+			static void PostClothsStateUpdate(ChaControl __instance)
 			{
 				var ctrl = __instance.GetComponent<CharaMorpherController>();
 #if HS2 || AI
@@ -50,13 +52,49 @@ namespace Character_Morpher
 					else
 #endif
 				if(Instance.cfg.enable.Value)
-					if(ctrl)
-						if(!ctrl.reloading)
-						{
-							Logger.LogDebug("The hook gets called");
-							Instance.StopAllCoroutines();
-							Instance.StartCoroutine(ctrl.CoMorphUpdate(0));
-						}
+					if(ctrl && !ctrl.reloading)
+					{
+						Logger.LogDebug("The Post hook gets called");
+						//Instance.StopAllCoroutines();
+						Instance.StartCoroutine(ctrl.CoMorphUpdate(0, forceChange: true));
+					}
+			}
+
+			[HarmonyPrefix]
+			[
+				HarmonyPatch(typeof(ChaControl), nameof(ChaControl.UpdateClothesStateAll)),
+				HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStateAll)),
+				HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState)),
+				HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStateNext)),
+				HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesStatePrev))
+			]
+#if !(HS2 || AI)
+			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.ChangeCoordinateType),
+				new Type[] { typeof(ChaFileDefine.CoordinateType), typeof(bool) })]
+#endif
+			static void PreClothsStateUpdate(ChaControl __instance)
+			{
+				var ctrl = __instance.GetComponent<CharaMorpherController>();
+#if HS2 || AI
+				var saveWindow = GameObject.FindObjectOfType<CharaCustom.CharaCustom>();
+				CharaCustom.CvsCaptureMenu capture = null;
+				if(saveWindow)
+					capture = saveWindow.GetComponentInChildren<CharaCustom.CvsCaptureMenu>();
+				if(capture)
+					if(capture.isActiveAndEnabled)
+					{
+						void donothing() { CharaMorpher_Core.Logger.LogDebug("I see nothing, I hear nothing, I DO NOTHING!!!!"); };
+						donothing();//this is very helpful
+					}
+					else
+#endif
+				if(Instance.cfg.enable.Value)
+					if(ctrl && !ctrl.reloading)
+					{
+						Logger.LogDebug("The Pre hook gets called");
+						//Instance.StopAllCoroutines();
+						ctrl.MorphChangeUpdate(true);
+					}
 			}
 
 
