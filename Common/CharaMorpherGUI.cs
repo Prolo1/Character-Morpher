@@ -354,13 +354,16 @@ namespace Character_Morpher
 		{
 			CharaMorpher_Core.Logger.LogDebug($"Enters accept");
 			if(strings == null || strings.Length == 0) return;
-			var texPath = strings[0];
+			string MakeDirPath(string path) => CharaMorpher_Core.MakeDirPath(path);
+			var texPath = MakeDirPath(strings[0]);
+
+			CharaMorpher_Core.Logger.LogDebug($"Original path: {texPath}");
 			CharaMorpher_Core.Logger.LogDebug($"texture path: {Path.Combine(Path.GetDirectoryName(texPath), Path.GetFileName(texPath))}");
 
 			if(string.IsNullOrEmpty(texPath)) return;
 
 			CharaMorpher_Core.Instance.cfg.charDir.Value = Path.GetDirectoryName(texPath);
-			CharaMorpher_Core.Instance.cfg.imageName.Value = Path.GetFileName(texPath);
+			CharaMorpher_Core.Instance.cfg.imageName.Value = Path.GetFileName(texPath.Substring(texPath.LastIndexOf('/') + 1));//not sure why this happens on hs2?
 
 			ForeGrounder.RevertForground();
 			CharaMorpher_Core.Logger.LogDebug($"Exit accept");

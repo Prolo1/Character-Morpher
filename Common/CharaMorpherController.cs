@@ -856,7 +856,7 @@ namespace Character_Morpher
 			else
 				m_data1.Copy(this); //get all character data!!!
 
-			StartCoroutine(CoMorphTargetUpdate(20));
+			StartCoroutine(CoMorphTargetUpdate(12));
 
 			//CharaMorpher_Core.Logger.LogDebug("Morphing model...");
 			//Update the model
@@ -910,21 +910,7 @@ namespace Character_Morpher
 		/// <inheritdoc/>
 		protected override void OnReload(GameMode currentGameMode, bool keepState)
 		{
-			//if(keepState) return;
-			//  
-			//  CharaMorpher_Core.Logger.LogDebug("Character start reloading...");
-			//  reloading = true;
-			//  
-			//stop all rouge co-routines (probably not needed)
-			//StopAllCoroutines();
-			//  
-			//  //only use coroutine here (or not)
-			//  //StartCoroutine(CoMorphReload(30));
-			//OnCharaReload(currentGameMode);
-
-			//  CharaMorpher_Core.Logger.LogDebug("Character finished reloading...");
-			//reloading = true;
-			//StartCoroutine(CoMorphReload(0));
+		
 			OnCharaReload(currentGameMode);
 
 		}
@@ -987,7 +973,7 @@ namespace Character_Morpher
 		{
 			var cfg = CharaMorpher_Core.Instance.cfg;
 
-			CharaMorpher_Core.Logger.LogDebug($"is data copied check?");
+			//CharaMorpher_Core.Logger.LogDebug($"is data copied check?");
 			if(m_data1?.main == null) return;
 			{
 
@@ -999,8 +985,8 @@ namespace Character_Morpher
 #elif KK //not sure if this will work (it didn't but it's just an optimization)
 				string storedID = m_data1.id.ToString(), cardID = ChaControl.chaID.ToString();
 #endif
-				CharaMorpher_Core.Logger.LogDebug($"file is: {cardID}");
-				CharaMorpher_Core.Logger.LogDebug($"stored file is: {storedID}");
+			//	CharaMorpher_Core.Logger.LogDebug($"file is: {cardID}");
+			//	CharaMorpher_Core.Logger.LogDebug($"stored file is: {storedID}");
 
 				if(cardID == null || cardID != storedID) return;
 			}
@@ -1034,14 +1020,14 @@ namespace Character_Morpher
 
 			#endregion
 
-			CharaMorpher_Core.Logger.LogDebug("update values check?");
+		//	CharaMorpher_Core.Logger.LogDebug("update values check?");
 			if(!updateValues) return;
 
-			CharaMorpher_Core.Logger.LogDebug("not male in main game check?");
+		//	CharaMorpher_Core.Logger.LogDebug("not male in main game check?");
 			if(KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame && ChaControl.sex != 1/*(allowed in maker as of now)*/)
 				return;
 
-			CharaMorpher_Core.Logger.LogDebug("not male in maker check?");
+		//	CharaMorpher_Core.Logger.LogDebug("not male in maker check?");
 			if(KoikatuAPI.GetCurrentGameMode() == GameMode.Maker && (
 				MakerAPI.GetMakerSex() != 1 && !cfg.enableInMaleMaker.Value)) return;//lets try it out in male maker
 
@@ -1080,13 +1066,13 @@ namespace Character_Morpher
 
 			}
 
-			CharaMorpher_Core.Logger.LogDebug($"data 1 body bones: {m_data1.abmx.body.Count}");
-			CharaMorpher_Core.Logger.LogDebug($"data 2 body bones: {m_data2.abmx.body.Count}");
-			CharaMorpher_Core.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
-			CharaMorpher_Core.Logger.LogDebug($"data 2 face bones: {m_data2.abmx.face.Count}");
-			CharaMorpher_Core.Logger.LogDebug($"chara bones: {boneCtrl.Modifiers.Count}");
-			CharaMorpher_Core.Logger.LogDebug($"body parts: {m_data1.main.custom.body.shapeValueBody.Length}");
-			CharaMorpher_Core.Logger.LogDebug($"face parts: {m_data1.main.custom.face.shapeValueFace.Length}");
+		//	CharaMorpher_Core.Logger.LogDebug($"data 1 body bones: {m_data1.abmx.body.Count}");
+		//	CharaMorpher_Core.Logger.LogDebug($"data 2 body bones: {m_data2.abmx.body.Count}");
+		//	CharaMorpher_Core.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
+		//	CharaMorpher_Core.Logger.LogDebug($"data 2 face bones: {m_data2.abmx.face.Count}");
+		//	CharaMorpher_Core.Logger.LogDebug($"chara bones: {boneCtrl.Modifiers.Count}");
+		//	CharaMorpher_Core.Logger.LogDebug($"body parts: {m_data1.main.custom.body.shapeValueBody.Length}");
+		//	CharaMorpher_Core.Logger.LogDebug($"face parts: {m_data1.main.custom.face.shapeValueFace.Length}");
 
 
 
@@ -1403,16 +1389,12 @@ namespace Character_Morpher
 			charaCtrl.reSetupDynamicBoneBust = true;
 			
 			
-			//charaCtrl.updateShapeFace = true;
-			//charaCtrl.updateShapeBody = true;
-			//charaCtrl.updateShape = true;
-			////charaCtrl.UpdateShapeFace();
-			////charaCtrl.UpdateShapeBody();
-			//boneCtrl.NeedsBaselineUpdate = true;
+		
 
 			//if(reset)
 			//{
 			//	boneCtrl.NeedsFullRefresh = true;
+			//	boneCtrl.NeedsBaselineUpdate = true;
 			//}
 #if HS2 || AI
 				charaCtrl.ChangeNipColor();
