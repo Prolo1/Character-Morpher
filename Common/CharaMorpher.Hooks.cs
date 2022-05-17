@@ -144,9 +144,9 @@ namespace Character_Morpher
 				var ctrler = __instance.gameObject;
 				if(!ctrler || ctrler.name.IsNullOrEmpty()) return;
 #if HS2 || AI
-				if(ctrler.name.ToLower().Contains("exit") || ctrler.name.ToLower().Contains("no"))
+				if(ctrler.name.ToLower().Contains("exit") || ctrler.name.Contains("No"))
 #elif KKS || KK
-				if(ctrler.name.ToLower().Contains("exit") || ctrler.name.ToLower().Contains("no"))
+				if(ctrler.name.ToLower().Contains("exit") || ctrler.name.Contains("No"))
 #endif
 					if(Instance.cfg.enable.Value)
 						if(!Instance.cfg.saveWithMorph.Value)
