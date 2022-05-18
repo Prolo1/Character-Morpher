@@ -33,16 +33,16 @@ using AIChara;
 /***********************************************
   Features:
 
- * morph body features
- * morph face features     
- * morph ABMX body features
- * morph ABMX face features
- * Make an in-game version affect all but male character[s]
- * added easy file search for morph target in maker
+ * Morph body features
+ * Morph face features     
+ * Morph ABMX body features
+ * Morph ABMX face features
+ * Added QoL file explorer search for morph target in maker
+ * Can choose to enable/disable in-game use (this affects all but male character[s])
+ * Can choose to enable/disable use in male maker
 
-  Planned:
-                                           
- * Save morph changes to card (w/o changing card)
+  Planned:                                           
+ * Save morph changes to card (w/o changing card perameters)
 ************************************************/
 
 
@@ -118,8 +118,7 @@ namespace Character_Morpher
 			ForeGrounder.SetCurrentForground();
 
 
-			string femalepath = Path.Combine(Paths.GameRootPath, "UserData/chara/female/");
-
+			string femalepath = Path.Combine(Paths.GameRootPath, "/UserData/chara/");
 
 			int index = 0;//easier to input index order values
 			cfg = new MyConfig
@@ -150,21 +149,21 @@ namespace Character_Morpher
 
 
 					Config.Bind("Defaults", "ABMX  Body Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index    , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Boobs Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index    , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Butt Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index     , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Torso Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index    , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Arms Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index     , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Hands Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order =--index     , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Legs Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index    , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Feet Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index    , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Genitals Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Boobs Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index    , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Butt Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index     , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Torso Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index    , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Arms Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index     , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Hands Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order =--index     , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Legs Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index    , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Feet Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index    , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Genitals Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
 
 
 					Config.Bind("Defaults", "ABMX  Head Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Ears Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Eyes Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Mouth Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Hair Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Ears Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Eyes Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Mouth Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = --index , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Hair Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable=false})),
 				},
 
 				headIndex = Config.Bind("Adv1 Head", "Head Index", 1, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true })),
@@ -369,13 +368,13 @@ namespace Character_Morpher
 						{
 							StopAllCoroutines();
 							StartCoroutine(ctrl?.CoMorphTargetUpdate());
-						///	StartCoroutine(ctrl?.CoMorphReload(abmxOnly: true));
 						}
-				Logger.LogDebug("");
+				//Logger.LogDebug("");
 				string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
 				if(File.Exists(path))
 					OnNewTargetImage.Invoke(path);
 			};
+
 			cfg.imageName.SettingChanged += (m, n) =>
 			{
 				foreach(var hnd in CharacterApi.RegisteredHandlers)
