@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>f835505b-0492-45c9-a446-c4bf82473cee</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Character_Morpher</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)CharaMorpher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CharaMorpher.Hooks.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CharaMorpherController.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CharaMorpherGUI.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConfigurationManagerAttributes.cs" />
+  </ItemGroup>
+</Project>

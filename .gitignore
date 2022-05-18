@@ -347,7 +347,8 @@ healthchecksdb
 
 # Backup folder for Package Reference Convert tool in Visual Studio 2017
 MigrationBackup/
+
+# My Custom Ignores
 *.zip
-\[HS2\] Character Morpher/\[HS2\] Character Morpher/
-\[KKSS\] Character Morpher/\[KKSS\] Character Morpher/
 \[HS2\] Character Morpher/Properties/
+Builds/
