@@ -1377,8 +1377,6 @@ namespace Character_Morpher
 				}
 				#endregion
 
-
-
 				//  CharaMorpher_Core.Logger.LogDebug("");
 			}
 
