@@ -21,9 +21,8 @@ using UniRx;
 using UnityEngine;
 using System.Collections;
 using System.Runtime.InteropServices;
-using static Illusion.Component.ShortcutKey;
-using System.Diagnostics;
-#if HS2
+
+#if HS2||AI
 
 using AIChara;
 #endif
@@ -70,7 +69,7 @@ namespace Character_Morpher
 		// Avoid changing GUID unless absolutely necessary. Plugins that rely on your plugin will no longer recognize it, and if you use it in function controllers you will lose all data saved to cards before the change!
 		public const string ModName = "Character Morpher";
 		public const string GUID = "prolo.chararmorpher";
-		public const string Version = "0.2.0";
+		public const string Version = "0.2.0.R1";
 
 		internal static CharaMorpher_Core Instance;
 		internal static new ManualLogSource Logger;
@@ -166,20 +165,19 @@ namespace Character_Morpher
 					Config.Bind("Defaults", "ABMX  Hair Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = --index , Browsable=false})),
 				},
 
-				headIndex = Config.Bind("Adv1 Head", "Head Index", 1, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true })),
+				headIndex = Config.Bind("Adv1 Head", "Head Index", (int)ChaFileDefine.BodyShapeIdx.HeadSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true })),
 
 				brestIndex = new List<ConfigEntry<int>>
 #if HS2 || AI
                 {
-					Config.Bind("Adv2 Brest", $"Brest Index {index=1}", 2, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
+					Config.Bind("Adv2 Brest", $"Brest Index {index=1}", 1, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 2, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
 					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 3, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
 					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 4, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
 					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 5, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
 					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 6, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
 					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 7, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
 					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 8, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 9, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 10, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
 				},
 #elif KKS || KK
 {
