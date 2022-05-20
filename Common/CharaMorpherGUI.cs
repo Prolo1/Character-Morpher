@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 //using System.Threading.Tasks;
 
 
@@ -20,6 +21,7 @@ using UniRx;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using ADV.Commands.Base;
 
 
 namespace Character_Morpher
@@ -76,159 +78,44 @@ namespace Character_Morpher
 			ImageControls(e, category, inst);
 
 
+
 			#region Sliders
+#if true
+
+			//creates a slider that controls the bodies' shape
+			void CreateShapeSlider(string settingName, int index)
 			{
-				int index = 0;
-				sliders.Clear();
 				float min = -cfg.sliderExtents.Value * .01f, max = 1 + cfg.sliderExtents.Value * .01f;
+				string[] hits = new string[] { "overall", "abmx" };
+				string visualName = string.Copy(settingName);
 
-				e.AddControl(new MakerText("Body Controls", category, CharaMorpher_Core.Instance));
-				sliders.Add(e.AddControl(new MakerSlider(category, "Overall Body", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
+				if(settingName.ToLower().Contains(hits[0]))
+				{
+					e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
+
+					string part = Regex.Replace(visualName, hits[0], "", RegexOptions.IgnoreCase);
+					part = Regex.Replace(part, "  ", " ", RegexOptions.IgnoreCase);
+					e.AddControl(new MakerText($"{part} Controls", category, CharaMorpher_Core.Instance));
+				}
+
+				foreach(var hit in hits)
+					visualName = Regex.Replace(visualName, hit, "", RegexOptions.IgnoreCase);
+
+				sliders.Add(e.AddControl(new MakerSlider(category, visualName, min, max, cfg.defaults[index].Value * .01f, CharaMorpher_Core.Instance)));
 				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				   (ctrl) => CharaMorpherController.controls.body,
-					(ctrl, val) => { CharaMorpherController.controls.body = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
+								   (ctrl) => ctrl.controls.all[settingName],
+									(ctrl, val) => { ctrl.controls.all[settingName] = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
 
-				e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
-				sliders.Add(e.AddControl(new MakerSlider(category, "Head", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.head,
-				  (ctrl, val) => { CharaMorpherController.controls.head = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
+				if(settingName.ToLower().Contains(hits[0]))
+					e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));//create separator line
 
-				sliders.Add(e.AddControl(new MakerSlider(category, "Boobs", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.boobs,
-				  (ctrl, val) => { CharaMorpherController.controls.boobs = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Butt", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.butt,
-				  (ctrl, val) => { CharaMorpherController.controls.butt = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Torso", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.torso,
-				  (ctrl, val) => { CharaMorpherController.controls.torso = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Arms", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.arms,
-				  (ctrl, val) => { CharaMorpherController.controls.arms = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Legs", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.legs,
-				  (ctrl, val) => { CharaMorpherController.controls.legs = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-
-
-				e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
-				e.AddControl(new MakerText("Face Controls", category, CharaMorpher_Core.Instance));
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Overall Face", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				   (ctrl) => CharaMorpherController.controls.face,
-					(ctrl, val) => { CharaMorpherController.controls.face = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
-				sliders.Add(e.AddControl(new MakerSlider(category, "Ears", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.ears,
-				  (ctrl, val) => { CharaMorpherController.controls.ears = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Eyes", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.eyes,
-				  (ctrl, val) => { CharaMorpherController.controls.eyes = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Mouth", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.mouth,
-				  (ctrl, val) => { CharaMorpherController.controls.mouth = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				abmxIndex = index;//may use this later
-
-				e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
-				e.AddControl(new MakerText("ABMX Body", category, CharaMorpher_Core.Instance));
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Body", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxBody,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxBody = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
-				sliders.Add(e.AddControl(new MakerSlider(category, "Boobs", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxBoobs,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxBoobs = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Butt", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxButt,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxButt = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Torso", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxTorso,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxTorso = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Arms", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxArms,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxArms = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Hands", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxHands,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxHands = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Legs", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxLegs,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxLegs = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Feet", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxFeet,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxFeet = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Genitals", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxGenitals,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxGenitals = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-
-
-
-
-				e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
-				e.AddControl(new MakerText("ABMX Head", category, CharaMorpher_Core.Instance));
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Head", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxHead,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxHead = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
-				sliders.Add(e.AddControl(new MakerSlider(category, "Ears", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxEars,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxEars = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Eyes", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxEyes,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxEyes = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Mouth", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxMouth,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxMouth = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
-
-				sliders.Add(e.AddControl(new MakerSlider(category, "Hair", min, max, cfg.defaults[index++].Value * .01f, CharaMorpher_Core.Instance)));
-				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-				 (ctrl) => CharaMorpherController.controls.abmxHair,
-				  (ctrl, val) => { CharaMorpherController.controls.abmxHair = (float)Math.Round(val, 2); inst.StartCoroutine(ctrl.CoMorphUpdate(0)); });
 			}
+
+			foreach(var ctrl in CharaMorpher_Core.Instance.controlCategories)
+				CreateShapeSlider(ctrl.Value, ctrl.Key);
+
+
+#endif
 
 			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
@@ -255,6 +142,7 @@ namespace Character_Morpher
 				   int count = 0;
 				   foreach(var def in cfg.defaults)
 					   def.Value = sliders[count++].Value * 100f;
+				   CharaMorpher_Core.Logger.LogMessage("Saved CharaMorpher Default");
 			   });
 
 			e.AddControl(new MakerButton("Load Default", category, CharaMorpher_Core.Instance))
@@ -264,6 +152,7 @@ namespace Character_Morpher
 				  int count = 0;
 				  foreach(var slider in sliders)
 					  slider.Value = cfg.defaults[count++].Value * .01f;
+				  CharaMorpher_Core.Logger.LogMessage("Loaded CharaMorpher Default");
 			  });
 			CharaMorpher_Core.Logger.LogDebug($"Finished adding buttons");
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
@@ -314,7 +203,7 @@ namespace Character_Morpher
 			});
 
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
-			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
+			//	e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 		}
 
 		private static void ButtonDefaults(RegisterSubCategoriesEvent e, MakerCategory category, BepInEx.BaseUnityPlugin owner)

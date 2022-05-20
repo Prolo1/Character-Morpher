@@ -133,7 +133,7 @@ namespace Character_Morpher
 										foreach(CharaMorpherController ctrl in hnd.Instances)
 										{
 											Logger.LogDebug("The Overwrite Button was called!!!");
-											Instance.StopAllCoroutines();
+											//Instance.StopAllCoroutines();
 											ctrl.MorphChangeUpdate(true);
 										}
 			}
@@ -156,7 +156,7 @@ namespace Character_Morpher
 										foreach(CharaMorpherController ctrl in hnd.Instances)
 										{
 											Logger.LogDebug("The Exiting Button was called!!!");
-											Instance.StopAllCoroutines();
+										//	Instance.StopAllCoroutines();
 											ctrl.MorphChangeUpdate();
 										}
 			}

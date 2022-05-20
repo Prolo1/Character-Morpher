@@ -22,7 +22,6 @@ using ChaCustom;
 using UnityEngine;
 
 
-
 namespace Character_Morpher
 {
 	public class CharaMorpherController : CharaCustomFunctionController
@@ -115,8 +114,8 @@ namespace Character_Morpher
 				//CopyAll will not copy this data in hs2
 				tmp.dataID = main.dataID;
 #endif
-				
-				return new MorphData() { id = id,  main = tmp, abmx = abmx.Copy() };
+
+				return new MorphData() { id = id, main = tmp, abmx = abmx.Copy() };
 			}
 
 			public void Copy(MorphData data)
@@ -148,6 +147,10 @@ namespace Character_Morpher
 
 		internal struct MorphControls
 		{
+			public Dictionary<string, float> all;
+
+#if false
+
 			//Main
 			public float body;
 			public float head;
@@ -178,9 +181,13 @@ namespace Character_Morpher
 			public float abmxMouth;
 			public float abmxEars;
 			public float abmxHair;
+#endif
 		}
-		internal static MorphControls controls = new MorphControls()
+		internal MorphControls controls = new MorphControls()
 		{
+
+#if false
+
 
 			//Main
 			body = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
@@ -212,6 +219,7 @@ namespace Character_Morpher
 			abmxEyes = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
 			abmxMouth = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
 			abmxHair = CharaMorpher_Core.Instance.cfg.defaults[morphindex++].Value * .01f,
+#endif
 		};
 
 		private static MorphData charData = null;
@@ -219,7 +227,7 @@ namespace Character_Morpher
 		private static DateTime lastDT = new DateTime();
 
 		private readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
-		private static int morphindex = 0;//get defaults from config
+		//	private static int morphindex = 0;//get defaults from config
 
 		/// <summary>
 		/// Called after the model has been updated for the first time
@@ -701,6 +709,13 @@ namespace Character_Morpher
 		{
 			base.Awake();
 
+			var core = CharaMorpher_Core.Instance;
+
+			controls.all = new Dictionary<string, float>();
+
+			foreach(var ctrl in core.controlCategories)
+				controls.all[ctrl.Value] = core.cfg.defaults[ctrl.Key].Value * .01f;
+
 
 			////update after all custom func controllers load
 			//CharacterApi.CharacterReloaded += (e, a) =>
@@ -910,7 +925,7 @@ namespace Character_Morpher
 		/// <inheritdoc/>
 		protected override void OnReload(GameMode currentGameMode, bool keepState)
 		{
-		
+
 			OnCharaReload(currentGameMode);
 
 		}
@@ -985,8 +1000,8 @@ namespace Character_Morpher
 #elif KK //not sure if this will work (it didn't but it's just an optimization)
 				string storedID = m_data1.id.ToString(), cardID = ChaControl.chaID.ToString();
 #endif
-			//	CharaMorpher_Core.Logger.LogDebug($"file is: {cardID}");
-			//	CharaMorpher_Core.Logger.LogDebug($"stored file is: {storedID}");
+				//	CharaMorpher_Core.Logger.LogDebug($"file is: {cardID}");
+				//	CharaMorpher_Core.Logger.LogDebug($"stored file is: {storedID}");
 
 				if(cardID == null || cardID != storedID) return;
 			}
@@ -1020,14 +1035,14 @@ namespace Character_Morpher
 
 			#endregion
 
-		//	CharaMorpher_Core.Logger.LogDebug("update values check?");
+			//	CharaMorpher_Core.Logger.LogDebug("update values check?");
 			if(!updateValues) return;
 
-		//	CharaMorpher_Core.Logger.LogDebug("not male in main game check?");
+			//	CharaMorpher_Core.Logger.LogDebug("not male in main game check?");
 			if(KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame && ChaControl.sex != 1/*(allowed in maker as of now)*/)
 				return;
 
-		//	CharaMorpher_Core.Logger.LogDebug("not male in maker check?");
+			//	CharaMorpher_Core.Logger.LogDebug("not male in maker check?");
 			if(KoikatuAPI.GetCurrentGameMode() == GameMode.Maker && (
 				MakerAPI.GetMakerSex() != 1 && !cfg.enableInMaleMaker.Value)) return;//lets try it out in male maker
 
@@ -1043,6 +1058,15 @@ namespace Character_Morpher
 			UpdateMorphValues(forceReset ? true : reset);
 		}
 
+
+		float GetControlValue(string contain, bool abmx = false)
+		{
+			var tmp = controls.all.ToList();
+
+			return abmx ? tmp.Find(m => m.Key.ToLower().Contains("abmx") && m.Key.ToLower().Contains(contain.ToLower())).Value :
+				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && m.Key.ToLower().Contains(contain.ToLower())).Value;
+		}
+
 		private void UpdateMorphValues(bool reset)
 		{
 			var cfg = CharaMorpher_Core.Instance.cfg;
@@ -1053,26 +1077,27 @@ namespace Character_Morpher
 
 			//update obscure values
 			{
+
 				//not sure how to update this :\
 				charaCtrl.fileBody.areolaSize = (m_data1.main.custom.body.areolaSize +
-							enable * controls.body * controls.boobs * (m_data2.main.custom.body.areolaSize - m_data1.main.custom.body.areolaSize));
+							enable * GetControlValue("body") * GetControlValue("Boobs") * (m_data2.main.custom.body.areolaSize - m_data1.main.custom.body.areolaSize));
 
 				charaCtrl.fileBody.bustSoftness = (m_data1.main.custom.body.bustSoftness +
-							enable * controls.body * controls.boobs * (m_data2.main.custom.body.bustSoftness - m_data1.main.custom.body.bustSoftness));
+							enable * GetControlValue("body") * GetControlValue("boobs") * (m_data2.main.custom.body.bustSoftness - m_data1.main.custom.body.bustSoftness));
 
 				charaCtrl.fileBody.bustWeight = (m_data1.main.custom.body.bustWeight +
-							enable * controls.body * controls.boobs * (m_data2.main.custom.body.bustWeight - m_data1.main.custom.body.bustWeight));
+							enable * GetControlValue("body") * GetControlValue("boobs") * (m_data2.main.custom.body.bustWeight - m_data1.main.custom.body.bustWeight));
 
 
 			}
 
-		//	CharaMorpher_Core.Logger.LogDebug($"data 1 body bones: {m_data1.abmx.body.Count}");
-		//	CharaMorpher_Core.Logger.LogDebug($"data 2 body bones: {m_data2.abmx.body.Count}");
-		//	CharaMorpher_Core.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
-		//	CharaMorpher_Core.Logger.LogDebug($"data 2 face bones: {m_data2.abmx.face.Count}");
-		//	CharaMorpher_Core.Logger.LogDebug($"chara bones: {boneCtrl.Modifiers.Count}");
-		//	CharaMorpher_Core.Logger.LogDebug($"body parts: {m_data1.main.custom.body.shapeValueBody.Length}");
-		//	CharaMorpher_Core.Logger.LogDebug($"face parts: {m_data1.main.custom.face.shapeValueFace.Length}");
+			//	CharaMorpher_Core.Logger.LogDebug($"data 1 body bones: {m_data1.abmx.body.Count}");
+			//	CharaMorpher_Core.Logger.LogDebug($"data 2 body bones: {m_data2.abmx.body.Count}");
+			//	CharaMorpher_Core.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
+			//	CharaMorpher_Core.Logger.LogDebug($"data 2 face bones: {m_data2.abmx.face.Count}");
+			//	CharaMorpher_Core.Logger.LogDebug($"chara bones: {boneCtrl.Modifiers.Count}");
+			//	CharaMorpher_Core.Logger.LogDebug($"body parts: {m_data1.main.custom.body.shapeValueBody.Length}");
+			//	CharaMorpher_Core.Logger.LogDebug($"face parts: {m_data1.main.custom.face.shapeValueFace.Length}");
 
 
 
@@ -1107,43 +1132,43 @@ namespace Character_Morpher
 
 						if(cfg.headIndex.Value == a)
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * controls.body * controls.head);
+								enable * GetControlValue("body") * GetControlValue("head"));
 						//result = MyLerp(d1, d2,
 						//	  enable * controls.body * controls.head);//lerp, may change it later
 						else
 						if(cfg.torsoIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * controls.body * controls.torso);
+								enable * GetControlValue("body") * GetControlValue("torso"));
 						//result = MyLerp(d1, d2,
 						//  enable * controls.body * controls.torso);//lerp, may change it later
 						else
 						if(cfg.buttIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * controls.body * controls.butt);
+								enable * GetControlValue("body") * GetControlValue("butt"));
 						//result = MyLerp(d1, d2,
 						//enable * controls.body * controls.butt);//lerp, may change it later
 						else
 						if(cfg.legIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * controls.body * controls.legs);
+								enable * GetControlValue("body") * GetControlValue("legs"));
 						//result = MyLerp(d1, d2,
 						// enable * controls.body * controls.legs);//lerp, may change it later
 						else
 						if(cfg.armIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * controls.body * controls.arms);
+								enable * GetControlValue("body") * GetControlValue("arms"));
 						//result = MyLerp(d1, d2,
 						// enable * controls.body * controls.arms);//lerp, may change it later
 						else
 						if(cfg.brestIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * controls.body * controls.boobs);
+								enable * GetControlValue("body") * GetControlValue("boobs"));
 						//result = MyLerp(d1, d2,
 						//   enable * controls.body * controls.boobs);//lerp, may change it later
 
 						else
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * controls.body);
+								enable * GetControlValue("body"));
 						//result = MyLerp(d1, d2,
 						//enable * controls.body);//lerp, may change it later
 					}
@@ -1169,24 +1194,24 @@ namespace Character_Morpher
 
 						if(cfg.eyeIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * controls.face * controls.eyes);
+								enable * GetControlValue("face") * GetControlValue("eyes"));
 						//result = MyLerp(d1, d2,
 						//	enable * controls.face * controls.eyes);
 						else
 						 if(cfg.mouthIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * controls.face * controls.mouth);
+								enable * GetControlValue("face") * GetControlValue("mouth"));
 						//result = MyLerp(d1, d2,
 						// enable * controls.face * controls.mouth);
 						else
 						  if(cfg.earIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * controls.face * controls.ears);
+								enable * GetControlValue("face") * GetControlValue("ears"));
 						//result = MyLerp(d1, d2,
 						// enable * controls.face * controls.ears);
 						else
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * controls.face);
+								enable * GetControlValue("face"));
 						//result = MyLerp(d1, d2,
 						//  enable * controls.face);
 					}
@@ -1251,8 +1276,8 @@ namespace Character_Morpher
 							"cf_j_little"
 						};
 
-					if(fingerNames.ToList().FindIndex((k) => content.Contains(k.Trim().ToLower())) >= 0)
-						modVal = controls.abmxHands;
+					if(Array.FindIndex(fingerNames, (k) => content.Contains(k.Trim().ToLower())) >= 0)
+						modVal = GetControlValue("hands", true);
 					else
 					{
 
@@ -1281,28 +1306,28 @@ namespace Character_Morpher
 #endif
 						{
 						case "torso":
-							modVal = controls.abmxTorso;
+							modVal = GetControlValue("Torso", true);
 							break;
 						case "boobs":
-							modVal = controls.abmxBoobs;
+							modVal = GetControlValue("Boobs", true);
 							break;
 						case "butt":
-							modVal = controls.abmxButt;
+							modVal = GetControlValue("Butt", true);
 							break;
 						case "arms":
-							modVal = controls.abmxArms;
+							modVal = GetControlValue("Arms", true);
 							break;
 						case "hands":
-							modVal = controls.abmxHands;
+							modVal = GetControlValue("Hands", true);
 							break;
 						case "genitals":
-							modVal = controls.abmxGenitals;
+							modVal = GetControlValue("Genitals", true);
 							break;
 						case "legs":
-							modVal = controls.abmxLegs;
+							modVal = GetControlValue("Legs", true);
 							break;
 						case "feet":
-							modVal = controls.abmxFeet;
+							modVal = GetControlValue("Feet", true);
 							break;
 
 						default:
@@ -1311,7 +1336,7 @@ namespace Character_Morpher
 						}
 					}
 
-					UpdateBoneModifier(ref current, bone1, bone2, modVal, sectVal: controls.body * controls.abmxBody, enable: enable);
+					UpdateBoneModifier(ref current, bone1, bone2, modVal, sectVal: GetControlValue("body") * GetControlValue("Body", true), enable: enable);
 
 				}
 
@@ -1355,16 +1380,16 @@ namespace Character_Morpher
 					{
 
 					case "eyes":
-						modVal = controls.abmxEyes;
+						modVal = GetControlValue("Eyes", true);
 						break;
 					case "mouth":
-						modVal = controls.abmxMouth;
+						modVal = GetControlValue("Mouth", true);
 						break;
 					case "ears":
-						modVal = controls.abmxEars;
+						modVal = GetControlValue("Ears", true);
 						break;
 					case "hair":
-						modVal = controls.abmxHair;
+						modVal = GetControlValue("Hair", true);
 						break;
 
 
@@ -1373,7 +1398,7 @@ namespace Character_Morpher
 						break;
 					}
 
-					UpdateBoneModifier(ref current, bone1, bone2, modVal, sectVal: controls.face * controls.abmxHead, enable: enable);
+					UpdateBoneModifier(ref current, bone1, bone2, modVal, sectVal: GetControlValue("face") * GetControlValue("head", true), enable: enable);
 				}
 				#endregion
 
@@ -1385,9 +1410,9 @@ namespace Character_Morpher
 			charaCtrl.updateShapeBody = true;
 			charaCtrl.updateBustSize = true;
 			charaCtrl.reSetupDynamicBoneBust = true;
-			
-			
-		
+
+
+
 
 			//if(reset)
 			//{
@@ -1395,10 +1420,10 @@ namespace Character_Morpher
 			//	boneCtrl.NeedsBaselineUpdate = true;
 			//}
 #if HS2 || AI
-				charaCtrl.ChangeNipColor();
-				charaCtrl.ChangeNipGloss();
-				charaCtrl.ChangeNipKind();
-				charaCtrl.ChangeNipScale();
+			charaCtrl.ChangeNipColor();
+			charaCtrl.ChangeNipGloss();
+			charaCtrl.ChangeNipKind();
+			charaCtrl.ChangeNipScale();
 #elif KKS || KK
 			charaCtrl.ChangeSettingAreolaSize();
 			charaCtrl.ChangeSettingNipColor();
