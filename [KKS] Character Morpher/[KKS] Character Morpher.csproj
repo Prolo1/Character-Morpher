@@ -22,7 +22,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;KKSS</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;KKS KOI_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
@@ -32,7 +32,7 @@
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\Builds\[KKS]_Character_Morpher\BepInEx\plugins\Prolo\</OutputPath>
-    <DefineConstants>TRACE;KKS</DefineConstants>
+    <DefineConstants>TRACE;KKS KOI_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>

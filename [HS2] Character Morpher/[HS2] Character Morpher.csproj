@@ -36,23 +36,23 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;HS2</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;HS2 HONEY_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>
     </DocumentationFile>
     <RegisterForComInterop>false</RegisterForComInterop>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\Builds\[HS2]_Character_Morpher\BepInEx\plugins\Prolo\</OutputPath>
-    <DefineConstants>TRACE;HS2</DefineConstants>
+    <DefineConstants>TRACE;HS2 HONEY_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
@@ -133,6 +133,10 @@
       <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.CoreModule.2018.4.11.4\lib\net46\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.AudioModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.AudioModule.2018.4.11.4\lib\net46\UnityEngine.AudioModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.CoreModule.2018.4.11.4\lib\net46\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
@@ -167,6 +171,7 @@
     <Error Condition="!Exists('..\packages\IllusionLibs.HoneySelect2.UnityEngine.IMGUIModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.IMGUIModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.HoneySelect2.UnityEngine.IMGUIModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.IMGUIModule.targets'))" />
     <Error Condition="!Exists('..\packages\IllusionLibs.HoneySelect2.UnityEngine.UI.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.UI.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.HoneySelect2.UnityEngine.UI.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.UI.targets'))" />
     <Error Condition="!Exists('..\packages\IllusionLibs.HoneySelect2.UnityEngine.UIModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.UIModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.HoneySelect2.UnityEngine.UIModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.UIModule.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.HoneySelect2.UnityEngine.AudioModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.AudioModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.HoneySelect2.UnityEngine.AudioModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.AudioModule.targets'))" />
   </Target>
   <Import Project="..\packages\IllusionLibs.HoneySelect2.Assembly-CSharp.2020.5.29.4\build\IllusionLibs.HoneySelect2.Assembly-CSharp.targets" Condition="Exists('..\packages\IllusionLibs.HoneySelect2.Assembly-CSharp.2020.5.29.4\build\IllusionLibs.HoneySelect2.Assembly-CSharp.targets')" />
   <Import Project="..\packages\IllusionLibs.HoneySelect2.Assembly-CSharp-firstpass.2020.5.29.4\build\IllusionLibs.HoneySelect2.Assembly-CSharp-firstpass.targets" Condition="Exists('..\packages\IllusionLibs.HoneySelect2.Assembly-CSharp-firstpass.2020.5.29.4\build\IllusionLibs.HoneySelect2.Assembly-CSharp-firstpass.targets')" />
@@ -177,4 +182,5 @@
   <Import Project="..\packages\IllusionLibs.HoneySelect2.UnityEngine.IMGUIModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.IMGUIModule.targets" Condition="Exists('..\packages\IllusionLibs.HoneySelect2.UnityEngine.IMGUIModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.IMGUIModule.targets')" />
   <Import Project="..\packages\IllusionLibs.HoneySelect2.UnityEngine.UI.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.UI.targets" Condition="Exists('..\packages\IllusionLibs.HoneySelect2.UnityEngine.UI.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.UI.targets')" />
   <Import Project="..\packages\IllusionLibs.HoneySelect2.UnityEngine.UIModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.UIModule.targets" Condition="Exists('..\packages\IllusionLibs.HoneySelect2.UnityEngine.UIModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.UIModule.targets')" />
+  <Import Project="..\packages\IllusionLibs.HoneySelect2.UnityEngine.AudioModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.AudioModule.targets" Condition="Exists('..\packages\IllusionLibs.HoneySelect2.UnityEngine.AudioModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.AudioModule.targets')" />
 </Project>
