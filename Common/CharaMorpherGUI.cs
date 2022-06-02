@@ -36,7 +36,7 @@ namespace Character_Morpher
 {
 	class CharaMorpherGUI
 	{
-		public class NewImageEvent : UnityEvent<string> { }
+		//public class NewImageEvent : UnityEvent<string> { }
 
 		static MakerCategory category;
 		internal static void Initialize()
@@ -137,7 +137,7 @@ namespace Character_Morpher
 				//setup slider
 				sliders.Add(e.AddControl(new MakerSlider(category, visualName, min, max, (float)cfg.defaults[index].Value * .01f, CharaMorpher_Core.Instance)));
 				sliders.Last().BindToFunctionController<CharaMorpherController, float>(
-								   (ctrl) => ctrl?.controls.all[settingName] ?? 0,
+								   (ctrl) => ctrl.controls.all[settingName],
 									(ctrl, val) =>
 									{
 										if(!ctrl) return;
@@ -145,6 +145,24 @@ namespace Character_Morpher
 										ctrl.controls.all[settingName] = (float)Math.Round(val, 2);
 										inst.StartCoroutine(ctrl.CoMorphUpdate(0));
 									});
+
+				var currSlider = sliders.Last();
+				OnSliderValueChange.AddListener(() =>
+				{
+					CharaMorpher_Core.Logger.LogDebug("controls updating");
+
+					foreach(var hnd in CharacterApi.RegisteredHandlers)
+						if(hnd.ControllerType == typeof(CharaMorpherController))
+							foreach(CharaMorpherController ctrl in hnd.Instances)
+								if(currSlider.Value != ctrl.controls.all[settingName])
+									if(currSlider.ControlObject)
+									{
+										currSlider.Value = ctrl.controls.all[settingName];
+										CharaMorpher_Core.Logger.LogDebug("control changed");
+									}
+				});
+
+
 
 				//add separator after overall control
 				if(Regex.IsMatch(settingName, searchHits[0], RegexOptions.IgnoreCase))
@@ -312,7 +330,7 @@ namespace Character_Morpher
 #pragma warning disable CS0162 // Unreachable code detected
 
 			//Force Reset Button
-			var button = e.AddControl(new MakerButton($"Force Character Reset", category, owner));
+			var button = e.AddControl(new MakerButton($"Force Character Reset (WIP)", category, owner));
 			button.OnClick.AddListener(() =>
 			{
 				foreach(var hnd in CharacterApi.RegisteredHandlers)
@@ -322,6 +340,115 @@ namespace Character_Morpher
 							//	ctrl.StopAllCoroutines();
 							ctrl.ForceCardReload();
 
+						}
+			});
+
+
+			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
+			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
+
+			// easy morph buttons
+			button = e.AddControl(new MakerButton($"Morph 0%", category, owner));
+			button.OnClick.AddListener(() =>
+			{
+				foreach(var hnd in CharacterApi.RegisteredHandlers)
+					if(hnd.ControllerType == typeof(CharaMorpherController))
+						foreach(CharaMorpherController ctrl in hnd.Instances)
+						{
+							//	ctrl.StopAllCoroutines();
+							for(int a = 0; a < ctrl.controls.all.Count; ++a)
+								ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 1;
+
+							var tmp = ctrl.controls.overall;
+							for(int a = 0; a < tmp.Count(); ++a)
+								ctrl.controls.all[tmp.ElementAt(a).Key] = 0;
+
+							Instance.StartCoroutine(ctrl.CoMorphUpdate(0));
+							CharaMorpher_Core.Logger.LogDebug("Set to 0%");
+						}
+			});
+		
+			button = e.AddControl(new MakerButton($"Morph 25%", category, owner));
+			button.OnClick.AddListener(() =>
+			{
+				foreach(var hnd in CharacterApi.RegisteredHandlers)
+					if(hnd.ControllerType == typeof(CharaMorpherController))
+						foreach(CharaMorpherController ctrl in hnd.Instances)
+						{
+							//	ctrl.StopAllCoroutines();
+							for(int a = 0; a < ctrl.controls.all.Count; ++a)
+								ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 1;
+
+							var tmp = ctrl.controls.overall;
+							for(int a = 0; a < tmp.Count(); ++a)
+								ctrl.controls.all[tmp.ElementAt(a).Key] = .25f;
+
+							Instance.StartCoroutine(ctrl.CoMorphUpdate(0));
+							CharaMorpher_Core.Logger.LogDebug("Set to 0%");
+						}
+			});
+
+			button = e.AddControl(new MakerButton($"Morph 50%", category, owner));
+			button.OnClick.AddListener(() =>
+			{
+				foreach(var hnd in CharacterApi.RegisteredHandlers)
+					if(hnd.ControllerType == typeof(CharaMorpherController))
+						foreach(CharaMorpherController ctrl in hnd.Instances)
+						{
+							//	ctrl.StopAllCoroutines();
+							for(int a = 0; a < ctrl.controls.all.Count; ++a)
+								ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 1;
+
+							var tmp = ctrl.controls.overall;
+							for(int a = 0; a < tmp.Count(); ++a)
+								ctrl.controls.all[tmp.ElementAt(a).Key] = 0.5f;
+
+							Instance.StartCoroutine(ctrl.CoMorphUpdate(0));
+
+							CharaMorpher_Core.Logger.LogDebug("Set to 50%");
+
+						}
+			});
+	
+			button = e.AddControl(new MakerButton($"Morph 75%", category, owner));
+			button.OnClick.AddListener(() =>
+			{
+				foreach(var hnd in CharacterApi.RegisteredHandlers)
+					if(hnd.ControllerType == typeof(CharaMorpherController))
+						foreach(CharaMorpherController ctrl in hnd.Instances)
+						{
+							//	ctrl.StopAllCoroutines();
+							for(int a = 0; a < ctrl.controls.all.Count; ++a)
+								ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 1;
+
+							var tmp = ctrl.controls.overall;
+							for(int a = 0; a < tmp.Count(); ++a)
+								ctrl.controls.all[tmp.ElementAt(a).Key] = 0.75f;
+
+							Instance.StartCoroutine(ctrl.CoMorphUpdate(0));
+
+							CharaMorpher_Core.Logger.LogDebug("Set to 50%");
+
+						}
+			});
+
+			button = e.AddControl(new MakerButton($"Morph 100%", category, owner));
+			button.OnClick.AddListener(() =>
+			{
+				foreach(var hnd in CharacterApi.RegisteredHandlers)
+					if(hnd.ControllerType == typeof(CharaMorpherController))
+						foreach(CharaMorpherController ctrl in hnd.Instances)
+						{
+							//	ctrl.StopAllCoroutines();
+							for(int a = 0; a < ctrl.controls.all.Count; ++a)
+								ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 1;
+
+							var tmp = ctrl.controls.overall;
+							for(int a = 0; a < tmp.Count(); ++a)
+								ctrl.controls.all[tmp.ElementAt(a).Key] = 1;
+
+							Instance.StartCoroutine(ctrl.CoMorphUpdate(0));
+							CharaMorpher_Core.Logger.LogDebug("Set to 100%");
 						}
 			});
 
@@ -375,7 +502,7 @@ namespace Character_Morpher
 				tmp.Substring(tmp.LastIndexOf('/') + 1);
 				var path = Path.Combine(MakeDirPath(Path.GetDirectoryName(cfg.charDir.Value)), tmp);
 
-				return File.Exists(path) ? path :Path.Combine( _defaultOverlayDirectory, tmp);
+				return File.Exists(path) ? path : Path.Combine(_defaultOverlayDirectory, tmp);
 			}
 		}
 

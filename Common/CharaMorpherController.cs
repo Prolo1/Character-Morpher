@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using KKAPI;
 using KKAPI.Chara;
@@ -141,9 +142,53 @@ namespace Character_Morpher
 			}
 		}
 
-		internal struct MorphControls
+		internal class MorphControls
 		{
-			public Dictionary<string, float> all;
+			Dictionary<string, float> _all, _lastAll;
+			Coroutine post;
+			public Dictionary<string, float> all
+			{
+				get
+				{
+					if(_all == null)
+					{
+						_all = new Dictionary<string, float>();
+						_lastAll = new Dictionary<string, float>();
+					}
+
+					IEnumerator CoPost()
+					{
+						for(int count = 0; count < 5; ++count)
+							yield return null;
+						// CharaMorpher_Core.Logger.LogDebug("post called in controls");
+
+						bool Check()
+						{
+							if(_all.Count != _lastAll.Count)
+								return false;
+
+							for(int a = 0; a < _all.Count; ++a)
+								if(_all[_all.Keys.ElementAt(a)] != _lastAll[_lastAll.Keys.ElementAt(a)])
+									return true;
+
+							//CharaMorpher_Core.Logger.LogDebug("All values the same ");
+							return false;
+						}
+
+						if(Check())
+							OnSliderValueChange.Invoke();
+
+						_lastAll = new Dictionary<string, float>(_all);
+					}
+
+					if(post != null)
+						Instance.StopCoroutine(post);
+
+					post = Instance.StartCoroutine(CoPost());
+					return _all;
+				}
+				set { _all = value; }
+			}
 			public Dictionary<string, float> full
 			{
 				get
@@ -153,6 +198,11 @@ namespace Character_Morpher
 						tmp[tmp.Keys.ElementAt(a)] = 1;
 					return tmp;
 				}
+			}
+			public IEnumerable<KeyValuePair<string, float>> overall
+			{
+				get
+				=> all.Where((p) => Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
 			}
 
 		}
@@ -732,11 +782,11 @@ namespace Character_Morpher
 
 			var core = CharaMorpher_Core.Instance;
 
-			controls.all = new Dictionary<string, float>();
 
 			foreach(var ctrl in core.controlCategories)
 				controls.all[ctrl.Value] = cfg.defaults[ctrl.Key].Value * .01f;
 
+			CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
 
 			//	//update after all custom func controllers load
 			//	CharacterApi.CharacterReloaded += (e, a) =>
@@ -775,7 +825,7 @@ namespace Character_Morpher
 					yield return null;
 
 				ChaControl.chaFile.SetCustomBytes(m_data1.main.GetCustomBytes(), ChaFileDefine.ChaFileCustomVersion);
-				ChaControl.Reload();
+				ChaControl.Reload(noChangeClothes: true);
 
 				//	forcedReload = false;
 				CharaMorpher_Core.Logger.LogDebug("restored backup");

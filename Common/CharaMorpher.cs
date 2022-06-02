@@ -74,6 +74,7 @@ namespace Character_Morpher
 		internal static CharaMorpher_Core Instance;
 		internal static new ManualLogSource Logger;
 		internal static OnNewImage OnNewTargetImage = new OnNewImage();
+		internal static OnValueChange OnSliderValueChange = new OnValueChange();
 		//internal static Subject<string> OnNewTargetImage = new Subject<string>();
 
 		public static MyConfig cfg;
@@ -466,10 +467,8 @@ namespace Character_Morpher
 			return dir;
 		}
 
-		public class OnNewImage : UnityEvent<string>
-		{
-
-		}
+		public class OnValueChange : UnityEvent { }
+		public class OnNewImage : UnityEvent<string> { }
 	}
 
 
