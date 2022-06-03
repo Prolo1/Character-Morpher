@@ -174,7 +174,7 @@ namespace Character_Morpher
 				},
 
 
-				initialMorph = Config.Bind("_Testing_", "Init morph value", 0.5f, new ConfigDescription("Used for calculations on reload", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
+				initialMorph = Config.Bind("_Testing_", "Init morph value", 1.0f, new ConfigDescription("Used for calculations on reload", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
 
 
 				headIndex = Config.Bind("Adv1 Head", "Head Index", (int)ChaFileDefine.BodyShapeIdx.HeadSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true })),

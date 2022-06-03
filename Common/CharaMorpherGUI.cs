@@ -54,7 +54,7 @@ namespace Character_Morpher
 				category = new MakerCategory(peram.CategoryName, "Morph", int.MaxValue, "Chara Morph");
 				e.AddSubCategory(category);
 			};
-			MakerAPI.MakerBaseLoaded += (s, e) => { AddCharaMorpherMenu(e); };
+			MakerAPI.MakerBaseLoaded += (s, e) => { OnSliderValueChange.RemoveAllListeners(); AddCharaMorpherMenu(e); };
 			MakerAPI.MakerFinishedLoading += (s, e) =>
 			{
 
@@ -325,10 +325,7 @@ namespace Character_Morpher
 
 		private static void ButtonDefaults(RegisterCustomControlsEvent e, BepInEx.BaseUnityPlugin owner)
 		{
-			//	throw new NotImplementedException();
-
-#pragma warning disable CS0162 // Unreachable code detected
-
+			
 			//Force Reset Button
 			var button = e.AddControl(new MakerButton($"Force Character Reset (WIP)", category, owner));
 			button.OnClick.AddListener(() =>
@@ -357,14 +354,14 @@ namespace Character_Morpher
 						{
 							//	ctrl.StopAllCoroutines();
 							for(int a = 0; a < ctrl.controls.all.Count; ++a)
-								ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 1;
+								ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 0;
 
-							var tmp = ctrl.controls.overall;
-							for(int a = 0; a < tmp.Count(); ++a)
-								ctrl.controls.all[tmp.ElementAt(a).Key] = 0;
+							//var tmp = ctrl.controls.overall;
+							//for(int a = 0; a < tmp.Count(); ++a)
+							//	ctrl.controls.all[tmp.ElementAt(a).Key] = 0;
 
 							Instance.StartCoroutine(ctrl.CoMorphUpdate(0));
-							CharaMorpher_Core.Logger.LogDebug("Set to 0%");
+							CharaMorpher_Core.Logger.LogMessage("Morphed to 0%");
 						}
 			});
 		
@@ -384,7 +381,7 @@ namespace Character_Morpher
 								ctrl.controls.all[tmp.ElementAt(a).Key] = .25f;
 
 							Instance.StartCoroutine(ctrl.CoMorphUpdate(0));
-							CharaMorpher_Core.Logger.LogDebug("Set to 0%");
+							CharaMorpher_Core.Logger.LogMessage("Morphed to 25%");
 						}
 			});
 
@@ -405,7 +402,7 @@ namespace Character_Morpher
 
 							Instance.StartCoroutine(ctrl.CoMorphUpdate(0));
 
-							CharaMorpher_Core.Logger.LogDebug("Set to 50%");
+							CharaMorpher_Core.Logger.LogMessage("Morphed to 50%");
 
 						}
 			});
@@ -427,7 +424,7 @@ namespace Character_Morpher
 
 							Instance.StartCoroutine(ctrl.CoMorphUpdate(0));
 
-							CharaMorpher_Core.Logger.LogDebug("Set to 50%");
+							CharaMorpher_Core.Logger.LogMessage("Morphed to 75%");
 
 						}
 			});
@@ -443,12 +440,12 @@ namespace Character_Morpher
 							for(int a = 0; a < ctrl.controls.all.Count; ++a)
 								ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 1;
 
-							var tmp = ctrl.controls.overall;
-							for(int a = 0; a < tmp.Count(); ++a)
-								ctrl.controls.all[tmp.ElementAt(a).Key] = 1;
+							//var tmp = ctrl.controls.overall;
+							//for(int a = 0; a < tmp.Count(); ++a)
+							//	ctrl.controls.all[tmp.ElementAt(a).Key] = 1;
 
 							Instance.StartCoroutine(ctrl.CoMorphUpdate(0));
-							CharaMorpher_Core.Logger.LogDebug("Set to 100%");
+							CharaMorpher_Core.Logger.LogMessage("Morphed to 100%");
 						}
 			});
 
@@ -456,7 +453,6 @@ namespace Character_Morpher
 			//Add Ending
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			//	e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
-#pragma warning restore CS0162 // Unreachable code detected
 		}
 
 		static string MakeDirPath(string path) => CharaMorpher_Core.MakeDirPath(path);

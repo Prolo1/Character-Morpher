@@ -156,6 +156,7 @@ namespace Character_Morpher
 						_lastAll = new Dictionary<string, float>();
 					}
 
+					//var ctrl = this;
 					IEnumerator CoPost()
 					{
 						for(int count = 0; count < 5; ++count)
@@ -218,7 +219,7 @@ namespace Character_Morpher
 		//	private static int morphindex = 0;//get defaults from config
 
 		/// <summary>
-		/// Called after the model has been updated for the first time
+		/// Called after the model has finished being loaded for the first time
 		/// </summary>
 		public bool initLoadFinished { get; private set; } = false;
 
@@ -783,25 +784,11 @@ namespace Character_Morpher
 			var core = CharaMorpher_Core.Instance;
 
 
+
 			foreach(var ctrl in core.controlCategories)
 				controls.all[ctrl.Value] = cfg.defaults[ctrl.Key].Value * .01f;
 
 			CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
-
-			//	//update after all custom func controllers load
-			//	CharacterApi.CharacterReloaded += (e, a) =>
-			//	{
-			//		CharaMorpher_Core.Logger.LogDebug("saving backup");
-			//
-			//		IEnumerator CoBackup(int delay)
-			//		{
-			//			for(int count = 0; count < delay; ++count)
-			//				yield return null;
-			//			a.ReloadedCharacter.mannequinBackInfo.Backup(a.ReloadedCharacter);
-			//		}
-			//
-			//		StartCoroutine(CoBackup(15));
-			//	};
 		}
 
 
@@ -839,48 +826,31 @@ namespace Character_Morpher
 
 #pragma warning restore CS0162 // Unreachable code detected
 		}
+			
 
-		public IEnumerator CoMorphReload(int delayFrames = 10, bool abmxOnly = false)
-		{
-			reloading = true;//just in-case
-
-			for(int a = 0; a < delayFrames; ++a)
-				yield return null;
-
-			//CharaMorpher_Core.Logger.LogDebug("Reloading After character loaded");
-			OnCharaReload(KoikatuAPI.GetCurrentGameMode(), abmxOnly);
-
-			//CharaMorpher_Core.Logger.LogDebug("Morphing model...");
-			yield return StartCoroutine(CoMorphUpdate((int)Mathf.Round(delayFrames * .5f), forceChange: true));
-
-			reloading = false;
-			initLoadFinished = true;
-			yield break;
-		}
-
-		public IEnumerator CoMorphTargetUpdate(int delayFrames = 10, bool updateValues = true)
+		public IEnumerator CoMorphTargetUpdate(int delay = 10, bool updateValues = true, bool initReset = false)
 		{
 			reloading = true;
-			for(int a = 0; a < delayFrames; ++a)
+			for(int a = 0; a < delay; ++a)
 				yield return null;
 
 			UpdateMorphTarget();
 
-			for(int a = 0; a < delayFrames; ++a)
+			for(int a = 0; a < delay; ++a)
 				yield return null;
 
-			MorphChangeUpdate(updateValues: updateValues);
+			MorphChangeUpdate(updateValues: updateValues, initReset: initReset);
 
 			reloading = false;
 			initLoadFinished = true;
 			yield break;
 		}
 
-		public IEnumerator CoMorphUpdate(int delayFrames = 6, bool forceReset = false, bool initReset = false, bool forceChange = false)
+		public IEnumerator CoMorphUpdate(int delay = 6, bool forceReset = false, bool initReset = false, bool forceChange = false)
 		{
 			//var tmp = reloading;
 
-			for(int a = 0; a < delayFrames; ++a)
+			for(int a = 0; a < delay; ++a)
 				yield return null;
 
 			//CharaMorpher_Core.Logger.LogDebug("Updating morph values after card save/load");
@@ -890,7 +860,7 @@ namespace Character_Morpher
 			yield break;
 		}
 
-		public IEnumerator CoMorphAfterABMX(int delayFramesExtra = 5, bool forcereset = false, bool forceChange = false)
+		public IEnumerator CoMorphAfterABMX(int delayExtra = 5, bool forcereset = false, bool forceChange = false)
 		{
 			var boneCtrl = ChaControl.GetComponent<BoneController>();
 
@@ -899,7 +869,7 @@ namespace Character_Morpher
 			CharaMorpher_Core.Logger.LogDebug("Updating morph values after ABMX");
 			//MorphChangeUpdate(forcereset);
 
-			yield return StartCoroutine(CoMorphUpdate(delayFramesExtra, forcereset, forceChange: forceChange));
+			yield return StartCoroutine(CoMorphUpdate(delayExtra, forcereset, forceChange: forceChange));
 
 
 			yield break;
@@ -914,7 +884,9 @@ namespace Character_Morpher
 		/// <param name="abmxOnly">Only change ABMX data for current character (base character data is not changed)</param>
 		public void OnCharaReload(GameMode currentGameMode, bool abmxOnly = false)
 		{
+			if(reloading) return;
 
+			reloading = true;
 
 			var boneCtrl = ChaControl.GetComponent<BoneController>();
 
@@ -933,26 +905,39 @@ namespace Character_Morpher
 			else
 				m_data1.Copy(this); //get all character data!!!
 
-			StartCoroutine(CoMorphTargetUpdate());
+			//initLoadFinished = true;//NEEDS TO BE HERE!!!
+
+			UpdateMorphTarget();
+
+		//	initLoadFinished = false;//NEEDS TO BE HERE!!!
+
+
+			//Update the model
+			//boneCtrl.NeedsFullRefresh = true;
+			//boneCtrl.NeedsBaselineUpdate = true;
+			MorphChangeUpdate(initReset: true);
+
+
+			//post update
+			StartCoroutine(CoMorphUpdate(10, forceChange: true));
 
 			IEnumerator CoLaterStatus(int delayFrames)
 			{
+				reloading = true;
 				for(int a = 0; a < delayFrames; ++a)
 					yield return null;
 
 				//copy the status again 
 				m_data1.main.CopyStatus(ChaControl.fileStatus);
+
+				reloading = false;
+				initLoadFinished = true;
+
 				yield break;
 			}
 			StartCoroutine(CoLaterStatus(10));//I just need this info later
 
 			//CharaMorpher_Core.Logger.LogDebug("Morphing model...");
-			//Update the model
-			boneCtrl.NeedsFullRefresh = true;
-			boneCtrl.NeedsBaselineUpdate = true;
-
-
-			MorphChangeUpdate(updateValues: true, initReset: true);
 
 		}
 
@@ -960,8 +945,8 @@ namespace Character_Morpher
 		{
 			//ChaControl.mannequinBackInfo.Backup(ChaControl);
 
-			//copy the status again 
-			m_data1.main.CopyStatus(ChaControl.fileStatus);
+			////copy the status again 
+			//m_data1.main.CopyStatus(ChaControl.fileStatus);
 
 			//create path to morph target
 			string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
@@ -975,12 +960,15 @@ namespace Character_Morpher
 					lastCharDir != path ||
 					File.GetLastWriteTime(path).Ticks != lastDT.Ticks)
 				{
+					//reloading = true;
 					lastDT = File.GetLastWriteTime(path);
 					lastCharDir = path;
 					charData = new MorphData();
 
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("load morph target");
-					ChaFileControl.LoadCharaFile(path/*, 255 female; 0 male*/);
+					ChaFileControl.LoadCharaFile(path,noLoadPng:true/*, 255 female; 0 male*/);
+
+					//reloading = false;
 
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("copy morph target");
 					charData.Copy(this);
@@ -1015,13 +1003,11 @@ namespace Character_Morpher
 		/// <inheritdoc/>
 		protected override void OnCardBeingSaved(GameMode currentGameMode)
 		{
-			if(!cfg.saveWithMorph.Value)
-			{
-				reloading = true;//just in-case
-				StartCoroutine(CoMorphReload(6, abmxOnly: true));
-			}
-			else
-				StartCoroutine(CoMorphUpdate());
+			////reset values to default
+			//if(!cfg.saveWithMorph.Value)
+			//	StartCoroutine(CoMorphUpdate(forceReset: true, forceChange: true));
+
+
 		}
 
 		/// <inheritdoc/> 
