@@ -103,7 +103,7 @@ namespace Character_Morpher
 				abmx.Clear();
 			}
 
-			public MorphData Copy()
+			public MorphData Clone()
 			{
 				var tmp = new ChaFile();
 				tmp.CopyAll(main);
@@ -118,6 +118,7 @@ namespace Character_Morpher
 			public void Copy(MorphData data)
 			{
 				if(data == null) return;
+
 				main.CopyAll(data.main);
 				abmx = data.abmx.Copy();
 				id = data.id;
@@ -129,6 +130,7 @@ namespace Character_Morpher
 				//CopyAll will not copy this data in hs2
 				main.dataID = data.ChaControl.chaFile.dataID;
 #endif
+
 				main.CopyAll(data.ChaFileControl);
 				abmx.Populate(data);
 #if HONEY_API
@@ -215,7 +217,7 @@ namespace Character_Morpher
 
 		//ChaControl.MannequinBackInfo backup = new ChaControl.MannequinBackInfo();
 
-		private readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
+		internal readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
 		//	private static int morphindex = 0;//get defaults from config
 
 		/// <summary>
@@ -826,7 +828,7 @@ namespace Character_Morpher
 
 #pragma warning restore CS0162 // Unreachable code detected
 		}
-			
+
 
 		public IEnumerator CoMorphTargetUpdate(int delay = 10, bool updateValues = true, bool initReset = false)
 		{
@@ -909,14 +911,14 @@ namespace Character_Morpher
 
 			UpdateMorphTarget();
 
-		//	initLoadFinished = false;//NEEDS TO BE HERE!!!
+			//	initLoadFinished = false;//NEEDS TO BE HERE!!!
 
 
 			//Update the model
 			//boneCtrl.NeedsFullRefresh = true;
 			//boneCtrl.NeedsBaselineUpdate = true;
 			MorphChangeUpdate(initReset: true);
-
+			resetBoobs();
 
 			//post update
 			StartCoroutine(CoMorphUpdate(10, forceChange: true));
@@ -966,8 +968,11 @@ namespace Character_Morpher
 					charData = new MorphData();
 
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("load morph target");
-					ChaFileControl.LoadCharaFile(path,noLoadPng:true/*, 255 female; 0 male*/);
-
+					ChaFileControl.LoadCharaFile(path, noLoadPng: true);
+					ChaFileControl.pngData = m_data1.main.pngData;
+#if KOI_API
+					ChaFileControl.facePngData = m_data1.main.facePngData;
+#endif
 					//reloading = false;
 
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("copy morph target");
@@ -1003,9 +1008,9 @@ namespace Character_Morpher
 		/// <inheritdoc/>
 		protected override void OnCardBeingSaved(GameMode currentGameMode)
 		{
-			////reset values to default
-			//if(!cfg.saveWithMorph.Value)
-			//	StartCoroutine(CoMorphUpdate(forceReset: true, forceChange: true));
+			//reset values to default after saving
+			if(cfg.enable.Value && !cfg.saveWithMorph.Value)
+				StartCoroutine(CoMorphUpdate(forceReset: true, forceChange: true));
 
 
 		}
@@ -1144,6 +1149,149 @@ namespace Character_Morpher
 				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && m.Key.ToLower().Contains(contain.ToLower())).Value;
 		}
 
+		public void resetBoobs()
+		{
+			MorphChangeUpdate(updateValues: false);//make sure the bone mods are balanced
+
+
+			var boneCtrl = ChaControl.GetComponent<BoneController>();
+
+			//not sure how to update this :\
+			ChaControl.fileBody.areolaSize = m_data1.main.custom.body.areolaSize;
+
+			ChaControl.fileBody.bustSoftness = m_data1.main.custom.body.bustSoftness;
+
+			ChaControl.fileBody.bustWeight = m_data1.main.custom.body.bustWeight;
+
+			//Main
+			for(int a = 0; a < Mathf.Max(new float[]
+			{
+				m_data1.main.custom.body.shapeValueBody.Length,
+				//m_data1.main.custom.face.shapeValueFace.Length,
+			});
+			++a)
+			{
+				float result = 0;
+
+
+				#region Main
+
+				//Body Shape
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"updating body");
+				if(a < m_data1.main.custom.body.shapeValueBody.Length)
+				{
+					//Value Update
+					{
+						float
+							d1 = m_data1.main.custom.body.shapeValueBody[a]
+							;// d2 = m_data2.main.custom.body.shapeValueBody[a];
+
+
+						if(cfg.brestIndex.FindIndex(find => (find.Value == a)) >= 0)
+							result = d1;
+						else
+							continue;
+					}
+
+					//load values to character
+					ChaControl.chaFile.custom.body.shapeValueBody[a] = result;
+					ChaControl.SetShapeBodyValue(a, result);
+				}
+			}
+
+
+
+			//ABMX
+			for(int a = 0; a < Mathf.Max(new float[]
+					{
+				m_data1.abmx.body.Count
+					});
+					++a)
+			{
+				//float result = 0;
+
+
+				//Body
+				if(a < m_data1.abmx.body.Count)
+				{
+					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"looking for body values");
+
+					var bone1 = m_data1.abmx.body[a];
+					var bone2 = m_data2.abmx.body[a];
+					var current = boneCtrl.Modifiers.Find((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
+
+					//  CharaMorpher.Logger.LogDebug($"found values");
+					//    CharaMorpher_Core.Logger.LogDebug($"current = {current.BoneName}");
+
+					float modVal = 0;
+
+					//remove L/R from bone name
+					string content = bone1.BoneName.Trim().ToLower();
+
+
+					{
+						#region content finding
+
+						string ending1 = "";
+						string ending2 = "";
+						int end = content.LastIndexOf("_");
+						int end2 = -1;
+
+
+						if(end >= 0)
+						{
+							ending1 = content.Substring(content.LastIndexOf("_"));
+							end2 = content.Substring(0, end).LastIndexOf("_");
+						}
+						if(end2 >= 0)
+							ending2 = content.Substring(end - (end - (end2)));
+
+						// CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
+
+						if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
+							content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
+						#endregion
+
+
+						// CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
+#if KOI_API
+						switch(bonecatagories.Find((k) => k.Key.Trim().ToLower().Contains(content)).Value)
+#else
+						switch(bonecatagories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
+#endif
+						{
+						case "boobs":
+							modVal = 0;
+							break;
+						default:
+							continue;
+							//break;
+						}
+					}
+
+					UpdateBoneModifier(ref current, bone1, bone2, modVal, index: a);
+				}
+			}
+
+
+			boneCtrl.NeedsBaselineUpdate = true;
+
+
+#if HONEY_API
+			ChaControl.ChangeNipColor();
+			ChaControl.ChangeNipGloss();
+			ChaControl.ChangeNipKind();
+			ChaControl.ChangeNipScale();
+#elif KOI_API
+			ChaControl.ChangeSettingAreolaSize();
+			ChaControl.ChangeSettingNipColor();
+			ChaControl.ChangeSettingNipGlossPower();
+			ChaControl.ChangeSettingNip();
+			ChaControl.ChangeSettingEyeTilt();
+
+#endif
+		}
+
 		private void UpdateMorphValues(bool reset, bool initReset = false)
 		{
 
@@ -1205,7 +1353,7 @@ namespace Character_Morpher
 
 				enable = (reset ? (initReset ? cfg.initialMorph.Value : 0) : 1);
 
-				#region Main
+
 
 				//Body Shape
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"updating body");

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using BepInEx;
 using BepInEx.Configuration;
@@ -23,7 +25,7 @@ namespace Character_Morpher
 	{
 		private static class Hooks
 		{
-			static Coroutine lastClothsUpdate = null;
+			static Coroutine m_lastClothsUpdate = null;
 
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState)),]
@@ -48,46 +50,55 @@ namespace Character_Morpher
 					else
 #endif
 				if(cfg.enable.Value)
-					if(ctrl && !ctrl.reloading)
+					if(ctrl && !ctrl.reloading && ctrl.initLoadFinished)
 					{
 						Logger.LogDebug("The Post hook gets called");
-						if(lastClothsUpdate != null)
-							Instance.StopCoroutine(lastClothsUpdate);
-						lastClothsUpdate = Instance.StartCoroutine(ctrl.CoMorphUpdate(1, forceChange: true));
+						if(m_lastClothsUpdate != null)
+							Instance.StopCoroutine(m_lastClothsUpdate);
+						m_lastClothsUpdate = Instance.StartCoroutine(ctrl.CoMorphUpdate(1, forceChange: true));
 					}
+
+
 			}
 
-			[HarmonyPrefix]
-			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState)),]
 
-#if !HONEY_API
-			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.ChangeCoordinateType),
-				new Type[] { typeof(ChaFileDefine.CoordinateType), typeof(bool) })]
-#endif
-			static void PreClothsStateUpdate(ChaControl __instance)
+#if KOI_API
+			[HarmonyPostfix]
+			[HarmonyPatch(typeof(ChaFile), nameof(ChaFile.LoadFile),
+				new Type[] { typeof(BinaryReader), typeof(bool), typeof(bool) }),]
+			static void GetCharaPngs(ChaFile __instance)
 			{
-				var ctrl = __instance.GetComponent<CharaMorpherController>();
-#if HONEY_API
-				var saveWindow = GameObject.FindObjectOfType<CharaCustom.CharaCustom>();
-				CharaCustom.CvsCaptureMenu capture = null;
-				if(saveWindow)
-					capture = saveWindow.GetComponentInChildren<CharaCustom.CvsCaptureMenu>();
-				if(capture)
-					if(capture.isActiveAndEnabled)
-					{
-						void donothing() { if(cfg.debug.Value) Logger.LogDebug("I see nothing, I hear nothing, I DO NOTHING!!!!"); };
-						donothing();//this is very helpful
-					}
-					else
-#endif
-				if(cfg.enable.Value)
-					if(ctrl && !ctrl.reloading)
-					{
-						Logger.LogDebug("The Pre hook gets called");
-						//Instance.StopAllCoroutines();
-						ctrl.MorphChangeUpdate(forceReset: true);
-					}
+				if(KoikatuAPI.GetCurrentGameMode() != GameMode.Maker) return;
+
+				var _png = (byte[])__instance.pngData?.Clone();
+				var _facePng = (byte[])__instance.facePngData?.Clone();
+
+				if(_png != null)
+					Logger.LogDebug("Character png file exists");
+				if(_facePng != null)
+					Logger.LogDebug("Character face png file exists");
+
+				IEnumerator DelayedPngSet(CharaMorpherController ctrl, byte[] png, byte[] facePng)
+				{
+					for(int a = 0; a < 0; ++a)
+						yield return null;
+					ctrl.ChaFileControl.pngData = png ?? ctrl.ChaFileControl.pngData;
+					ctrl.ChaFileControl.facePngData = facePng ?? ctrl.ChaFileControl.facePngData;
+					yield break;
+				}
+
+				foreach(var hnd in CharacterApi.RegisteredHandlers)
+					if(hnd.ControllerType == typeof(CharaMorpherController))
+						foreach(CharaMorpherController ctrl in hnd.Instances)
+						{
+							//if(m_lastpngload != null)
+							//	Instance.StopCoroutine(m_lastpngload);
+							Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
+						}
+
 			}
+#endif
+
 
 
 			[HarmonyPrefix]
