@@ -82,6 +82,7 @@ namespace Character_Morpher
 				{
 					for(int a = 0; a < 0; ++a)
 						yield return null;
+
 					ctrl.ChaFileControl.pngData = png ?? ctrl.ChaFileControl.pngData;
 					ctrl.ChaFileControl.facePngData = facePng ?? ctrl.ChaFileControl.facePngData;
 					yield break;
@@ -93,7 +94,8 @@ namespace Character_Morpher
 						{
 							//if(m_lastpngload != null)
 							//	Instance.StopCoroutine(m_lastpngload);
-							Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
+							if(ctrl.ChaControl.chaFile == __instance)
+								Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
 						}
 
 			}

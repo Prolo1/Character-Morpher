@@ -22,6 +22,7 @@ using ChaCustom;
 
 using UnityEngine;
 using static Character_Morpher.CharaMorpher_Core;
+using Manager;
 
 namespace Character_Morpher
 {
@@ -33,12 +34,13 @@ namespace Character_Morpher
 			{
 				public List<BoneModifier> body = new List<BoneModifier>();
 				public List<BoneModifier> face = new List<BoneModifier>();
-				public List<BoneModifier> other = new List<BoneModifier>();
+				public bool isSplit { get; private set; } = false;
+				//public List<BoneModifier> other = new List<BoneModifier>();
 
-				public void Populate(CharaCustomFunctionController charaControl)
+				public void Populate(CharaMorpherController morphControl)
 				{
-					var boneCtrl = charaControl.GetComponent<BoneController>();
-					var charaCtrl = charaControl.ChaControl;
+					var boneCtrl = morphControl.GetComponent<BoneController>();
+					var charaCtrl = morphControl.ChaControl;
 
 					//Store Bonemod Extended Data
 					{//helps get rid of data sooner
@@ -48,43 +50,51 @@ namespace Character_Morpher
 						face = new List<BoneModifier>(newModifiers);
 					}
 
-					//split up body & head bones
-					{
-						var headRoot = charaCtrl.objHeadBone.transform.parent.parent;
 
-						var headBones = new HashSet<string>(headRoot.GetComponentsInChildren<Transform>().Select(x => x.name)) { /*Additional*/headRoot.name };
+					BoneSplit(morphControl, charaCtrl);
 
-						body.RemoveAll(x => headBones.Contains(x.BoneName));
+				}
+
+				//split up body & head bones
+				public void BoneSplit(CharaMorpherController charaControl, ChaControl charaCtrl)
+				{
+
+					if(!charaCtrl.objHeadBone) return;
+
+					CharaMorpher_Core.Logger.LogDebug("Splitting bones apart");
+					//if(!charaCtrl.objHeadBone) await Task.Run(() => { while(!charaCtrl.objHeadBone) ; });
+
+					var headRoot = charaCtrl.objHeadBone.transform.parent.parent;
+
+					var headBones = new HashSet<string>(headRoot.GetComponentsInChildren<Transform>().Select(x => x.name)) { /*Additional*/headRoot.name };
+
+					body.RemoveAll(x => headBones.Contains(x.BoneName));
 
 
-						var bodyBones = new HashSet<string>(charaCtrl.objBodyBone.transform.parent.parent.
-							GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
-						face.RemoveAll(x => bodyBones.Contains(x.BoneName));
+					var bodyBones = new HashSet<string>(charaCtrl.objBodyBone.transform.parent.parent.
+						GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
+					face.RemoveAll(x => bodyBones.Contains(x.BoneName));
 
-						//CharaMorpher.Logger.LogDebug($"Head root: {headRoot.name}");
-						//    foreach(var part in face)
-						//        CharaMorpher.Logger.LogDebug($"Face: {part.BoneName}");
+					isSplit = true;
 
-						//    CharaMorpher.Logger.LogDebug($"body root: {charaCtrl.objBodyBone.transform.parent.parent.name}");
-						//foreach(var part in body)
-						//    CharaMorpher.Logger.LogDebug($"Body: {part.BoneName}");
-
-					}
+					charaControl.MorphChangeUpdate(updateValues: false);
+					//	yield break;
 				}
 
 				public void Clear()
 				{
 					body?.Clear();
 					face?.Clear();
-					other?.Clear();
+					//other?.Clear();
 				}
+
 				public AMBXSections Copy()
 				{
 					return new AMBXSections()
 					{
 						body = new List<BoneModifier>(body ?? new List<BoneModifier>()),
 						face = new List<BoneModifier>(face ?? new List<BoneModifier>()),
-						other = new List<BoneModifier>(other ?? new List<BoneModifier>())
+						//other = new List<BoneModifier>(other ?? new List<BoneModifier>())
 					};
 				}
 			}
@@ -794,6 +804,22 @@ namespace Character_Morpher
 		}
 
 
+		protected override void Update()
+		{
+			if((!m_data1.abmx.isSplit || !m_data2.abmx.isSplit) && initLoadFinished)
+			{
+				if(!m_data1.abmx.isSplit)
+					m_data1.abmx.BoneSplit(this, ChaControl);
+				if(!m_data2.abmx.isSplit)
+					m_data2.abmx.BoneSplit(this, ChaControl);
+
+				if(m_data1.abmx.isSplit && m_data2.abmx.isSplit)
+					MorphChangeUpdate();
+			}
+
+			base.Update();
+		}
+
 		//bool forcedReload = false;
 		public void ForceCardReload()
 		{
@@ -907,11 +933,8 @@ namespace Character_Morpher
 			else
 				m_data1.Copy(this); //get all character data!!!
 
-			//initLoadFinished = true;//NEEDS TO BE HERE!!!
 
 			UpdateMorphTarget();
-
-			//	initLoadFinished = false;//NEEDS TO BE HERE!!!
 
 
 			//Update the model
@@ -1092,24 +1115,29 @@ namespace Character_Morpher
 			#region Merge results
 
 			//add non-existent bones to other lists
+			if(m_data1.abmx.isSplit && m_data2.abmx.isSplit)
+			{
 
-			//Body
-			BoneModifierMatching(ref m_data1.abmx.body, ref m_data2.abmx.body);
-			BoneModifierMatching(ref m_data2.abmx.body, ref m_data1.abmx.body);
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("balancing bone lists...");
 
-			//Face
-			BoneModifierMatching(ref m_data1.abmx.face, ref m_data2.abmx.face);
-			BoneModifierMatching(ref m_data2.abmx.face, ref m_data1.abmx.face);
+				//Body
+				BoneModifierMatching(ref m_data1.abmx.body, ref m_data2.abmx.body);
+				BoneModifierMatching(ref m_data2.abmx.body, ref m_data1.abmx.body);
 
-			//current body
-			BoneModifierMatching(ref boneCtrl, m_data1.abmx.body);
-			BoneModifierMatching(ref boneCtrl, m_data1.abmx.face);
+				//Face
+				BoneModifierMatching(ref m_data1.abmx.face, ref m_data2.abmx.face);
+				BoneModifierMatching(ref m_data2.abmx.face, ref m_data1.abmx.face);
 
-			//sort list
-			m_data1.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
-			m_data2.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
-			m_data1.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
-			m_data2.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+				//current body
+				BoneModifierMatching(ref boneCtrl, m_data1.abmx.body);
+				BoneModifierMatching(ref boneCtrl, m_data1.abmx.face);
+
+				//sort list
+				m_data1.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+				m_data2.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+				m_data1.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+				m_data2.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+			}
 
 			#endregion
 
@@ -1199,82 +1227,6 @@ namespace Character_Morpher
 				}
 			}
 
-
-
-			//ABMX
-			for(int a = 0; a < Mathf.Max(new float[]
-					{
-				m_data1.abmx.body.Count
-					});
-					++a)
-			{
-				//float result = 0;
-
-
-				//Body
-				if(a < m_data1.abmx.body.Count)
-				{
-					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"looking for body values");
-
-					var bone1 = m_data1.abmx.body[a];
-					var bone2 = m_data2.abmx.body[a];
-					var current = boneCtrl.Modifiers.Find((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
-
-					//  CharaMorpher.Logger.LogDebug($"found values");
-					//    CharaMorpher_Core.Logger.LogDebug($"current = {current.BoneName}");
-
-					float modVal = 0;
-
-					//remove L/R from bone name
-					string content = bone1.BoneName.Trim().ToLower();
-
-
-					{
-						#region content finding
-
-						string ending1 = "";
-						string ending2 = "";
-						int end = content.LastIndexOf("_");
-						int end2 = -1;
-
-
-						if(end >= 0)
-						{
-							ending1 = content.Substring(content.LastIndexOf("_"));
-							end2 = content.Substring(0, end).LastIndexOf("_");
-						}
-						if(end2 >= 0)
-							ending2 = content.Substring(end - (end - (end2)));
-
-						// CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
-
-						if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
-							content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
-						#endregion
-
-
-						// CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
-#if KOI_API
-						switch(bonecatagories.Find((k) => k.Key.Trim().ToLower().Contains(content)).Value)
-#else
-						switch(bonecatagories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
-#endif
-						{
-						case "boobs":
-							modVal = 0;
-							break;
-						default:
-							continue;
-							//break;
-						}
-					}
-
-					UpdateBoneModifier(ref current, bone1, bone2, modVal, index: a);
-				}
-			}
-
-
-			boneCtrl.NeedsBaselineUpdate = true;
 
 
 #if HONEY_API
@@ -1465,11 +1417,39 @@ namespace Character_Morpher
 			}
 
 			//ABMX
+			StartCoroutine(AbmxSettings(reset, initReset, boneCtrl));
+
+
+
+
+#if HONEY_API
+			charaCtrl.ChangeNipColor();
+			charaCtrl.ChangeNipGloss();
+			charaCtrl.ChangeNipKind();
+			charaCtrl.ChangeNipScale();
+#elif KOI_API
+			charaCtrl.ChangeSettingAreolaSize();
+			charaCtrl.ChangeSettingNipColor();
+			charaCtrl.ChangeSettingNipGlossPower();
+			charaCtrl.ChangeSettingNip();
+			charaCtrl.ChangeSettingEyeTilt();
+
+#endif
+			//charaCtrl.UpdateBustSoftnessAndGravity();
+			//charaCtrl.UpdateForce();//will update voice?
+			//charaCtrl.LateUpdateForce();//will update everything else?
+
+		}
+
+		IEnumerator AbmxSettings(bool reset, bool initReset, BoneController boneCtrl)
+		{
+			yield return new WaitUntil(() => m_data1.abmx.isSplit && m_data2.abmx.isSplit);
+			float enable;
 			for(int a = 0; a < Mathf.Max(new float[]
-					{
+				{
 				m_data1.abmx.body.Count, m_data1.abmx.face.Count
-					});
-					++a)
+				});
+				++a)
 			{
 				//float result = 0;
 
@@ -1639,28 +1619,9 @@ namespace Character_Morpher
 				//  CharaMorpher_Core.Logger.LogDebug("");
 			}
 
-
 			boneCtrl.NeedsBaselineUpdate = true;
-
-
-#if HONEY_API
-			charaCtrl.ChangeNipColor();
-			charaCtrl.ChangeNipGloss();
-			charaCtrl.ChangeNipKind();
-			charaCtrl.ChangeNipScale();
-#elif KOI_API
-			charaCtrl.ChangeSettingAreolaSize();
-			charaCtrl.ChangeSettingNipColor();
-			charaCtrl.ChangeSettingNipGlossPower();
-			charaCtrl.ChangeSettingNip();
-			charaCtrl.ChangeSettingEyeTilt();
-
-#endif
-			//charaCtrl.UpdateBustSoftnessAndGravity();
-			//charaCtrl.UpdateForce();//will update voice?
-			//charaCtrl.LateUpdateForce();//will update everything else?
-
 		}
+
 
 		/// <summary>
 		/// Adds all bones from bone2 to bone1

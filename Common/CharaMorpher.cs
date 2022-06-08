@@ -433,7 +433,8 @@ namespace Character_Morpher
 						}
 			};
 
-
+		
+			
 			if(StudioAPI.InsideStudio) return;
 			/*
 				Register your logic that depends on a character.

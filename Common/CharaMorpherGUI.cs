@@ -39,6 +39,7 @@ namespace Character_Morpher
 		//public class NewImageEvent : UnityEvent<string> { }
 
 		static MakerCategory category;
+		static Coroutine lastExtent;
 		internal static void Initialize()
 		{
 			MakerAPI.RegisterCustomSubCategories += (s, e) =>
@@ -65,14 +66,50 @@ namespace Character_Morpher
 #endif
 				//charactortop
 			};
+
+			cfg.sliderExtents.SettingChanged += (m, n) =>
+			{
+
+				IEnumerator CoEditExtents(uint start = 0, uint end = int.MaxValue)
+				{
+					yield return new WaitWhile(() =>
+					{
+						for(int a = (int)start; a < Math.Min(sliders.Count, (int)end); ++a)
+							if(sliders?[a]?.ControlObject == null) return true;
+						return false;
+					});
+
+					float
+					min = -cfg.sliderExtents.Value * .01f,
+					max = 1 + cfg.sliderExtents.Value * .01f;
+					int count = 0;
+					foreach(var slider in sliders)
+					{
+						if(count++ < start) continue;
+						if(count - 1 >= Math.Min(sliders.Count, (int)end)) break;
+
+
+						slider.ControlObject.GetComponentInChildren<Slider>().minValue = min;
+						slider.ControlObject.GetComponentInChildren<Slider>().maxValue = max;
+
+
+					}
+				}
+
+				if(lastExtent != null)
+					Instance.StopCoroutine(lastExtent);
+				lastExtent= Instance.StartCoroutine(CoEditExtents(start: 1));
+			};
 		}
 #if HONEY_API
 		static CvsO_Type charaCustom = null;
 #else
 		static CvsChara charaCustom = null;
 #endif
-		static int abmxIndex = -1;
+		static int abmxIndex = -1, voiceIndex;
 		static List<MakerSlider> sliders = new List<MakerSlider>();
+
+
 
 		private static void AddCharaMorpherMenu(RegisterCustomControlsEvent e)
 		{
@@ -325,7 +362,7 @@ namespace Character_Morpher
 
 		private static void ButtonDefaults(RegisterCustomControlsEvent e, BepInEx.BaseUnityPlugin owner)
 		{
-			
+
 			//Force Reset Button
 			var button = e.AddControl(new MakerButton($"Force Character Reset (WIP)", category, owner));
 			button.OnClick.AddListener(() =>
@@ -364,7 +401,7 @@ namespace Character_Morpher
 							CharaMorpher_Core.Logger.LogMessage("Morphed to 0%");
 						}
 			});
-		
+
 			button = e.AddControl(new MakerButton($"Morph 25%", category, owner));
 			button.OnClick.AddListener(() =>
 			{
@@ -406,7 +443,7 @@ namespace Character_Morpher
 
 						}
 			});
-	
+
 			button = e.AddControl(new MakerButton($"Morph 75%", category, owner));
 			button.OnClick.AddListener(() =>
 			{
