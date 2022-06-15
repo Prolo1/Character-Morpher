@@ -22,7 +22,7 @@ using UniRx;
 using UnityEngine;
 using System.Runtime.InteropServices;
 
-#if HS2 || AI
+#if HONEY_API
 
 using AIChara;
 #endif
@@ -45,7 +45,8 @@ using AIChara;
 ************************************************/
 
 
-
+/**
+ */
 namespace Character_Morpher
 {
 
@@ -97,9 +98,12 @@ namespace Character_Morpher
 
 			public List<ConfigEntry<float>> defaults { set; get; }
 
+			//Advanced (show up below main) 
 
-			//Advanced (show up below main)
-			public ConfigEntry<float> initialMorph { set; get; }
+			//tests
+			public ConfigEntry<float> initialMorphTest { set; get; }
+			public ConfigEntry<uint> multiUpdateTest { set; get; }
+			//indexes 
 			public ConfigEntry<int> headIndex { set; get; }
 			public List<ConfigEntry<int>> earIndex { set; get; }
 			public List<ConfigEntry<int>> eyeIndex { set; get; }
@@ -113,7 +117,7 @@ namespace Character_Morpher
 
 
 		public List<KeyValuePair<int, string>> controlCategories = new List<KeyValuePair<int, string>>();
-		private void Awake()
+		void Awake()
 		{
 			Instance = this;
 			Logger = base.Logger;
@@ -139,48 +143,86 @@ namespace Character_Morpher
 
 				//you don't need to see this in game
 				defaults = new List<ConfigEntry<float>>{
-					Config.Bind("Defaults", "Vioce Default" , 00f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "Overall Voice")).Key , Browsable=false})),
-					Config.Bind("Defaults", "Body  Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Body")).Key , Browsable=false })),
-					Config.Bind("Defaults", "Head  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "Head")).Key, Browsable=false })),
-					Config.Bind("Defaults", "Boobs Default", 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "Boobs")).Key , Browsable=false})),
-					Config.Bind("Defaults", "Butt  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "Butt")).Key, Browsable=false })),
-					Config.Bind("Defaults", "Torso Default", 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "Torso")).Key , Browsable=false})),
-					Config.Bind("Defaults", "Arms  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "Arms")).Key, Browsable=false })),
-					Config.Bind("Defaults", "Legs  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "Legs")).Key, Browsable=false })),
+					Config.Bind("Defaults", "Vioce Default" , 00f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes  { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Overall Voice")).Key , Browsable=false})),
 
-					Config.Bind("Defaults", "Face  Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "Overall Face")).Key , Browsable=false})),
-					Config.Bind("Defaults", "Ears  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "Ears")).Key , Browsable=false})),
-					Config.Bind("Defaults", "Eyes  Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "Eyes")).Key , Browsable=false})),
-					Config.Bind("Defaults", "Mouth Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "Mouth")).Key , Browsable=false})),
+					Config.Bind("Defaults", "Skin Default" , 100f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Skin Colour")).Key , Browsable=false })),
+					Config.Bind("Defaults", "Base Skin Default" , 00f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Base Skin Colour")).Key , Browsable=false })),
+					Config.Bind("Defaults", "Sunburn Default" , 00f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Sunburn Colour")).Key , Browsable=false })),
+
+					Config.Bind("Defaults", "Body  Default" , 100f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Body")).Key , Browsable=false })),
+					Config.Bind("Defaults", "Head  Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Head")).Key, Browsable=false })),
+					Config.Bind("Defaults", "Boobs Default", 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Boobs")).Key , Browsable=false})),
+					Config.Bind("Defaults", "Butt  Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Butt")).Key, Browsable=false })),
+					Config.Bind("Defaults", "Torso Default", 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Torso")).Key , Browsable=false})),
+					Config.Bind("Defaults", "Arms  Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Arms")).Key, Browsable=false })),
+					Config.Bind("Defaults", "Legs  Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Legs")).Key, Browsable=false })),
+
+					Config.Bind("Defaults", "Face  Default" , 100f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Overall Face")).Key , Browsable=false})),
+					Config.Bind("Defaults", "Ears  Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Ears")).Key , Browsable=false})),
+					Config.Bind("Defaults", "Eyes  Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Eyes")).Key , Browsable=false})),
+					Config.Bind("Defaults", "Mouth Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Mouth")).Key , Browsable=false})),
 
 
-					Config.Bind("Defaults", "ABMX  Body Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Overall Body")).Key, Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Boobs Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Boobs")).Key, Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Butt Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Butt")).Key, Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Torso Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Torso")).Key, Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Arms Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Arms")).Key, Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Hands Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order =-controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Hands")).Key, Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Legs Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Legs")).Key, Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Feet Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Feet")).Key, Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Genitals Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Genitals")).Key , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Body Default" , 100f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Overall Body")).Key, Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Boobs Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Boobs")).Key, Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Butt Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Butt")).Key, Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Torso Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Torso")).Key, Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Arms Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Arms")).Key, Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Hands Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order =-controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Hands")).Key, Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Legs Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes  { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Legs")).Key, Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Feet Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes  { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Feet")).Key, Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Genitals Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Genitals")).Key , Browsable=false})),
 
 
-					Config.Bind("Defaults", "ABMX  Head Default" , 100f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Overall Head ")).Key , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Ears Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Ears")).Key , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Eyes Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Eyes")).Key , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Mouth Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Mouth")).Key , Browsable=false})),
-					Config.Bind("Defaults", "ABMX  Hair Default" , 50f, new ConfigDescription("Set default value on maker startup", null, new ConfigurationManagerAttributes  { Order = -controlCategories.AddReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Hair")).Key , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Head Default" , 100f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Overall Head ")).Key , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Ears Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes  { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Ears")).Key , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Eyes Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes  { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Eyes")).Key , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Mouth Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Mouth")).Key , Browsable=false})),
+					Config.Bind("Defaults", "ABMX  Hair Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes  { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "ABMX Hair")).Key , Browsable=false})),
 
 				},
 
-
-				initialMorph = Config.Bind("_Testing_", "Init morph value", 1.0f, new ConfigDescription("Used for calculations on reload", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
+#if KOI_API
+				initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.47f, new ConfigDescription("Used for calculations on reload (0.47 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
+#elif HONEY_API
+				initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.47f, new ConfigDescription("Used for calculations on reload (0.47 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
+#endif
+				multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
 
 
 				headIndex = Config.Bind("Adv1 Head", "Head Index", (int)ChaFileDefine.BodyShapeIdx.HeadSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true })),
 
 				brestIndex = new List<ConfigEntry<int>>
-#if HS2 || AI
+#if HONEY_API
                 {
 					Config.Bind("Adv2 Brest", $"Brest Index {index=1}", 1, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
 					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 2, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
@@ -191,7 +233,7 @@ namespace Character_Morpher
 					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 7, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
 					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 8, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
 				},
-#elif KKS || KK
+#elif KOI_API
 {
 					Config.Bind("Adv2 Brest", $"Brest Index {index=1}", 4, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })),
 					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 5, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
@@ -206,7 +248,7 @@ namespace Character_Morpher
 				   },
 #endif
 				torsoIndex = new List<ConfigEntry<int>>
-#if HS2 || AI
+#if HONEY_API
                 {
 					Config.Bind("Adv3 Torso", $"Torso Index {index=1}", 14, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 15, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -216,7 +258,7 @@ namespace Character_Morpher
 					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 				  },
-#elif KKS || KK
+#elif KOI_API
 {
 					Config.Bind("Adv3 Torso", $"Torso Index {index=1}", 14, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 15, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -231,7 +273,7 @@ namespace Character_Morpher
 				  },
 #endif
 				armIndex = new List<ConfigEntry<int>>
-#if HS2 || AI
+#if HONEY_API
                 {
 					Config.Bind("Adv4 Arm", $"Arm Index {index=1}", 12, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 13, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
@@ -239,7 +281,7 @@ namespace Character_Morpher
 					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
 					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
 				  },
-#elif KKS || KK
+#elif KOI_API
  {
 					Config.Bind("Adv4 Arm", $"Arm Index {index=1}", 37, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 38, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -251,28 +293,28 @@ namespace Character_Morpher
 				  },
 #endif
 				buttIndex = new List<ConfigEntry<int>>
-#if HS2 || AI
+#if HONEY_API
                 {
 					Config.Bind("Adv5 Butt", $"Butt Index {index=1}", 21, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv5 Butt", $"Butt Index {++index}", 22, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv5 Butt", $"Butt Index {++index}", 23, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv5 Butt", $"Butt Index {++index}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 				  },
-#elif KKS || KK
+#elif KOI_API
  {
 					Config.Bind("Adv5 Butt", $"Butt Index {index=1}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
 					Config.Bind("Adv5 Butt", $"Butt Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 				  },
 #endif
 				legIndex = new List<ConfigEntry<int>>
-#if HS2 || AI
+#if HONEY_API
                 {
 					Config.Bind("Adv6 Leg", $"Leg Index {index=1}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
 					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 28, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 				  },
-#elif KKS || KK
+#elif KOI_API
 {
 					Config.Bind("Adv6 Leg", $"Leg Index {index=1}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -288,7 +330,7 @@ namespace Character_Morpher
 				  },
 #endif
 				earIndex = new List<ConfigEntry<int>>
-#if HS2 || AI
+#if HONEY_API
                 {
 					Config.Bind("Adv7 Ear", $"Ear Index {index=1}", 54, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 55, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -296,7 +338,7 @@ namespace Character_Morpher
 					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 57, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 58, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 				},
-#elif KKS || KK
+#elif KOI_API
  {
 					Config.Bind("Adv7 Ear", $"Ear Index {index=1}", 47, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 48, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -306,7 +348,7 @@ namespace Character_Morpher
 				},
 #endif
 				eyeIndex = new List<ConfigEntry<int>>
-#if HS2 || AI
+#if HONEY_API
                 {
 					Config.Bind("Adv8 Eye", $"Eye Index {index=1}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -322,7 +364,7 @@ namespace Character_Morpher
 					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 				},
-#elif KKS || KK
+#elif KOI_API
 {
 					Config.Bind("Adv8 Eye", $"Eye Index {index=1}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -346,7 +388,7 @@ namespace Character_Morpher
 				},
 #endif
 				mouthIndex = new List<ConfigEntry<int>>
-#if HS2 || AI
+#if HONEY_API
                 {
 					Config.Bind("Adv9 Mouth", $"Mouth Index {index=1}", 47, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 48, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -356,7 +398,7 @@ namespace Character_Morpher
 					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 52, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 53, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 			   },
-#elif KKS || KK
+#elif KOI_API
  {
 					Config.Bind("Adv9 Mouth", $"Mouth Index {index=1}", 41, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
 					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 42, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
@@ -409,6 +451,7 @@ namespace Character_Morpher
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
 							//	StopAllCoroutines();
+							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 							StartCoroutine(ctrl?.CoMorphUpdate(3));
 						}
 			};
@@ -419,7 +462,8 @@ namespace Character_Morpher
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
 							//	StopAllCoroutines();
-							StartCoroutine(ctrl?.CoMorphUpdate(3));
+							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a) 
+								StartCoroutine(ctrl?.CoMorphUpdate(3));
 						}
 			};
 			cfg.enableABMX.SettingChanged += (m, n) =>
@@ -429,12 +473,13 @@ namespace Character_Morpher
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
 							//	StopAllCoroutines();
-							StartCoroutine(ctrl?.CoMorphUpdate(3));
+							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+								StartCoroutine(ctrl?.CoMorphUpdate(3));
 						}
 			};
 
-		
-			
+
+
 			if(StudioAPI.InsideStudio) return;
 			/*
 				Register your logic that depends on a character.
@@ -446,7 +491,7 @@ namespace Character_Morpher
 
 
 			CharaMorpherGUI.Initialize();
-			Harmony.CreateAndPatchAll(typeof(Hooks), GUID);
+			Hooks.Init();
 
 
 		}
@@ -508,6 +553,7 @@ namespace Character_Morpher
 		[DllImport("user32.dll")]
 		static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
 	}
+
 	internal static class MyUtil
 	{
 		/// <summary>
@@ -517,7 +563,7 @@ namespace Character_Morpher
 		/// <param name="list"></param>
 		/// <param name="val"></param>
 		/// <returns></returns>
-		public static T AddReturn<T>(this ICollection<T> list, T val)
+		public static T AddNReturn<T>(this ICollection<T> list, T val)
 		{
 			list.Add(val);
 			return list.Last();
