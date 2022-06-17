@@ -35,14 +35,20 @@ namespace Character_Morpher
 				Harmony.CreateAndPatchAll(typeof(Hooks), GUID);
 			}
 
+#if KOI_API
 			[HarmonyPrefix]
 			[HarmonyPatch(typeof(ChaFileCoordinate), nameof(ChaFileCoordinate.LoadFile),
-				new Type[] { typeof(Stream) }),]
+				new Type[] {
+					typeof(Stream),
+#if HONEY_API
+					typeof (int)
+#endif
+				}),]
 			static void PreLoadCoordinate(ChaFileCoordinate __instance)
 			{
 				if(cfg.enable.Value)
 					if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
-						if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInGame.Value)
+						if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
 
 							foreach(var hnd in CharacterApi.RegisteredHandlers)
 								if(hnd.ControllerType == typeof(CharaMorpherController))
@@ -53,28 +59,24 @@ namespace Character_Morpher
 											Logger.LogDebug("Coordinate being loaded");
 											//for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 											ctrl.MorphChangeUpdate(forceReset: true);
-
-											//copy the current status  
-											ctrl.m_data1.main.CopyStatus(ctrl.ChaControl.fileStatus);
-
-											//Reset original character data
-											ctrl.ChaControl.chaFile.CopyAll(ctrl.m_data1.main);
-
-											ctrl.ChaControl.chaFile.SetCustomBytes(ctrl.m_data1.main.GetCustomBytes(), ChaFileDefine.ChaFileCustomVersion);
+											
 										}
 									}
 			}
 
-
-			//	static List<Coroutine> m_lastCoordinates = new List<Coroutine>();
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(ChaFileCoordinate), nameof(ChaFileCoordinate.LoadFile),
-				new Type[] { typeof(Stream) }),]
+				new Type[] {
+					typeof(Stream),
+#if HONEY_API
+					typeof (int)
+#endif
+				}),]
 			static void PostLoadCoordinate(ChaFileCoordinate __instance)
 			{
 				if(cfg.enable.Value)
 					if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
-						if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInGame.Value)
+						if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
 
 							foreach(var hnd in CharacterApi.RegisteredHandlers)
 								if(hnd.ControllerType == typeof(CharaMorpherController))
@@ -89,9 +91,11 @@ namespace Character_Morpher
 										}
 									}
 			}
+#endif
 
-			static Coroutine m_lastClothsUpdate = null;
 
+
+			static Coroutine m_lastClothsUpdate;
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState)),]
 #if !HONEY_API
@@ -105,27 +109,27 @@ namespace Character_Morpher
 
 				var saveWindow = FindObjectOfType<CharaCustom.CharaCustom>();
 				CvsCaptureMenu capture = null;
-				
+
 				if(saveWindow)
 					capture = saveWindow.GetComponentInChildren<CvsCaptureMenu>();
 				if(capture)
 					if(capture.isActiveAndEnabled)
 					{
-						void donothing() { CharaMorpher_Core.Logger.LogDebug("I see nothing, I hear nothing, I DO NOTHING!!!!"); };
+						void donothing() { Logger.LogDebug("I see nothing, I hear nothing, I DO NOTHING!!!!"); };
 						donothing();//this is very helpful
 					}
 					else
 #endif
 				if(cfg.enable.Value)
-					if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
-						if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInGame.Value)
-							if(ctrl && !ctrl.reloading && ctrl.initLoadFinished)
-							{
-								if(cfg.debug.Value) Logger.LogDebug("The Post hook gets called");
-								if(m_lastClothsUpdate != null)
-									Instance.StopCoroutine(m_lastClothsUpdate);
-								m_lastClothsUpdate = Instance.StartCoroutine(ctrl.CoMorphUpdate(7, forceChange: true));
-							}
+						if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
+							if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
+								if(ctrl && !ctrl.reloading && ctrl.initLoadFinished)
+								{
+									if(cfg.debug.Value) Logger.LogDebug("The Post hook gets called");
+									if(m_lastClothsUpdate != null)
+										Instance.StopCoroutine(m_lastClothsUpdate);
+									m_lastClothsUpdate = Instance.StartCoroutine(ctrl.CoMorphUpdate(7, forceChange: true));
+								}
 
 
 			}
@@ -166,7 +170,7 @@ namespace Character_Morpher
 #if !KK
 							if(ctrl.ChaControl.chaFile == __instance)
 #endif
-								Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
+							Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
 						}
 
 			}
@@ -180,40 +184,78 @@ namespace Character_Morpher
 			{
 				//  CharaMorpher.CharaMorpher_Core.Logger.LogDebug($"Button Name: {ctrler.name.ToLower()}");
 
-				if(KoikatuAPI.GetCurrentGameMode() != GameMode.Maker) return;
+				if(!__instance.interactable) return;
+
+				if(!MakerAPI.InsideMaker) return;
 
 				OnSaveLoadClick(__instance);
 				OnExitSaveClick(__instance);
+				OnLoadClick(__instance);
 			}
 
+			/// <summary>
+			/// Resets the character before a new one is loaded
+			/// </summary>
+			/// <param name="__instance"></param>
+			static void OnLoadClick(Button __instance)
+			{
 
+				var ctrler = __instance.gameObject;
+				if(!ctrler || ctrler.name.IsNullOrEmpty()) return;
+				//reset character to default before saving or loading character 
+#if HONEY_API
+				if(ctrler.GetComponentInParent<CvsO_CharaLoad>())
+					if(ctrler.name.ToLower().Contains("overwrite"))
+#elif KOI_API
+				if(ctrler.name.ToLower().Contains("load"))
+#endif
+						foreach(var hnd in CharacterApi.RegisteredHandlers)
+							if(hnd.ControllerType == typeof(CharaMorpherController))
+								foreach(CharaMorpherController ctrl in hnd.Instances)
+								{
+									Logger.LogDebug("The Load Button was called!!!");
+									//Instance.StopAllCoroutines();
+									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+										ctrl.MorphChangeUpdate(forceReset: true);
+
+
+									ctrl.reloading = true;
+									//ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay:10,forceReset: true, forceChange: true));
+
+									//	ctrl.ForceCardReload();
+								}
+			}
+		
 			static void OnSaveLoadClick(Button __instance)
 			{
 
 				var ctrler = __instance.gameObject;
 				if(!ctrler || ctrler.name.IsNullOrEmpty()) return;
 				//reset character to default before saving or loading character 
-#if HS2 || AI
-				if(ctrler.transform.parent.parent.GetComponentInParent<CharaCustom.CustomCharaWindow>())
+#if HONEY_API
+				if(ctrler.transform.parent?.parent?.GetComponentInParent<CharaCustom.CustomCharaWindow>())
 					if(ctrler.name.ToLower().Contains("overwrite") || ctrler.name.ToLower().Contains("save"))
 #elif KOI_API
+				//	if(ctrler.transform.parent.parent.GetComponentInParent<ChaCustom.cvs>())
 				if(ctrler.name.ToLower().Contains("override") || ctrler.name.ToLower().Contains("save")
 					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
 #endif
 
-					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
-						if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
-							foreach(var hnd in CharacterApi.RegisteredHandlers)
-								if(hnd.ControllerType == typeof(CharaMorpherController))
-									foreach(CharaMorpherController ctrl in hnd.Instances)
-									{
-										if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
-										//Instance.StopAllCoroutines();
-										for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-											ctrl.MorphChangeUpdate(forceReset: true);
+						if(cfg.enable.Value && !cfg.saveWithMorph.Value)
+							if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
+								if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
+									foreach(var hnd in CharacterApi.RegisteredHandlers)
+										if(hnd.ControllerType == typeof(CharaMorpherController))
+											foreach(CharaMorpherController ctrl in hnd.Instances)
+											{
+												if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
+												//Instance.StopAllCoroutines();
+												for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+													ctrl.MorphChangeUpdate(forceReset: true);
 
-										//ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay:10,forceReset: true, forceChange: true));
-									}
+
+												//ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay:10,forceReset: true, forceChange: true));
+											}
 			}
 
 			static void OnExitSaveClick(Button __instance)
@@ -229,15 +271,16 @@ namespace Character_Morpher
 					if(cfg.enable.Value)
 						if(!cfg.saveWithMorph.Value)
 							if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
-								foreach(var hnd in CharacterApi.RegisteredHandlers)
-									if(hnd.ControllerType == typeof(CharaMorpherController))
-										foreach(CharaMorpherController ctrl in hnd.Instances)
-										{
-											if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
-											//	Instance.StopAllCoroutines();
-											for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-												ctrl.MorphChangeUpdate();
-										}
+								if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
+									foreach(var hnd in CharacterApi.RegisteredHandlers)
+										if(hnd.ControllerType == typeof(CharaMorpherController))
+											foreach(CharaMorpherController ctrl in hnd.Instances)
+											{
+												if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
+												//	Instance.StopAllCoroutines();
+												for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+													ctrl.MorphChangeUpdate();
+											}
 			}
 		}
 	}

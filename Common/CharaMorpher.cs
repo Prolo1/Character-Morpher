@@ -79,6 +79,7 @@ namespace Character_Morpher
 		//internal static Subject<string> OnNewTargetImage = new Subject<string>();
 
 		public static MyConfig cfg;
+		public static SetValues sv;
 
 		public struct MyConfig
 		{
@@ -101,8 +102,10 @@ namespace Character_Morpher
 			//Advanced (show up below main) 
 
 			//tests
-			public ConfigEntry<float> initialMorphTest { set; get; }
-			public ConfigEntry<uint> multiUpdateTest { set; get; }
+			public ConfigEntry<float> initialMorphTest { internal set; get; }
+			public ConfigEntry<float> initalBoobTest { get; internal set; }
+			public ConfigEntry<float> initalFaceTest { get; internal set; }
+			public ConfigEntry<uint> multiUpdateTest { internal set; get; }
 			//indexes 
 			public ConfigEntry<int> headIndex { set; get; }
 			public List<ConfigEntry<int>> earIndex { set; get; }
@@ -114,7 +117,10 @@ namespace Character_Morpher
 			public List<ConfigEntry<int>> buttIndex { set; get; }
 			public List<ConfigEntry<int>> legIndex { set; get; }
 		}
+		public struct SetValues
+		{
 
+		}
 
 		public List<KeyValuePair<int, string>> controlCategories = new List<KeyValuePair<int, string>>();
 		void Awake()
@@ -139,7 +145,7 @@ namespace Character_Morpher
 				charDir = Config.Bind("_Main_", "Directory Path", femalepath, new ConfigDescription("Directory where character is stored", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
 				imageName = Config.Bind("_Main_", "Card Name", "sample.png", new ConfigDescription("The character card used to morph", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
 				sliderExtents = Config.Bind("_Main_", "Slider Extents", 200u, new ConfigDescription("How far the slider values go above default (e.i. setting value to 10 gives values -10 -> 110)", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true })),
-				debug = Config.Bind("_Main_", "Debug", false, new ConfigDescription("Allows debug logs to be written to the log file", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true })),
+				debug = Config.Bind("_Main_", "Debug Logging", false, new ConfigDescription("Allows debug logs to be written to the log file", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true })),
 
 				//you don't need to see this in game
 				defaults = new List<ConfigEntry<float>>{
@@ -213,10 +219,13 @@ namespace Character_Morpher
 
 #if KOI_API
 				initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.47f, new ConfigDescription("Used for calculations on reload (0.47 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
-#elif HONEY_API
-				initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.47f, new ConfigDescription("Used for calculations on reload (0.47 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
-#endif
 				multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
+#elif HONEY_API
+				initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.0f, new ConfigDescription("Used for calculations on reload (0.0 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
+				multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 1u, new ConfigDescription("Used to determine how many extra updates are done per-frame (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
+#endif
+				initalBoobTest = Config.Bind("_Testing_", "Init Boob value", 0.05f, new ConfigDescription("Used for calculations on reload (HS2 Only)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
+				initalFaceTest = Config.Bind("_Testing_", "Init Face value", 0.05f, new ConfigDescription("Used for calculations on reload (HS2 Only)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
 
 
 				headIndex = Config.Bind("Adv1 Head", "Head Index", (int)ChaFileDefine.BodyShapeIdx.HeadSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true })),
@@ -452,7 +461,7 @@ namespace Character_Morpher
 						{
 							//	StopAllCoroutines();
 							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-							StartCoroutine(ctrl?.CoMorphUpdate(3));
+								StartCoroutine(ctrl?.CoMorphUpdate(3));
 						}
 			};
 			cfg.enableInGame.SettingChanged += (m, n) =>
@@ -462,7 +471,7 @@ namespace Character_Morpher
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
 							//	StopAllCoroutines();
-							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a) 
+							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 								StartCoroutine(ctrl?.CoMorphUpdate(3));
 						}
 			};
@@ -557,7 +566,7 @@ namespace Character_Morpher
 	internal static class MyUtil
 	{
 		/// <summary>
-		/// Adds a value to a list and returns it
+		/// Adds a value to the end of a list and returns it
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="list"></param>
