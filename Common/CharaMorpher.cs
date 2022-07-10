@@ -21,6 +21,8 @@ using UnityEngine.Events;
 using UniRx;
 using UnityEngine;
 using System.Runtime.InteropServices;
+using KKABMX.Core;
+
 
 #if HONEY_API
 
@@ -79,7 +81,6 @@ namespace Character_Morpher
 		//internal static Subject<string> OnNewTargetImage = new Subject<string>();
 
 		public static MyConfig cfg;
-		public static SetValues sv;
 
 		public struct MyConfig
 		{
@@ -103,11 +104,13 @@ namespace Character_Morpher
 
 			//tests
 			public ConfigEntry<float> initialMorphTest { internal set; get; }
-			public ConfigEntry<float> initalBoobTest { get; internal set; }
-			public ConfigEntry<float> initalFaceTest { get; internal set; }
+			public ConfigEntry<float> initalBoobTest { internal set; get; }
+			public ConfigEntry<float> initalFaceTest { internal set; get; }
 			public ConfigEntry<uint> multiUpdateTest { internal set; get; }
+			public ConfigEntry<uint> fullBoneResetTest { internal set; get; }
+
 			//indexes 
-			public ConfigEntry<int> headIndex { set; get; }
+			public List<ConfigEntry<int>> headIndex { set; get; }
 			public List<ConfigEntry<int>> earIndex { set; get; }
 			public List<ConfigEntry<int>> eyeIndex { set; get; }
 			public List<ConfigEntry<int>> mouthIndex { set; get; }
@@ -117,10 +120,8 @@ namespace Character_Morpher
 			public List<ConfigEntry<int>> buttIndex { set; get; }
 			public List<ConfigEntry<int>> legIndex { set; get; }
 		}
-		public struct SetValues
-		{
 
-		}
+
 
 		public List<KeyValuePair<int, string>> controlCategories = new List<KeyValuePair<int, string>>();
 		void Awake()
@@ -218,209 +219,214 @@ namespace Character_Morpher
 				},
 
 #if KOI_API
-				initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.47f, new ConfigDescription("Used for calculations on reload (0.47 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
-				multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
+				initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.47f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH (0.47 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(),
+				multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(),
 #elif HONEY_API
-				initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.0f, new ConfigDescription("Used for calculations on reload (0.0 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
-				multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 1u, new ConfigDescription("Used to determine how many extra updates are done per-frame (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
+				initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.0f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH (0.0 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(),
+				initalBoobTest = Config.Bind("_Testing_", "Init Boob value", 0.00f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH (HS2 Only)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(),
+				initalFaceTest = Config.Bind("_Testing_", "Init Face value", 0.00f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH (HS2 Only)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(),
+				multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(),
 #endif
-				initalBoobTest = Config.Bind("_Testing_", "Init Boob value", 0.05f, new ConfigDescription("Used for calculations on reload (HS2 Only)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
-				initalFaceTest = Config.Bind("_Testing_", "Init Face value", 0.05f, new ConfigDescription("Used for calculations on reload (HS2 Only)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true, ShowRangeAsPercent = false })),
+				fullBoneResetTest = Config.Bind("_Testing_", "Full Bone Reset Delay", 3u, new ConfigDescription("Used to determine how long to wait for full bone reset. RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(),
 
 
-				headIndex = Config.Bind("Adv1 Head", "Head Index", (int)ChaFileDefine.BodyShapeIdx.HeadSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = index, IsAdvanced = true })),
-
+				headIndex = new List<ConfigEntry<int>>{
+					Config.Bind("Adv1 Head", $"Head Index {index=1}", (int)ChaFileDefine.BodyShapeIdx.HeadSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv1 Head", $"Head Index {++index}", (int)ChaFileDefine.BodyShapeIdx.NeckW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv1 Head", $"Head Index {++index}", (int)ChaFileDefine.BodyShapeIdx.NeckZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })).ConfigDefaulter(),
+				},
 				brestIndex = new List<ConfigEntry<int>>
 #if HONEY_API
                 {
-					Config.Bind("Adv2 Brest", $"Brest Index {index=1}", 1, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 2, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 3, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 4, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 5, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 6, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 7, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 8, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
+					Config.Bind("Adv2 Brest", $"Brest Index {index=1}", 1, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 2, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 3, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 4, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 5, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 6, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 7, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 8, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
 				},
 #elif KOI_API
 {
-					Config.Bind("Adv2 Brest", $"Brest Index {index=1}", 4, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 5, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 6, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 7, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 8, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 9, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 10, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 11, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 12, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 13, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })),
+					Config.Bind("Adv2 Brest", $"Brest Index {index=1}", 4, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true }))  .ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 5, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })) .ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 6, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })) .ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 7, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })) .ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 8, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })) .ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 9, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })) .ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 10, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 11, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 12, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", 13, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
 				   },
 #endif
 				torsoIndex = new List<ConfigEntry<int>>
 #if HONEY_API
                 {
-					Config.Bind("Adv3 Torso", $"Torso Index {index=1}", 14, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 15, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 16, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 17, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 18, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv3 Torso", $"Torso Index {index=1}", 14, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 15, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 16, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 17, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 18, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 				  },
 #elif KOI_API
 {
-					Config.Bind("Adv3 Torso", $"Torso Index {index=1}", 14, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 15, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 16, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 17, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 18, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 21, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 22, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 23, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv3 Torso", $"Torso Index {index=1}", 14, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 15, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 16, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 17, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 18, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 21, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 22, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}", 23, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 				  },
 #endif
 				armIndex = new List<ConfigEntry<int>>
 #if HONEY_API
                 {
-					Config.Bind("Adv4 Arm", $"Arm Index {index=1}", 12, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 13, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
-					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 29, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
-					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
-					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
+					Config.Bind("Adv4 Arm", $"Arm Index {index=1}", 12, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(),
+					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 13, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 29, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
 				  },
 #elif KOI_API
  {
-					Config.Bind("Adv4 Arm", $"Arm Index {index=1}", 37, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 38, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 39, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 40, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 41, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 42, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 43, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv4 Arm", $"Arm Index {index=1}", 37, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 38, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 39, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 40, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 41, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 42, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv4 Arm", $"Arm Index {++index}", 43, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 				  },
 #endif
 				buttIndex = new List<ConfigEntry<int>>
 #if HONEY_API
                 {
-					Config.Bind("Adv5 Butt", $"Butt Index {index=1}", 21, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv5 Butt", $"Butt Index {++index}", 22, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv5 Butt", $"Butt Index {++index}", 23, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv5 Butt", $"Butt Index {++index}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv5 Butt", $"Butt Index {index=1}", 21, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv5 Butt", $"Butt Index {++index}", 22, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv5 Butt", $"Butt Index {++index}", 23, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv5 Butt", $"Butt Index {++index}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 				  },
 #elif KOI_API
  {
-					Config.Bind("Adv5 Butt", $"Butt Index {index=1}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
-					Config.Bind("Adv5 Butt", $"Butt Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv5 Butt", $"Butt Index {index=1}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv5 Butt", $"Butt Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(),
 				  },
 #endif
 				legIndex = new List<ConfigEntry<int>>
 #if HONEY_API
                 {
-					Config.Bind("Adv6 Leg", $"Leg Index {index=1}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 28, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv6 Leg", $"Leg Index {index=1}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 28, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 32), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(),
 				  },
 #elif KOI_API
 {
-					Config.Bind("Adv6 Leg", $"Leg Index {index=1}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 28, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 29, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 32, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 33, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 34, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 35, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 36, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv6 Leg", $"Leg Index {index=1}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 28, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 29, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 32, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 33, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 34, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 35, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv6 Leg", $"Leg Index {++index}", 36, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 44), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 				  },
 #endif
 				earIndex = new List<ConfigEntry<int>>
 #if HONEY_API
                 {
-					Config.Bind("Adv7 Ear", $"Ear Index {index=1}", 54, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 55, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 56, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 57, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 58, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv7 Ear", $"Ear Index {index=1}", 54, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 55, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 56, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 57, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 58, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 				},
 #elif KOI_API
  {
-					Config.Bind("Adv7 Ear", $"Ear Index {index=1}", 47, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 48, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 49, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 50, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 51, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv7 Ear", $"Ear Index {index=1}", 47, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 48, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 49, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 50, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv7 Ear", $"Ear Index {++index}", 51, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 				},
 #endif
 				eyeIndex = new List<ConfigEntry<int>>
 #if HONEY_API
                 {
-					Config.Bind("Adv8 Eye", $"Eye Index {index=1}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 21, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 22, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 23, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 28, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 29, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv8 Eye", $"Eye Index {index=1}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 21, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 22, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 23, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 28, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 29, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 				},
 #elif KOI_API
 {
-					Config.Bind("Adv8 Eye", $"Eye Index {index=1}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 21, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 22, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 23, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 28, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 29, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 32, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 33, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 34, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 35, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 36, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 37, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv8 Eye", $"Eye Index {index=1}", 19, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 20, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 21, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 22, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 23, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 24, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 25, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 26, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 27, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 28, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 29, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 30, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 31, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 32, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 33, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 34, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 35, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 36, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv8 Eye", $"Eye Index {++index}", 37, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 				},
 #endif
 				mouthIndex = new List<ConfigEntry<int>>
 #if HONEY_API
                 {
-					Config.Bind("Adv9 Mouth", $"Mouth Index {index=1}", 47, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 48, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 49, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 50, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 51, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 52, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 53, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {index=1}", 47, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 48, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 49, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 50, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 51, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 52, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 53, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 			   },
 #elif KOI_API
  {
-					Config.Bind("Adv9 Mouth", $"Mouth Index {index=1}", 41, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 42, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 43, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 44, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 45, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
-					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 46, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {index=1}", 41, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 42, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 43, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 44, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 45, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Mouth", $"Mouth Index {++index}", 46, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 52), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 			   },
 #endif
 			};
 
-			//	Logger.enable = cfg.debug.Value;
-			//	cfg.debug.SettingChanged += (m,n) => { Logger.enable = cfg.debug.Value; };
+
+			//	Logger.enable = cfg.debug multiUpdateTest  .Value;
+			//	cfg.debug.SettingChanged  fullBoneResetTest+= (m,n) => { Logger.enable = cfg.debug.Value; };
 
 			cfg.charDir.SettingChanged += (m, n) =>
 			{
@@ -430,7 +436,9 @@ namespace Character_Morpher
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
 							//StopAllCoroutines();
-							StartCoroutine(ctrl?.CoMorphTargetUpdate());
+							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
+
+							StartCoroutine(ctrl?.CoFullBoneRrfresh(6 + (int)cfg.fullBoneResetTest.Value));
 						}
 				//Logger.LogDebug("");
 				string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
@@ -445,7 +453,8 @@ namespace Character_Morpher
 						foreach(CharaMorpherController ctrl in hnd.Instances)
 						{
 							//StopAllCoroutines();
-							StartCoroutine(ctrl?.CoMorphTargetUpdate());
+							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
+							StartCoroutine(ctrl?.CoFullBoneRrfresh(6 + (int)cfg.fullBoneResetTest.Value));
 							///	StartCoroutine(ctrl?.CoMorphReload(abmxOnly: true));
 						}
 				string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
@@ -462,6 +471,9 @@ namespace Character_Morpher
 							//	StopAllCoroutines();
 							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 								StartCoroutine(ctrl?.CoMorphUpdate(3));
+
+							StartCoroutine(ctrl?.CoFullBoneRrfresh(3 + (int)cfg.fullBoneResetTest.Value));
+
 						}
 			};
 			cfg.enableInGame.SettingChanged += (m, n) =>
@@ -473,8 +485,12 @@ namespace Character_Morpher
 							//	StopAllCoroutines();
 							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 								StartCoroutine(ctrl?.CoMorphUpdate(3));
+
+							StartCoroutine(ctrl?.CoFullBoneRrfresh(3 + (int)cfg.fullBoneResetTest.Value));
+
 						}
 			};
+
 			cfg.enableABMX.SettingChanged += (m, n) =>
 			{
 				foreach(var hnd in CharacterApi.RegisteredHandlers)
@@ -484,6 +500,8 @@ namespace Character_Morpher
 							//	StopAllCoroutines();
 							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 								StartCoroutine(ctrl?.CoMorphUpdate(3));
+							StartCoroutine(ctrl?.CoFullBoneRrfresh(3 + (int)cfg.fullBoneResetTest.Value));
+
 						}
 			};
 
@@ -507,7 +525,7 @@ namespace Character_Morpher
 
 
 		/// <summary>
-		/// makes sure a path fallows the format "this/is/a/path" and not "this\is\a\path" or similar
+		/// makes sure a path fallows the format "this/is/a/path" and not "this//is\\a/path" or similar
 		/// </summary>
 		/// <param name="dir"></param>
 		/// <returns></returns>
@@ -515,7 +533,7 @@ namespace Character_Morpher
 		{
 			dir = dir.Trim().Replace('\\', '/').Replace("//", "/");
 
-			if((dir.LastIndexOf('.') <= dir.LastIndexOf('/'))
+			if((dir.LastIndexOf('.') < dir.LastIndexOf('/'))
 				&& dir.Last() != '/')
 				dir += '/';
 
@@ -577,6 +595,32 @@ namespace Character_Morpher
 			list.Add(val);
 			return list.Last();
 		}
+
+		/// <summary>
+		/// Defaults the ConfigEntry on game launch
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="v1"></param>
+		/// <param name="v2"></param>
+		public static ConfigEntry<T> ConfigDefaulter<T>(this ConfigEntry<T> v1, T v2)
+		{
+			if(v1 == null) return v1;
+
+			v1.Value = v2;
+			v1.SettingChanged += (m, n) => { if(v2 != null) v2 = v1.Value; };
+			return v1;
+		}
+
+		/// <summary>
+		/// Defaults the ConfigEntry on game launch
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="v1"></param>
+		/// <param name="v2"></param>
+		public static ConfigEntry<T> ConfigDefaulter<T>(this ConfigEntry<T> v1) =>
+			v1.ConfigDefaulter((T)v1.DefaultValue);
+
+
 	}
 
 }

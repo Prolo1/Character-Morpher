@@ -8,6 +8,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using KKAPI;
+using KKAPI.MainGame;
+using KKAPI.Utilities;
 using KKAPI.Chara;
 using KKABMX.Core;
 using KKAPI.Maker;
@@ -23,7 +25,6 @@ using ChaCustom;
 using UnityEngine;
 using UnityEngine.UI;
 using static Character_Morpher.CharaMorpher_Core;
-using ADV.Commands.Base;
 
 namespace Character_Morpher
 {
@@ -914,16 +915,25 @@ namespace Character_Morpher
 
 			UpdateMorphTarget();
 
-			for(int a = 0; a < delay; ++a)
-				yield return null;
+			//for(int a = 0; a < delay; ++a)
+			yield return null;
 
 			MorphChangeUpdate(updateValues: updateValues, initReset: initReset);
+
+			//if(updateValues)
+			//{
+			//
+			//	if(coFullRefresh != null)
+			//		StopCoroutine(coFullRefresh);
+			//	coFullRefresh = StartCoroutine(CoFullBoneRrfresh(10));
+			//}
 
 			reloading = false;
 			initLoadFinished = true;
 			yield break;
 		}
 
+		Coroutine coFullRefresh;
 		public IEnumerator CoMorphUpdate(int delay = 6, bool forceReset = false, bool initReset = false, bool forceChange = false)
 		{
 			//var tmp = reloading;
@@ -943,9 +953,28 @@ namespace Character_Morpher
 				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
 			}
 
+			//	if(coFullRefresh != null)
+			//		StopCoroutine(coFullRefresh);
+			//	coFullRefresh = StartCoroutine(CoFullBoneRrfresh(10));
+
 			yield break;
 		}
+		public IEnumerator CoFullBoneRrfresh(int delay = 5)
+		{
+			for(int a = 0; a < delay; ++a)
+				yield return null;
 
+			yield return StartCoroutine(CoMorphUpdate(delay: 0, forceReset: true));
+			yield return StartCoroutine(CoMorphUpdate(delay: 1));
+
+			var boneCtrl = ChaControl.GetComponent<BoneController>();
+			yield return new WaitWhile(() => (boneCtrl?.NeedsFullRefresh ?? true) || (boneCtrl?.NeedsBaselineUpdate ?? true));
+
+			if(boneCtrl)
+				boneCtrl.NeedsFullRefresh = true;
+
+			yield break;
+		}
 		public IEnumerator CoMorphAfterABMX(int delayExtra = 5, bool forcereset = false, bool forceChange = false)
 		{
 			var boneCtrl = ChaControl.GetComponent<BoneController>();
@@ -957,6 +986,9 @@ namespace Character_Morpher
 
 			yield return StartCoroutine(CoMorphUpdate(delayExtra, forcereset, forceChange: forceChange));
 
+			if(coFullRefresh != null)
+				StopCoroutine(coFullRefresh);
+			coFullRefresh = StartCoroutine(CoFullBoneRrfresh((int)cfg.fullBoneResetTest.Value));
 
 			yield break;
 		}
@@ -973,7 +1005,7 @@ namespace Character_Morpher
 			if(reloading) return;
 
 			reloading = true;
-			//initLoadFinished = false;
+
 			var boneCtrl = ChaControl.GetComponent<BoneController>();
 
 			if(!abmxOnly)
@@ -1001,25 +1033,20 @@ namespace Character_Morpher
 
 
 
-			//Update the model
-			//boneCtrl.NeedsFullRefresh = true;
-			//boneCtrl.NeedsBaselineUpdate = true;
-
-
-			//if(cfg.enable.Value)
-			//	if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
-			//		if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
+		//	if(initLoadFinished)
 			{
-				for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-					MorphChangeUpdate(initReset: true);
+				if(MakerAPI.InsideMaker)
+					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+						MorphChangeUpdate(initReset: true);
 #if HONEY_API
-				resetBoobs(abmx: false);
-				resetFace(abmx: false);
+				//			resetBoobs(abmx: true);
+				//			resetFace(abmx: true);
 #endif
-
-				for(int a = -1; a < cfg.multiUpdateTest.Value + 6; ++a)
-					StartCoroutine(CoMorphAfterABMX(delayExtra: 20, forceChange: true));
+				boneCtrl.NeedsFullRefresh = true;
 			}
+
+			for(int a = -1; a < cfg.multiUpdateTest.Value + 6; ++a)
+				StartCoroutine(CoMorphAfterABMX(delayExtra: 20, forceChange: true));
 
 			//post update
 			IEnumerator CoLaterStatus(int delayFrames)
@@ -1039,7 +1066,7 @@ namespace Character_Morpher
 			}
 			StartCoroutine(CoLaterStatus(11));//I just need to do this stuff later
 
-			//CharaMorpher_Core.Logger.LogDebug("Morphing model...");
+
 		}
 
 		public void UpdateMorphTarget()
@@ -1108,8 +1135,6 @@ namespace Character_Morpher
 					//ChaControl.Load();
 				}
 
-			if(KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame && ChaControl.sex != 1/*(allowed in maker not in main game)*/)
-				return;
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("replace data 2");
 			m_data2.Copy(charData);
@@ -1118,13 +1143,8 @@ namespace Character_Morpher
 		/// <inheritdoc/>
 		protected override void OnReload(GameMode currentGameMode, bool keepState)
 		{
-			//#if !HONEY_API
-
-			//	if(!forcedReload)
 			reloading = false;
 			OnCharaReload(currentGameMode);
-			//#endif
-			//	reloading = true;
 		}
 
 		/// <inheritdoc/>
@@ -1134,8 +1154,6 @@ namespace Character_Morpher
 			if(cfg.enable.Value && !cfg.saveWithMorph.Value)
 				for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 					StartCoroutine(CoMorphUpdate(delay: 10));//turn the card back after
-
-
 		}
 
 		/// <inheritdoc/> 
@@ -1392,7 +1410,7 @@ namespace Character_Morpher
 
 								// CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
 #if KOI_API
-							switch(boneDatabaseCatagories.Find((k) => k.Key.Trim().ToLower().Contains(content)).Value)
+								switch(boneDatabaseCatagories.Find((k) => k.Key.Trim().ToLower().Contains(content)).Value)
 #else
 								switch(bonecatagories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
 #endif
@@ -1413,7 +1431,8 @@ namespace Character_Morpher
 				}
 
 			//Slider Defaults set
-			SetDefaultSliders();
+			if(MakerAPI.InsideMaker)
+				SetDefaultSliders();
 
 #if HONEY_API
 			ChaControl.ChangeNipColor();
@@ -1510,7 +1529,8 @@ namespace Character_Morpher
 				}
 
 			//Slider Defaults set
-			SetDefaultSliders();
+			if(MakerAPI.InsideMaker)
+				SetDefaultSliders();
 		}
 
 		private void MorphValuesUpdate(bool reset, bool initReset = false, bool abmx = true)
@@ -1542,8 +1562,8 @@ namespace Character_Morpher
 #if KOI_API
 				charaCtrl.fileBody.skinMainColor = Color.LerpUnclamped(m_data1.main.custom.body.skinMainColor, m_data2.main.custom.body.skinMainColor,
 									enable * GetControlValue("skin") * GetControlValue("base skin"));
-				charaCtrl.fileBody.skinSubColor = Color.LerpUnclamped(m_data1.main.custom.body.skinSubColor, m_data2.main.custom.body.skinSubColor,
-									enable * GetControlValue("skin") * GetControlValue("base skin"));
+				//	charaCtrl.fileBody.skinSubColor = Color.LerpUnclamped(m_data1.main.custom.body.skinSubColor, m_data2.main.custom.body.skinSubColor,
+				//						enable * GetControlValue("skin") * GetControlValue("base skin"));
 #elif HONEY_API
 				charaCtrl.fileBody.skinColor = Color.LerpUnclamped(m_data1.main.custom.body.skinColor, m_data2.main.custom.body.skinColor,
 									enable * GetControlValue("skin") * GetControlValue("base skin"));
@@ -1621,7 +1641,7 @@ namespace Character_Morpher
 							d1 = m_data1.main.custom.body.shapeValueBody[a],
 							d2 = m_data2.main.custom.body.shapeValueBody[a];
 
-						if(cfg.headIndex.Value == a)
+						if(cfg.headIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("body", fullVal: initReset) * GetControlValue("head", fullVal: initReset));
 						//result = MyLerp(d1, d2,
@@ -1731,29 +1751,52 @@ namespace Character_Morpher
 
 
 			//Slider Defaults set
-			SetDefaultSliders();
+			if(MakerAPI.InsideMaker)
+				SetDefaultSliders();
 
 
 
 			//colour update
-			charaCtrl.AddUpdateCMBodyColorFlags
+			if(initLoadFinished)
+			{
+				charaCtrl.AddUpdateCMBodyColorFlags
 #if HONEY_API
-							(true, true, false, true);
+					(true, true, true, true);
 #elif KOI_API
-							(true, true, false, false, true, false);
+					(true, true, true, true, true, true);
 #endif
-			charaCtrl.AddUpdateCMFaceColorFlags
-				(true, true, false, false, false, false, false);
 
-			//reset the textures in game
-			charaCtrl.CreateBodyTexture();
-			charaCtrl.CreateFaceTexture();
+				charaCtrl.AddUpdateCMFaceColorFlags
+					(true, true, true, true, true, true, true);
+
+				if(!MakerAPI.InsideMaker)
+				{
+
+					charaCtrl.AddUpdateCMBodyTexFlags
+#if HONEY_API
+						(true, true, true, true);
+#elif KOI_API
+						(true, true, true, true, true);
+#endif
+					charaCtrl.AddUpdateCMFaceTexFlags
+						(true, true, true, true, true, true, true);
+				}
+
+
+				//reset the textures in game
+				charaCtrl.CreateBodyTexture();
+				charaCtrl.CreateFaceTexture();
+			}
 
 #if HONEY_API
 			//  charaCtrl.ChangeNipColor();
 			//  charaCtrl.ChangeNipGloss();
 			//  charaCtrl.ChangeNipKind();
 			//  charaCtrl.ChangeNipScale();
+
+
+			//boneCtrl.NeedsFullRefresh = true;//may need to be called after slider movement
+			//boneCtrl.NeedsBaselineUpdate = true;
 
 #elif KOI_API
 			//	charaCtrl.ChangeSettingBodyDetail();
@@ -2089,7 +2132,7 @@ namespace Character_Morpher
 #if HS2
 				current.Apply(boneCtrl.CurrentCoordinate.Value, null, MakerAPI.InsideMaker);
 #else
-				current.Apply(boneCtrl.CurrentCoordinate.Value, null, KKAPI.MainGame.GameAPI.InsideHScene);
+				current.Apply(boneCtrl.CurrentCoordinate.Value, null, GameAPI.InsideHScene);
 #endif
 			}
 			catch

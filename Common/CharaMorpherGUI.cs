@@ -32,6 +32,7 @@ using UnityEngine.UI;
 using ADV.Commands.Base;
 using static KKAPI.Utilities.OpenFileDialog;
 using static Character_Morpher.CharaMorpher_Core;
+using KKABMX.Core;
 
 namespace Character_Morpher
 {
@@ -125,7 +126,13 @@ namespace Character_Morpher
 		static List<MakerSlider> sliders = new List<MakerSlider>();
 
 
+		static IEnumerator CoOnGUIExists(BaseGuiEntry gui, UnityAction act)
+		{
+			yield return new WaitUntil(() => gui.Exists);//the thing neeeds to exist first
 
+			act();
+		}
+		//	static Coroutine boneRefresh = null;
 		private static void AddCharaMorpherMenu(RegisterCustomControlsEvent e)
 		{
 			var inst = CharaMorpher_Core.Instance;
@@ -197,18 +204,68 @@ namespace Character_Morpher
 								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {ctrl.controls.all[settingName]}");
 								ctrl.controls.all[settingName] = (float)Math.Round(val, 2);
 
+
+
 								//if(refreshBeforeChange != null)
 								//	inst.StopCoroutine(refreshBeforeChange);
 								//	inst.StartCoroutine(ctrl.CoMorphUpdate(delay: 0, forceReset: true));
 								for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 									ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: a));//this may be necessary (it is)
+
+
 							});
 
+
+				foreach(var hnd in CharacterApi.RegisteredHandlers)
+					if(hnd.ControllerType == typeof(CharaMorpherController))
+						foreach(CharaMorpherController ctrl in hnd.Instances)
+							inst.StartCoroutine(CoOnGUIExists(currSlider, () =>
+								{
+
+									// CharaMorpher_Core.Logger.LogDebug($"Slider ctrl object name: {currSlider.ControlObject.name}");
+
+									var slid = currSlider.ControlObject.GetComponentInChildren<Slider>();
+
+									slid?.OnPointerUpAsObservable().Subscribe((p) =>
+									{
+										if(!slid.interactable) return;
+
+										if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Slider release was called");
+
+										ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(1 + (int)cfg.fullBoneResetTest.Value));
+									});
+
+									var inputf = currSlider.ControlObject.GetComponentInChildren<InputField>();
+
+									inputf?.onEndEdit.AddListener((p) =>
+									{
+										if(!inputf.interactable) return;
+
+										/*if(cfg.debug.Value)*/ CharaMorpher_Core.Logger.LogDebug($"Slider value box was called");
+
+										ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(1 + (int)cfg.fullBoneResetTest.Value));
+									});
+
+									var btn = currSlider.ControlObject.GetComponentInChildren<Button>();
+
+									btn?.onClick.AddListener(() =>
+									{
+										if(!btn.interactable) return;
+
+										if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Reset button was called");
+
+										ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(1 + (int)cfg.fullBoneResetTest.Value));
+									});
+
+
+									//	currSlider.ControlObject.GetComponentInChildren<Slider>().
+									//		OnSubmitAsObservable().Subscribe((p) => { ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh((int)cfg.fullBoneResetTest.Value)) });
+								}));
 
 				OnSliderValueChange.AddListener(() =>
 				{
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("controls updating");
-				
+
 					foreach(var hnd in CharacterApi.RegisteredHandlers)
 						if(hnd.ControllerType == typeof(CharaMorpherController))
 							foreach(CharaMorpherController ctrl in hnd.Instances)
@@ -236,16 +293,28 @@ namespace Character_Morpher
 			void CreateVoiceSlider(string settingName, int index)
 			{
 				CreatSlider(settingName, index);
-				IEnumerator CoOnSliderExists(MakerSlider slider)
-				{
-					yield return new WaitUntil(() => slider.Exists);//the thing neeeds to exist first
 
-					slider.ControlObject.GetComponentInChildren<Slider>().
-						OnPointerUpAsObservable().Subscribe((p) => { charaCustom.PlayVoice(); });
-					slider.ControlObject.GetComponentInChildren<Slider>().
-						OnSubmitAsObservable().Subscribe((p) => { charaCustom.PlayVoice(); });
+				var mySlider = sliders.Last();
+				IEnumerator CoVoiceAfterFullRefresh()
+				{
+					yield return new WaitWhile(
+						() => MakerAPI.GetCharacterControl().GetComponent<BoneController>().NeedsFullRefresh);
+					charaCustom.PlayVoice();
 				}
-				inst.StartCoroutine(CoOnSliderExists(sliders.Last()));
+
+				inst.StartCoroutine(CoOnGUIExists(mySlider, () =>
+				{
+					mySlider.ControlObject.GetComponentInChildren<Slider>().
+						OnPointerUpAsObservable().Subscribe((p) =>
+						{
+							inst.StartCoroutine(CoVoiceAfterFullRefresh());
+						});
+					mySlider.ControlObject.GetComponentInChildren<Slider>().
+						OnSubmitAsObservable().Subscribe((p) =>
+						{
+							inst.StartCoroutine(CoVoiceAfterFullRefresh());
+						});
+				}));
 			}
 
 			foreach(var ctrl in CharaMorpher_Core.Instance.controlCategories)
@@ -303,7 +372,6 @@ namespace Character_Morpher
 			#endregion
 
 
-
 			#region Save/Load Buttons
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Adding buttons");
@@ -316,7 +384,7 @@ namespace Character_Morpher
 					   def.Value = sliders[count++].Value * 100f;
 				   CharaMorpher_Core.Logger.LogMessage("Saved CharaMorpher Default");
 
-				   Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
+				   Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
 			   });
 
 			e.AddControl(new MakerButton("Load Default", category, CharaMorpher_Core.Instance))
@@ -329,7 +397,7 @@ namespace Character_Morpher
 							  for(int a = 0; a < ctrl.controls.all.Count; ++a)
 							  {
 								  ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = (float)cfg.defaults[a].Value * .01f;
-								
+
 								  for(int b = -1; b < cfg.multiUpdateTest.Value; ++b)
 									  ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: 0));//this may be necessary 
 							  }
