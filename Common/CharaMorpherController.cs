@@ -15,6 +15,8 @@ using KKABMX.Core;
 using KKAPI.Maker;
 using ExtensibleSaveFormat;
 
+using Manager;
+
 #if HONEY_API
 using CharaCustom;
 using AIChara;
@@ -39,10 +41,10 @@ namespace Character_Morpher
 				public bool isSplit { get; private set; } = false;
 				//public List<BoneModifier> other = new List<BoneModifier>();
 
-				public void Populate(CharaMorpherController morphControl)
+				public void Populate(CharaMorpherController morphControl, bool morph = false)
 				{
-					var boneCtrl = morphControl.GetComponent<BoneController>();
-					var charaCtrl = morphControl.ChaControl;
+					var boneCtrl = morph ? morphTarget.extraCharacter.GetComponent<BoneController>() : morphControl.GetComponent<BoneController>();
+					var charaCtrl = morph ? morphTarget.extraCharacter : morphControl.ChaControl;
 
 					//Store Bonemod Extended Data
 					{//helps get rid of data sooner
@@ -146,7 +148,7 @@ namespace Character_Morpher
 				id = data.id;
 			}
 
-			public void Copy(CharaMorpherController data)
+			public void Copy(CharaMorpherController data, bool morph = false)
 			{
 
 #if HONEY_API
@@ -156,10 +158,10 @@ namespace Character_Morpher
 
 				try
 				{
-					main.CopyAll(data.ChaFileControl);
+					main.CopyAll(morph ? morphTarget.chaFile : data.ChaFileControl);
 				}
 				catch { }
-				abmx.Populate(data);
+				abmx.Populate(data, morph);
 #if HONEY_API
 				string cardID = data.ChaControl.chaFile.dataID;
 #elif KKS
@@ -813,17 +815,62 @@ namespace Character_Morpher
 		#endregion
 #endif
 ;
+		internal static MorphTarget morphTarget = new MorphTarget();
+		internal class MorphTarget
+		{
+			private static ChaControl _extraCharacter = null;
+
+			public static bool initalize
+			{
+				set
+				{
+					if(value)
+					{
+						if(_extraCharacter == null)
+						{
+							_extraCharacter =
+#if HONEY_API
+							Character.Instance.CreateChara(1, null, -10);
+#elif KK
+							Character.Instance.CreateFemale(null, -10);
+#elif KKS
+							Character.CreateFemale(null, -10);
+#endif
+							CharaMorpher_Core.Logger.LogDebug("created new character instance");
+						}
+						return;
+					}
+#if KKS
+					Character.DeleteChara(_extraCharacter);
+#else
+					Character.Instance.DeleteChara(_extraCharacter);
+#endif
+
+				}
+			}
+			public ChaControl extraCharacter
+			{
+				get => _extraCharacter;
+
+			}
+			public ChaFileControl chaFile { get { return extraCharacter?.chaFile; } }
+		}
+
+
 
 		protected override void Awake()
 		{
 			base.Awake();
 
-			var core = CharaMorpher_Core.Instance;
+			var core = Instance;
 
 			foreach(var ctrl in core.controlCategories)
 				controls.all[ctrl.Value] = cfg.defaults[ctrl.Key].Value * .01f;
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
+
+
+
 
 
 #if HONEY_API
@@ -837,6 +884,7 @@ namespace Character_Morpher
 		{
 			//	CharacterApi.CharacterReloaded -= HoneyReload;
 
+			MorphTarget.initalize = false;
 			base.OnDestroy();
 		}
 
@@ -959,7 +1007,7 @@ namespace Character_Morpher
 
 			yield break;
 		}
-		public IEnumerator CoFullBoneRrfresh(int delay = 5)
+		/*public IEnumerator CoFullBoneRrfresh(int delay = 5)
 		{
 			for(int a = 0; a < delay; ++a)
 				yield return null;
@@ -974,7 +1022,7 @@ namespace Character_Morpher
 				boneCtrl.NeedsFullRefresh = true;
 
 			yield break;
-		}
+		}*/
 		public IEnumerator CoMorphAfterABMX(int delayExtra = 5, bool forcereset = false, bool forceChange = false)
 		{
 			var boneCtrl = ChaControl.GetComponent<BoneController>();
@@ -986,9 +1034,9 @@ namespace Character_Morpher
 
 			yield return StartCoroutine(CoMorphUpdate(delayExtra, forcereset, forceChange: forceChange));
 
-			if(coFullRefresh != null)
-				StopCoroutine(coFullRefresh);
-			coFullRefresh = StartCoroutine(CoFullBoneRrfresh((int)cfg.fullBoneResetTest.Value));
+			//if(coFullRefresh != null)
+			//	StopCoroutine(coFullRefresh);
+			//coFullRefresh = StartCoroutine(CoFullBoneRrfresh((int)cfg.fullBoneResetTest.Value));
 
 			yield break;
 		}
@@ -1033,7 +1081,7 @@ namespace Character_Morpher
 
 
 
-		//	if(initLoadFinished)
+			//if(false)
 			{
 				if(MakerAPI.InsideMaker)
 					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
@@ -1042,7 +1090,7 @@ namespace Character_Morpher
 				//			resetBoobs(abmx: true);
 				//			resetFace(abmx: true);
 #endif
-				boneCtrl.NeedsFullRefresh = true;
+				//boneCtrl.NeedsFullRefresh = true;
 			}
 
 			for(int a = -1; a < cfg.multiUpdateTest.Value + 6; ++a)
@@ -1079,6 +1127,24 @@ namespace Character_Morpher
 			//create path to morph target
 			string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
 
+			//initialize secondary model
+			MorphTarget.initalize = true;
+			morphTarget.extraCharacter.
+				GetComponent<CharaMorpherController>().enabled = false;//Don't want it to be changed
+
+			if(ChaControl == morphTarget.extraCharacter)
+			{
+				CharaMorpher_Core.Logger.LogDebug("No need to initialize the Template");
+				return;
+			}
+
+			if(!morphTarget.extraCharacter.loadEnd)
+				morphTarget.extraCharacter.Load(false);
+			else
+			if(reloading)
+				morphTarget.extraCharacter.Reload(noChangeClothes: true);
+
+			morphTarget.extraCharacter.SetActiveTop(true);
 
 			// CharaMorpher_Core.Logger.LogDebug($"image path: {path}");
 
@@ -1088,31 +1154,39 @@ namespace Character_Morpher
 					lastCharDir != path ||
 					File.GetLastWriteTime(path).Ticks != lastDT.Ticks)
 				{
+
 					//reloading = true;
 					lastDT = File.GetLastWriteTime(path);
 					lastCharDir = path;
-					charData = new MorphData();
 
-					if(!reloading)
-						MorphChangeUpdate(forceReset: true);
+					charData = charData ?? new MorphData();
+
+
+					CharaMorpher_Core.Logger.LogDebug("Initializing secondary character");
+
+
+
+					//	if(!reloading)
+					//		MorphChangeUpdate(forceReset: true);
 
 					m_data1.main.status.Copy(ChaControl.fileStatus);
 
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("load morph target");
-					ChaFileControl.LoadCharaFile(path);
+					morphTarget.chaFile.LoadCharaFile(path);
 
 
 
-					ChaFileControl.pngData = m_data1.main.pngData;
-#if KOI_API
-					ChaFileControl.facePngData = m_data1.main.facePngData;
-#endif
+
+					//					ChaFileControl.pngData = m_data1.main.pngData;
+					//#if KOI_API
+					//					ChaFileControl.facePngData = m_data1.main.facePngData;
+					//#endif
 
 
 					//reloading = false;
 
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("copying morph target");
-					charData.Copy(this);
+					charData.Copy(this, true);
 
 
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("resetting original data");
@@ -1122,11 +1196,15 @@ namespace Character_Morpher
 					//ChaControl.chaFile.SetCustomBytes(m_data1.main.GetCustomBytes(), ChaFileDefine.ChaFileCustomVersion);
 					//ChaControl.Reload(noChangeClothes: true);
 
-					try
-					{
-						ChaControl.chaFile.CopyAll(m_data1.main);
-					}
-					catch { }
+
+
+
+
+					//	try
+					//	{
+					//		ChaControl.chaFile.CopyAll(m_data1.main);
+					//	}
+					//	catch { }
 
 #if HONEY_API
 					//CopyAll will not copy this data in hs2/ai
@@ -1138,6 +1216,8 @@ namespace Character_Morpher
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("replace data 2");
 			m_data2.Copy(charData);
+
+			morphTarget.extraCharacter.SetActiveTop(false);
 		}
 
 		/// <inheritdoc/>
@@ -1725,6 +1805,10 @@ namespace Character_Morpher
 						//result = MyLerp(d1, d2,
 						// enable * controls.face * controls.ears);
 						else
+						 if(cfg.noseIndex.FindIndex(find => (find.Value == a)) >= 0)
+							result = Mathf.LerpUnclamped(d1, d2,
+								enable * GetControlValue("face", fullVal: initReset) * GetControlValue("nose", fullVal: initReset));
+						else
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("face", fullVal: initReset));
 						//result = MyLerp(d1, d2,
@@ -1750,9 +1834,9 @@ namespace Character_Morpher
 
 
 
-			//Slider Defaults set
-			if(MakerAPI.InsideMaker)
-				SetDefaultSliders();
+			////Slider Defaults set
+			//if(MakerAPI.InsideMaker)
+			//	SetDefaultSliders();
 
 
 

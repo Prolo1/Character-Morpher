@@ -35,7 +35,10 @@ namespace Character_Morpher
 				Harmony.CreateAndPatchAll(typeof(Hooks), GUID);
 			}
 
+			/*
 #if KOI_API
+
+
 			[HarmonyPrefix]
 			[HarmonyPatch(typeof(ChaFileCoordinate), nameof(ChaFileCoordinate.LoadFile),
 				new Type[] {
@@ -64,7 +67,7 @@ namespace Character_Morpher
 										}
 									}
 			}
-
+			
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(ChaFileCoordinate), nameof(ChaFileCoordinate.LoadFile),
 				new Type[] {
@@ -75,6 +78,8 @@ namespace Character_Morpher
 				}),]
 			static void PostLoadCoordinate(ChaFileCoordinate __instance)
 			{
+
+
 				if(cfg.enable.Value)
 					if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
 						if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
@@ -90,13 +95,15 @@ namespace Character_Morpher
 											for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 												ctrl.StartCoroutine(ctrl.CoMorphUpdate(10));
 
-											ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(10));
+											//		ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(11));
 										}
 									}
 			}
 #endif
 
 
+
+			
 
 			static Coroutine m_lastClothsUpdate, m_lastClothsFBR;
 			[HarmonyPostfix]
@@ -142,7 +149,7 @@ namespace Character_Morpher
 
 			}
 
-
+			*/
 #if KOI_API
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(ChaFile), nameof(ChaFile.LoadFile),
@@ -188,7 +195,7 @@ namespace Character_Morpher
 
 			[HarmonyPrefix]
 			[HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
-			static void OnButtonClick(Button __instance)
+			static void OnPreButtonClick(Button __instance)
 			{
 				//  CharaMorpher.CharaMorpher_Core.Logger.LogDebug($"Button Name: {ctrler.name.ToLower()}");
 
@@ -198,16 +205,16 @@ namespace Character_Morpher
 
 				OnSaveLoadClick(__instance);
 				OnExitSaveClick(__instance);
-				OnLoadClick(__instance);
+				//	OnCharaLoadClick(__instance);
+				OnCoordLoadClick(__instance);
 			}
 
 			/// <summary>
 			/// Resets the character before a new one is loaded
 			/// </summary>
 			/// <param name="__instance"></param>
-			static void OnLoadClick(Button __instance)
+			static void OnCharaLoadClick(Button __instance)
 			{
-
 				var ctrler = __instance.gameObject;
 				if(!ctrler || ctrler.name.IsNullOrEmpty()) return;
 				//reset character to default before saving or loading character 
@@ -215,6 +222,7 @@ namespace Character_Morpher
 				if(ctrler.GetComponentInParent<CvsO_CharaLoad>())
 					if(ctrler.name.ToLower().Contains("overwrite"))
 #elif KOI_API
+
 				if(ctrler.GetComponentInParent<CustomCharaFile>())
 					if(ctrler.name.ToLower().Contains("load"))
 #endif
@@ -222,14 +230,44 @@ namespace Character_Morpher
 							if(hnd.ControllerType == typeof(CharaMorpherController))
 								foreach(CharaMorpherController ctrl in hnd.Instances)
 								{
-									Logger.LogDebug("The Load Button was called!!!");
+									Logger.LogDebug("The Chara Load Button was called!!!");
 									//Instance.StopAllCoroutines();
 									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 										ctrl.MorphChangeUpdate(forceReset: true);
 
-									ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
+									//ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
 
 									ctrl.reloading = true;
+									//ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay:10,forceReset: true, forceChange: true));
+
+									//	ctrl.ForceCardReload();
+								}
+			}
+			static void OnCoordLoadClick(Button __instance)
+			{
+				var ctrler = __instance.gameObject;
+				if(!ctrler || ctrler.name.IsNullOrEmpty()) return;
+				//reset character to default before saving or loading character 
+#if HONEY_API
+				if(ctrler.GetComponentInParent<CvsC_ClothesLoad>())
+					if(ctrler.name.ToLower().Contains("overwrite"))
+#elif KOI_API
+
+				if(ctrler.GetComponentInParent<CustomCoordinateFile>())
+					if(ctrler.name.ToLower().Contains("load"))
+#endif
+						foreach(var hnd in CharacterApi.RegisteredHandlers)
+							if(hnd.ControllerType == typeof(CharaMorpherController))
+								foreach(CharaMorpherController ctrl in hnd.Instances)
+								{
+									Logger.LogDebug("The Coord Load Button was called!!!");
+									//Instance.StopAllCoroutines();
+									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+										ctrl.MorphChangeUpdate();
+
+									//ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
+
+									//ctrl.reloading = true;
 									//ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay:10,forceReset: true, forceChange: true));
 
 									//	ctrl.ForceCardReload();
@@ -263,7 +301,7 @@ namespace Character_Morpher
 											for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 												ctrl.MorphChangeUpdate(forceReset: true);
 
-											ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
+											//	ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
 
 											//ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay:10,forceReset: true, forceChange: true));
 										}
@@ -291,7 +329,7 @@ namespace Character_Morpher
 												//	Instance.StopAllCoroutines();
 												for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 													ctrl.MorphChangeUpdate();
-												ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
+												//ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
 
 											}
 			}

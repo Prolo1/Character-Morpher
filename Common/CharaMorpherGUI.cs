@@ -190,7 +190,8 @@ namespace Character_Morpher
 
 				//remove search hits from the slider name
 				foreach(var hit in searchHits)
-					visualName = Regex.Replace(visualName, hit, "", RegexOptions.IgnoreCase);
+					if(hit != searchHits[0])
+						visualName = Regex.Replace(visualName, hit, "", RegexOptions.IgnoreCase);
 
 				//setup slider
 				var currSlider = sliders.AddNReturn(e.AddControl(new MakerSlider(category, visualName, min, max, (float)cfg.defaults[index].Value * .01f, CharaMorpher_Core.Instance)));
@@ -218,7 +219,8 @@ namespace Character_Morpher
 
 				foreach(var hnd in CharacterApi.RegisteredHandlers)
 					if(hnd.ControllerType == typeof(CharaMorpherController))
-						foreach(CharaMorpherController ctrl in hnd.Instances)
+						foreach(CharaMorpherController ctrl in hnd.Instances)//first one only
+						{
 							inst.StartCoroutine(CoOnGUIExists(currSlider, () =>
 								{
 
@@ -232,7 +234,7 @@ namespace Character_Morpher
 
 										if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Slider release was called");
 
-										ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(1 + (int)cfg.fullBoneResetTest.Value));
+										//				ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(1 + (int)cfg.fullBoneResetTest.Value));
 									});
 
 									var inputf = currSlider.ControlObject.GetComponentInChildren<InputField>();
@@ -241,9 +243,10 @@ namespace Character_Morpher
 									{
 										if(!inputf.interactable) return;
 
-										/*if(cfg.debug.Value)*/ CharaMorpher_Core.Logger.LogDebug($"Slider value box was called");
+										/*if(cfg.debug.Value)*/
+										CharaMorpher_Core.Logger.LogDebug($"Slider value box was called");
 
-										ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(1 + (int)cfg.fullBoneResetTest.Value));
+										//			ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(1 + (int)cfg.fullBoneResetTest.Value));
 									});
 
 									var btn = currSlider.ControlObject.GetComponentInChildren<Button>();
@@ -254,27 +257,31 @@ namespace Character_Morpher
 
 										if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Reset button was called");
 
-										ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(1 + (int)cfg.fullBoneResetTest.Value));
+										//	ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(1 + (int)cfg.fullBoneResetTest.Value));
 									});
 
 
 									//	currSlider.ControlObject.GetComponentInChildren<Slider>().
 									//		OnSubmitAsObservable().Subscribe((p) => { ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh((int)cfg.fullBoneResetTest.Value)) });
 								}));
-
+							break;
+						}
 				OnSliderValueChange.AddListener(() =>
 				{
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("controls updating");
 
 					foreach(var hnd in CharacterApi.RegisteredHandlers)
 						if(hnd.ControllerType == typeof(CharaMorpherController))
-							foreach(CharaMorpherController ctrl in hnd.Instances)
+							foreach(CharaMorpherController ctrl in hnd.Instances)//first one only
+							{
 								if(currSlider.Value != ctrl.controls.all[settingName])
 									if(currSlider.ControlObject)
 									{
 										currSlider.Value = ctrl.controls.all[settingName];
 										if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("control changed");
 									}
+								break;
+							}
 				});
 
 
@@ -394,6 +401,7 @@ namespace Character_Morpher
 				  foreach(var hnd in CharacterApi.RegisteredHandlers)
 					  if(hnd.ControllerType == typeof(CharaMorpherController))
 						  foreach(CharaMorpherController ctrl in hnd.Instances)
+						  {
 							  for(int a = 0; a < ctrl.controls.all.Count; ++a)
 							  {
 								  ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = (float)cfg.defaults[a].Value * .01f;
@@ -401,6 +409,8 @@ namespace Character_Morpher
 								  for(int b = -1; b < cfg.multiUpdateTest.Value; ++b)
 									  ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: 0));//this may be necessary 
 							  }
+						  	break;
+						  }
 				  int count = 0;
 				  foreach(var slider in sliders)
 					  slider.Value = (float)cfg.defaults[count++].Value * .01f;
@@ -477,6 +487,7 @@ namespace Character_Morpher
 						{
 							//	ctrl.StopAllCoroutines();
 							ctrl.ForceCardReload();
+							break;
 
 						}
 				Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
@@ -502,6 +513,7 @@ namespace Character_Morpher
 							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 								ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
 							CharaMorpher_Core.Logger.LogMessage("Morphed to 0%");
+							break;
 						}
 				Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
 			});
@@ -524,6 +536,7 @@ namespace Character_Morpher
 							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 								ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
 							CharaMorpher_Core.Logger.LogMessage("Morphed to 25%");
+							break;
 						}
 				Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
 			});
@@ -548,6 +561,7 @@ namespace Character_Morpher
 
 							CharaMorpher_Core.Logger.LogMessage("Morphed to 50%");
 
+							break;
 						}
 				Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
 			});
@@ -572,6 +586,7 @@ namespace Character_Morpher
 
 							CharaMorpher_Core.Logger.LogMessage("Morphed to 75%");
 
+							break;
 						}
 				Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
 			});
@@ -590,6 +605,8 @@ namespace Character_Morpher
 							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 								ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
 							CharaMorpher_Core.Logger.LogMessage("Morphed to 100%");
+
+							break;
 						}
 				Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
 			});
