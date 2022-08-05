@@ -52,12 +52,12 @@
       <HintPath>..\packages\ABMX.AIABMX.4.4.6\lib\net46\AIABMX.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="AIAPI, Version=1.31.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionModdingAPI.AIAPI.1.31.2\lib\net46\AIAPI.dll</HintPath>
+    <Reference Include="AIAPI, Version=1.33.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionModdingAPI.AIAPI.1.33.0\lib\net46\AIAPI.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="AI_ExtensibleSaveFormat, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\ExtensibleSaveFormat.AIGirl.17.0.0\lib\net46\AI_ExtensibleSaveFormat.dll</HintPath>
+      <HintPath>..\packages\ExtensibleSaveFormat.AIGirl.18.2.0\lib\net46\AI_ExtensibleSaveFormat.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
