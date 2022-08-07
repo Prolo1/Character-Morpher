@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using BepInEx;
@@ -35,121 +36,6 @@ namespace Character_Morpher
 				Harmony.CreateAndPatchAll(typeof(Hooks), GUID);
 			}
 
-			/*
-#if KOI_API
-
-
-			[HarmonyPrefix]
-			[HarmonyPatch(typeof(ChaFileCoordinate), nameof(ChaFileCoordinate.LoadFile),
-				new Type[] {
-					typeof(Stream),
-#if HONEY_API
-					typeof (int)
-#endif
-				}),]
-			static void PreLoadCoordinate(ChaFileCoordinate __instance)
-			{
-				if(cfg.enable.Value)
-					if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
-						if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
-
-							foreach(var hnd in CharacterApi.RegisteredHandlers)
-								if(hnd.ControllerType == typeof(CharaMorpherController))
-									foreach(CharaMorpherController ctrl in hnd.Instances)
-									{
-										if(ctrl && !ctrl.reloading && ctrl.initLoadFinished)
-										{
-											Logger.LogDebug("Coordinate being loaded");
-											//for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-											ctrl.MorphChangeUpdate(forceReset: true);
-											ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
-
-										}
-									}
-			}
-			
-			[HarmonyPostfix]
-			[HarmonyPatch(typeof(ChaFileCoordinate), nameof(ChaFileCoordinate.LoadFile),
-				new Type[] {
-					typeof(Stream),
-#if HONEY_API
-					typeof (int)
-#endif
-				}),]
-			static void PostLoadCoordinate(ChaFileCoordinate __instance)
-			{
-
-
-				if(cfg.enable.Value)
-					if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
-						if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
-
-							foreach(var hnd in CharacterApi.RegisteredHandlers)
-								if(hnd.ControllerType == typeof(CharaMorpherController))
-									foreach(CharaMorpherController ctrl in hnd.Instances)
-									{
-
-										if(ctrl && !ctrl.reloading && ctrl.initLoadFinished)
-										{
-											Logger.LogDebug("Coordinate has been selected");
-											for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-												ctrl.StartCoroutine(ctrl.CoMorphUpdate(10));
-
-											//		ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(11));
-										}
-									}
-			}
-#endif
-
-
-
-			
-
-			static Coroutine m_lastClothsUpdate, m_lastClothsFBR;
-			[HarmonyPostfix]
-			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState)),]
-#if !HONEY_API
-			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.ChangeCoordinateType),
-				new Type[] { typeof(ChaFileDefine.CoordinateType), typeof(bool) })]
-#endif
-			static void PostClothsStateUpdate(ChaControl __instance)
-			{
-				var ctrl = __instance.GetComponent<CharaMorpherController>();
-#if HONEY_API
-
-				var saveWindow = FindObjectOfType<CharaCustom.CharaCustom>();
-				CvsCaptureMenu capture = null;
-
-				if(saveWindow)
-					capture = saveWindow.GetComponentInChildren<CvsCaptureMenu>();
-				if(capture)
-					if(capture.isActiveAndEnabled)
-					{
-						void donothing() { Logger.LogDebug("I see nothing, I hear nothing, I DO NOTHING!!!!"); };
-						donothing();//this is very helpful
-					}
-					else
-#endif
-				if(cfg.enable.Value)
-					if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
-						if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
-							if(ctrl && !ctrl.reloading && ctrl.initLoadFinished)
-							{
-								if(cfg.debug.Value) Logger.LogDebug("The Post hook gets called");
-								if(m_lastClothsUpdate != null)
-									Instance.StopCoroutine(m_lastClothsUpdate);
-								m_lastClothsUpdate = ctrl.StartCoroutine(ctrl.CoMorphUpdate(7, forceChange: true));
-
-								if(m_lastClothsFBR != null)
-									Instance.StopCoroutine(m_lastClothsFBR);
-								m_lastClothsFBR = ctrl.StartCoroutine(ctrl.CoFullBoneRrfresh(8));
-
-							}
-
-
-			}
-
-			*/
 #if KOI_API
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(ChaFile), nameof(ChaFile.LoadFile),
@@ -185,13 +71,11 @@ namespace Character_Morpher
 #if !KK
 							if(ctrl.ChaControl.chaFile == __instance)
 #endif
-								Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
+							Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
 						}
 
 			}
 #endif
-
-
 
 			[HarmonyPrefix]
 			[HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
@@ -243,6 +127,7 @@ namespace Character_Morpher
 									//	ctrl.ForceCardReload();
 								}
 			}
+
 			static void OnCoordLoadClick(Button __instance)
 			{
 				var ctrler = __instance.gameObject;
@@ -289,22 +174,22 @@ namespace Character_Morpher
 					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
 #endif
 
-					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
-						if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
-							if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
-								foreach(var hnd in CharacterApi.RegisteredHandlers)
-									if(hnd.ControllerType == typeof(CharaMorpherController))
-										foreach(CharaMorpherController ctrl in hnd.Instances)
-										{
-											if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
-											//Instance.StopAllCoroutines();
-											for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-												ctrl.MorphChangeUpdate(forceReset: true);
+						if(cfg.enable.Value && !cfg.saveWithMorph.Value)
+							if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
+								if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
+									foreach(var hnd in CharacterApi.RegisteredHandlers)
+										if(hnd.ControllerType == typeof(CharaMorpherController))
+											foreach(CharaMorpherController ctrl in hnd.Instances)
+											{
+												if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
+												//Instance.StopAllCoroutines();
+												for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+													ctrl.MorphChangeUpdate(forceReset: true);
 
-											//	ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
+												//	ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
 
-											//ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay:10,forceReset: true, forceChange: true));
-										}
+												//ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay:10,forceReset: true, forceChange: true));
+											}
 			}
 
 			static void OnExitSaveClick(Button __instance)
