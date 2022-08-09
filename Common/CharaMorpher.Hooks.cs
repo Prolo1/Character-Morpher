@@ -115,7 +115,7 @@ namespace Character_Morpher
 								foreach(CharaMorpherController ctrl in hnd.Instances)
 								{
 									Logger.LogDebug("The Chara Load Button was called!!!");
-									
+
 									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 										ctrl.MorphChangeUpdate(forceReset: true);
 								}
@@ -139,7 +139,7 @@ namespace Character_Morpher
 								foreach(CharaMorpherController ctrl in hnd.Instances)
 								{
 									Logger.LogDebug("The Coord Load Button was called!!!");
-									
+
 									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 										ctrl.MorphChangeUpdate();
 								}
@@ -168,9 +168,9 @@ namespace Character_Morpher
 											foreach(CharaMorpherController ctrl in hnd.Instances)
 											{
 												if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
-												
+
 												for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-													ctrl.MorphChangeUpdate(forceReset: true);											
+													ctrl.MorphChangeUpdate(forceReset: true);
 											}
 			}
 
@@ -184,19 +184,18 @@ namespace Character_Morpher
 #elif KOI_API
 				if(ctrler.name.ToLower().Contains("exit") || ctrler.name.Contains("No")/*fixes issue with finding false results*/)
 #endif
-					if(cfg.enable.Value)
-						if(!cfg.saveWithMorph.Value)
-							if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
-								if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
-									foreach(var hnd in CharacterApi.RegisteredHandlers)
-										if(hnd.ControllerType == typeof(CharaMorpherController))
-											foreach(CharaMorpherController ctrl in hnd.Instances)
-											{
-												if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
-											
-												for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-													ctrl.MorphChangeUpdate();											
-											}
+					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
+						if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
+							if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
+								foreach(var hnd in CharacterApi.RegisteredHandlers)
+									if(hnd.ControllerType == typeof(CharaMorpherController))
+										foreach(CharaMorpherController ctrl in hnd.Instances)
+										{
+											if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
+
+											for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+												ctrl.MorphChangeUpdate();
+										}
 			}
 		}
 	}
