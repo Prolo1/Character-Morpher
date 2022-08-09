@@ -115,16 +115,9 @@ namespace Character_Morpher
 								foreach(CharaMorpherController ctrl in hnd.Instances)
 								{
 									Logger.LogDebug("The Chara Load Button was called!!!");
-									//Instance.StopAllCoroutines();
+									
 									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 										ctrl.MorphChangeUpdate(forceReset: true);
-
-									//ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
-
-									ctrl.reloading = true;
-									//ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay:10,forceReset: true, forceChange: true));
-
-									//	ctrl.ForceCardReload();
 								}
 			}
 
@@ -146,16 +139,9 @@ namespace Character_Morpher
 								foreach(CharaMorpherController ctrl in hnd.Instances)
 								{
 									Logger.LogDebug("The Coord Load Button was called!!!");
-									//Instance.StopAllCoroutines();
+									
 									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 										ctrl.MorphChangeUpdate();
-
-									//ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
-
-									//ctrl.reloading = true;
-									//ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay:10,forceReset: true, forceChange: true));
-
-									//	ctrl.ForceCardReload();
 								}
 			}
 
@@ -182,13 +168,9 @@ namespace Character_Morpher
 											foreach(CharaMorpherController ctrl in hnd.Instances)
 											{
 												if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
-												//Instance.StopAllCoroutines();
+												
 												for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-													ctrl.MorphChangeUpdate(forceReset: true);
-
-												//	ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
-
-												//ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay:10,forceReset: true, forceChange: true));
+													ctrl.MorphChangeUpdate(forceReset: true);											
 											}
 			}
 
@@ -211,11 +193,9 @@ namespace Character_Morpher
 											foreach(CharaMorpherController ctrl in hnd.Instances)
 											{
 												if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
-												//	Instance.StopAllCoroutines();
+											
 												for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-													ctrl.MorphChangeUpdate();
-												//ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
-
+													ctrl.MorphChangeUpdate();											
 											}
 			}
 		}

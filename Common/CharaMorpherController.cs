@@ -1,10 +1,10 @@
 ﻿
 using System;
-using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
+//using System.Text;
 using System.Text.RegularExpressions;
 
 using IllusionUtility.GetUtility;
@@ -12,11 +12,12 @@ using KKAPI;
 using KKAPI.MainGame;
 using KKAPI.Utilities;
 using KKAPI.Chara;
-using KKABMX.Core;
 using KKAPI.Maker;
+using KKABMX.Core;
 using ExtensibleSaveFormat;
 
 using Manager;
+using UniRx;
 
 #if HONEY_API
 using CharaCustom;
@@ -26,10 +27,13 @@ using ChaCustom;
 #endif
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpherController;
-using UnityEngine.Events;
+
+
+using MessagePack;
 
 namespace Character_Morpher
 {
@@ -43,26 +47,45 @@ namespace Character_Morpher
 				public List<BoneModifier> face = new List<BoneModifier>();
 
 				//public List<BoneModifier> newModifiers = new List<BoneModifier>();
+				public bool isLoaded { get; private set; } = false;
 				public bool isSplit { get; private set; } = false;
 				//public List<BoneModifier> other = new List<BoneModifier>();
 
 				public void Populate(CharaMorpherController morphControl, bool morph = false)
 				{
+
 					var boneCtrl = morph ? morphTarget.extraCharacter.GetComponent<BoneController>() : morphControl.GetComponent<BoneController>();
 					var charaCtrl = morphControl.ChaControl;
 
+					if(isLoaded) return;
 					//Store Bonemod Extended Data
 					{//helps get rid of data sooner
 
-						//This is the second dumbest fix (
-						//I was changing the the first character's bone modes when this was true ¯\_(ツ)_/¯)
-						var data = boneCtrl?.GetExtendedData(false);
+
+
+						if(!boneCtrl) CharaMorpher_Core.Logger.LogDebug("Bone controller don't exist");
+						if(!morphControl.ChaControl) CharaMorpher_Core.Logger.LogDebug("Character controller don't exist");
+
+						//This is the second dumbest fix
+						//(I was changing the the first character's bones when this was true ¯\_(ツ)_/¯)
+						//#if KKS || AI
+						var data = boneCtrl?.GetExtendedData(!morph);
+						//#else
+						//						var data = boneCtrl?.GetExtendedData(false);
+						//#endif
+
 						var newModifiers = ReadBoneModifiers(data);
 						body = new List<BoneModifier>(newModifiers);
 						face = new List<BoneModifier>(newModifiers);
+						isLoaded = true;
 					}
 
-					//	if(morphControl.initLoadFinished)
+					if(morph) CharaMorpher_Core.Logger.LogDebug("Character 2:");
+					else CharaMorpher_Core.Logger.LogDebug("Character 1:");
+					foreach(var part in body) CharaMorpher_Core.Logger.LogDebug("Bone: " + part.BoneName);
+
+
+
 					BoneSplit(morphControl, charaCtrl);
 
 				}
@@ -70,11 +93,13 @@ namespace Character_Morpher
 				//split up body & head bones
 				public void BoneSplit(CharaMorpherController charaControl, ChaControl charaCtrl)
 				{
+					var ChaControl = charaControl.GetComponent<ChaControl>();
+					var ChaFileControl = ChaControl.chaFile;
 
 					//charaCtrl = morph ? morphTarget.extraCharacter : charaCtrl;
 
 					if(!charaCtrl.objHeadBone) return;
-
+					if(isSplit || !isLoaded) return;
 
 
 					CharaMorpher_Core.Logger.LogDebug("Splitting bones apart");
@@ -101,16 +126,19 @@ namespace Character_Morpher
 					isSplit = true;
 
 
-
 					//	charaControl.MorphChangeUpdate(updateValues: false);
 					//	yield break;
 				}
+
+				public void ResetSplitStatus() => isSplit = false;
+
 
 				public void Clear()
 				{
 					body?.Clear();
 					face?.Clear();
 					//other?.Clear();
+					isLoaded = false;
 					isSplit = false;
 				}
 
@@ -122,6 +150,7 @@ namespace Character_Morpher
 						face = new List<BoneModifier>(face ?? new List<BoneModifier>()),
 						//other = new List<BoneModifier>(other ?? new List<BoneModifier>()),
 						isSplit = isSplit,
+						isLoaded = isLoaded,
 					};
 				}
 			}
@@ -171,7 +200,7 @@ namespace Character_Morpher
 
 #if HONEY_API
 				//CopyAll will not copy this data in hs2
-				main.dataID = morph ? morphTarget.extraCharacter.chaFile.dataID : data.ChaControl.chaFile.dataID;
+				main.dataID = morph ? morphTarget.chaFile.dataID : data.ChaControl.chaFile.dataID;
 #endif
 
 				try
@@ -179,8 +208,17 @@ namespace Character_Morpher
 					main.CopyAll(morph ? morphTarget.chaFile : data.ChaFileControl);
 				}
 				catch { }
-				abmx.Populate(data, morph);
 
+				//IEnumerator CoPopulate(CharaMorpherController _data, bool _morph, int delay = 5)
+				//{
+				//	for(int a = 0; a < delay; ++a)
+				//		yield return null;
+				//	abmx.Populate(_data, _morph);
+				//}
+				//
+				//data.StartCoroutine(CoPopulate(data, morph));
+
+				abmx.Populate(data, morph);
 			}
 		}
 
@@ -263,10 +301,8 @@ namespace Character_Morpher
 		private static DateTime lastDT = new DateTime();
 
 
-		//ChaControl.MannequinBackInfo backup = new ChaControl.MannequinBackInfo();
-
 		internal readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
-		//	private static int morphindex = 0;//get defaults from config
+
 
 		/// <summary>
 		/// Called after the model has finished being loaded for the first time
@@ -276,7 +312,62 @@ namespace Character_Morpher
 		/// <summary>
 		/// In the process of reloading. set to false after complete
 		/// </summary>
-		public bool reloading { get; internal set; } = true;
+		public bool reloading { get; internal set; } = false;
+
+		internal static readonly MorphTarget morphTarget = new MorphTarget();
+		internal class MorphTarget
+		{
+			private static ChaControl _extraCharacter = null;
+
+			public static bool initalize
+			{
+				set
+				{
+					if(value)
+					{
+						if(_extraCharacter == null)
+						{
+
+							Transform parent = null;
+							foreach(var hnd in CharacterApi.RegisteredHandlers)
+								if(hnd.ControllerType == typeof(CharaMorpherController))
+									if(hnd.Instances.Count() > 0)
+										parent = hnd.Instances.First().transform.parent;
+
+
+							//_extraCharacter = new ChaControl();//this is needed!!!
+							_extraCharacter =
+
+#if HONEY_API
+							Character.Instance.CreateChara(1, parent?.gameObject, -10);
+#elif KK
+							Character.Instance.CreateFemale(parent?.gameObject, -10, hiPoly: false);
+#elif KKS
+							Character.CreateFemale(parent?.gameObject, -10, hiPoly: false);
+#endif
+
+							Destroy(morphTarget.extraCharacter.GetComponent<CharaMorpherController>());
+							_extraCharacter.gameObject.SetActive(false);
+							CharaMorpher_Core.Logger.LogDebug("created new character instance");
+						}
+
+						return;
+					}
+#if KKS
+					Character.DeleteChara(_extraCharacter);
+#else
+					Character.Instance?.DeleteChara(_extraCharacter);
+#endif
+					_extraCharacter = null;
+				}
+				get { return _extraCharacter != null; }
+			}
+			public ChaControl extraCharacter { get => _extraCharacter; }
+
+			public ChaFileControl chaFile { get { return extraCharacter?.chaFile; } }
+		}
+
+
 
 		//this is a tuple list btw (of bones found in abmx mod and online... somewhere)
 #if KOI_API
@@ -829,131 +920,71 @@ namespace Character_Morpher
 		#endregion
 #endif
 ;
-		internal static readonly MorphTarget morphTarget = new MorphTarget();
-		internal class MorphTarget
-		{
-			private static ChaControl _extraCharacter = null;
 
-			public static bool initalize
-			{
-				set
-				{
-					if(value)
-					{
-						if(_extraCharacter == null)
-						{
-
-							Transform parent = null;
-							foreach(var hnd in CharacterApi.RegisteredHandlers)
-								if(hnd.ControllerType == typeof(CharaMorpherController))
-									if(hnd.Instances.Count() > 0)
-										parent = hnd.Instances.First().transform.parent;
-
-
-							//_extraCharacter = new ChaControl();//this is needed!!!
-							_extraCharacter =
-
-#if HONEY_API
-							Character.Instance.CreateChara(1, parent?.gameObject, -10);
-#elif KK
-							Character.Instance.CreateFemale(parent?.gameObject, -10, hiPoly: false);
-#elif KKS
-							Character.CreateFemale(parent?.gameObject, -10, hiPoly: false);
-#endif
-
-							Destroy(morphTarget.extraCharacter.GetComponent<CharaMorpherController>());
-
-							CharaMorpher_Core.Logger.LogDebug("created new character instance");
-						}
-
-						return;
-					}
-#if KKS
-					Character.DeleteChara(_extraCharacter);
-#else
-					Character.Instance.DeleteChara(_extraCharacter);
-#endif
-
-				}
-				get { return _extraCharacter != null; }
-			}
-			public ChaControl extraCharacter
-			{
-				get => _extraCharacter;
-
-			}
-			public ChaFileControl chaFile { get { return extraCharacter?.chaFile; } }
-		}
-
-
-
-		protected override void Awake()
-		{
-			base.Awake();
-
-			var core = Instance;
-
-			foreach(var ctrl in core.controlCategories)
-				controls.all[ctrl.Value] = cfg.defaults[ctrl.Key].Value * .01f;
-
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
-
-
-			//	UpdateMorphTarget(this);
-
-
-#if HONEY_API
-			//var ctrler = this;
-			//CharacterApi.CharacterReloaded += HoneyReload;
-#endif
-
-		}
-
-		protected override void OnDestroy()
-		{
-			//	CharacterApi.CharacterReloaded -= HoneyReload;
-
-			//MorphTarget.initalize = false;
-			base.OnDestroy();
-		}
-
-		void HoneyReload(object m, CharaReloadEventArgs n) =>
-			StartCoroutine(CoReloadChara());
-
-
-		IEnumerator CoReloadChara()
+		private IEnumerator CoReloadChara()
 		{
 			for(int a = 0; a < 7; ++a)
 				yield return null;
 
-			reloading = false;
 			OnCharaReload(KoikatuAPI.GetCurrentGameMode());
 
 			yield break;
 		}
 
-		bool boneSplitCheck()
+		public IEnumerator CoMorphTargetUpdate(int delay = 10, bool updateValues = true, bool initReset = false)
 		{
-			if((!m_data1.abmx.isSplit || !m_data2.abmx.isSplit))
+			for(int a = 0; a < delay; ++a)
+				yield return null;
+
+			MorphTargetUpdate(this);
+
+			yield return null;
+
+			for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+				MorphChangeUpdate(updateValues: updateValues, initReset: initReset);
+
+
+			yield break;
+		}
+
+		//Coroutine coFullRefresh;
+		public IEnumerator CoMorphUpdate(int delay = 6, bool forceReset = false, bool initReset = false, bool forceChange = false)
+		{
+			//var tmp = reloading;
+
+			for(int a = 0; a < delay; ++a)
+				yield return null;
+
+			//CharaMorpher_Core.Logger.LogDebug("Updating morph values after card save/load");
+			if(!reloading || forceChange)
 			{
-				if(!m_data1.abmx.isSplit)
-					m_data1.abmx.BoneSplit(this, ChaControl);
-				if(!m_data2.abmx.isSplit)
-					m_data2.abmx.BoneSplit(this, ChaControl);
-
+				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
 			}
-			return m_data1.abmx.isSplit && m_data2.abmx.isSplit;
+			else
+			{
+				yield return new WaitWhile(() => reloading);
+
+				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
+			}
+
+
+			yield break;
 		}
 
-
-
-		void LateUpdate()
+		public IEnumerator CoMorphAfterABMX(int delayExtra = 5, bool forcereset = false, bool forceChange = false)
 		{
-			if((!m_data1.abmx.isSplit || !m_data2.abmx.isSplit)
-				&& boneSplitCheck())
-				MorphChangeUpdate();
-		}
+			var boneCtrl = ChaControl.GetComponent<BoneController>();
 
+			yield return new WaitWhile(() => boneCtrl.NeedsFullRefresh || boneCtrl.NeedsBaselineUpdate);
+
+			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Updating morph values after ABMX");
+			//MorphChangeUpdate(forcereset);
+
+			yield return StartCoroutine(CoMorphUpdate(delayExtra, forcereset, forceChange: forceChange));
+
+
+			yield break;
+		}
 		//bool forcedReload = false;
 		Coroutine coForceReload;
 		public void ForceCardReload()
@@ -991,94 +1022,60 @@ namespace Character_Morpher
 
 		}
 
-
-		public IEnumerator CoMorphTargetUpdate(int delay = 10, bool updateValues = true, bool initReset = false)
-		{
-			reloading = true;
-			for(int a = 0; a < delay; ++a)
-				yield return null;
-
-			UpdateMorphTarget(this);
-
-			//for(int a = 0; a < delay; ++a)
-			yield return null;
-
-			MorphChangeUpdate(updateValues: updateValues, initReset: initReset);
-
-			//if(updateValues)
-			//{
-			//
-			//	if(coFullRefresh != null)
-			//		StopCoroutine(coFullRefresh);
-			//	coFullRefresh = StartCoroutine(CoFullBoneRrfresh(10));
-			//}
-
-			reloading = false;
-
-			yield break;
-		}
-
-		//Coroutine coFullRefresh;
-		public IEnumerator CoMorphUpdate(int delay = 6, bool forceReset = false, bool initReset = false, bool forceChange = false)
-		{
-			//var tmp = reloading;
-
-			for(int a = 0; a < delay; ++a)
-				yield return null;
-
-			//CharaMorpher_Core.Logger.LogDebug("Updating morph values after card save/load");
-			if(!reloading || forceChange)
-			{
-				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
-			}
-			else
-			{
-				yield return new WaitWhile(() => reloading);
-
-				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
-			}
-
-			//	if(coFullRefresh != null)
-			//		StopCoroutine(coFullRefresh);
-			//	coFullRefresh = StartCoroutine(CoFullBoneRrfresh(10));
-
-			yield break;
-		}
-		/*public IEnumerator CoFullBoneRrfresh(int delay = 5)
-		{
-			for(int a = 0; a < delay; ++a)
-				yield return null;
-
-			yield return StartCoroutine(CoMorphUpdate(delay: 0, forceReset: true));
-			yield return StartCoroutine(CoMorphUpdate(delay: 1));
-
-			var boneCtrl = ChaControl.GetComponent<BoneController>();
-			yield return new WaitWhile(() => (boneCtrl?.NeedsFullRefresh ?? true) || (boneCtrl?.NeedsBaselineUpdate ?? true));
-
-			if(boneCtrl)
-				boneCtrl.NeedsFullRefresh = true;
-
-			yield break;
-		}*/
-		public IEnumerator CoMorphAfterABMX(int delayExtra = 5, bool forcereset = false, bool forceChange = false)
-		{
-			var boneCtrl = ChaControl.GetComponent<BoneController>();
-
-			yield return new WaitWhile(() => boneCtrl.NeedsFullRefresh || boneCtrl.NeedsBaselineUpdate);
-
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Updating morph values after ABMX");
-			//MorphChangeUpdate(forcereset);
-
-			yield return StartCoroutine(CoMorphUpdate(delayExtra, forcereset, forceChange: forceChange));
-
-			//if(coFullRefresh != null)
-			//	StopCoroutine(coFullRefresh);
-			//coFullRefresh = StartCoroutine(CoFullBoneRrfresh((int)cfg.fullBoneResetTest.Value));
-
-			yield break;
-		}
-
 		private static string MakeDirPath(string path) => CharaMorpher_Core.MakeDirPath(path);
+
+
+		protected override void Awake()
+		{
+			base.Awake();
+
+			var core = Instance;
+
+			foreach(var ctrl in core.controlCategories)
+				controls.all[ctrl.Value] = cfg.defaults[ctrl.Key].Value * .01f;
+
+			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
+
+			MorphTarget.initalize = false;//just in-case
+		}
+
+		void LateUpdate()
+		{
+			if((!m_data1.abmx.isSplit || !m_data2.abmx.isSplit)
+				&& initLoadFinished && boneSplitCheck())
+				MorphChangeUpdate();
+		}
+
+
+
+		void HoneyReload(object m, CharaReloadEventArgs n) =>
+			StartCoroutine(CoReloadChara());
+
+
+
+		bool boneSplitCheck(bool onlycheck = false)
+		{
+
+			if(!onlycheck && (!m_data1.abmx.isLoaded || !m_data2.abmx.isLoaded) && (!m_data1.abmx.isSplit || !m_data2.abmx.isSplit))
+			{
+				if(!m_data1.abmx.isSplit)
+				{
+					if(!m_data1.abmx.isLoaded)
+						m_data1.abmx.Populate(this, false);
+					m_data1.abmx.BoneSplit(this, ChaControl);
+				}
+				if(!m_data2.abmx.isSplit)
+				{
+					if(!m_data2.abmx.isLoaded)
+						m_data2.abmx.Populate(this, true);
+					m_data2.abmx.BoneSplit(this, ChaControl);
+
+				}
+			}
+			return m_data1.abmx.isSplit && m_data2.abmx.isSplit;
+		}
+
+
 
 		/// <summary>
 		/// Called whenever base character data needs to be updated for calculations
@@ -1091,7 +1088,7 @@ namespace Character_Morpher
 
 			reloading = true;
 
-			var boneCtrl = ChaControl.GetComponent<BoneController>();
+			var boneCtrl = GetComponent<BoneController>();
 
 
 			{
@@ -1103,8 +1100,6 @@ namespace Character_Morpher
 
 			//store picked character data
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("replace data 1");
-			//	GetComponent<CharaMorpherController>().enabled = false;//Don't want it to be changed
-
 
 
 			m_data1.Copy(this); //get all character data!!!
@@ -1115,8 +1110,8 @@ namespace Character_Morpher
 			m_data1.main.facePngData = ChaFileControl.facePngData;
 #endif
 
-
-			UpdateMorphTarget(this);
+			//StartCoroutine(CoMorphTargetUpdate(4));
+			MorphTargetUpdate(this);
 
 
 			//if(initLoadFinished)
@@ -1131,29 +1126,27 @@ namespace Character_Morpher
 			for(int a = -1; a < cfg.multiUpdateTest.Value + 6; ++a)
 				StartCoroutine(CoMorphAfterABMX(delayExtra: 20 + a + 1, forceChange: true));
 
+			if(!initLoadFinished)
+				ChaFileControl.CopyAll(m_data1.main);
+
 			//post update
-			IEnumerator CoLaterStatus(int delayFrames)
+			IEnumerator CoLaterStatus(int delayFrames, BoneController _boneCtrl)
 			{
 				reloading = true;
 				for(int a = 0; a < delayFrames; ++a)
 					yield return null;
 
-				//var tmp = initLoadFinished;
 
 				reloading = false;
 				initLoadFinished = true;
-				//if(!tmp)
-				//	ChaControl.chaFile.LoadFromBytes(m_data1.main.GetCustomBytes());
 
+				_boneCtrl.NeedsFullRefresh = true;
 				yield break;
 			}
-			StartCoroutine(CoLaterStatus(11));//I just need to do this stuff later
-
-			//if(!initLoadFinished)
-			ChaFileControl.CopyAll(m_data1.main);
+			StartCoroutine(CoLaterStatus(11, boneCtrl));//I just need to do this stuff later
 		}
 
-		public static void UpdateMorphTarget(CharaMorpherController ctrl)
+		public static void MorphTargetUpdate(CharaMorpherController ctrl)
 		{
 
 			//create path to morph target
@@ -1173,7 +1166,7 @@ namespace Character_Morpher
 
 					lastDT = File.GetLastWriteTime(path);
 					lastCharDir = path;
-					charData = charData ?? new MorphData();
+					charData = new MorphData();
 
 					//initialize secondary model
 					MorphTarget.initalize = true;
@@ -1198,6 +1191,8 @@ namespace Character_Morpher
 		/// <inheritdoc/>
 		protected override void OnReload(GameMode currentGameMode, bool keepState)
 		{
+			if(keepState || reloading) return;
+
 			reloading = false;
 			CharaMorpher_Core.Logger.LogDebug("new Chara loaded");
 			OnCharaReload(currentGameMode);
@@ -1271,7 +1266,7 @@ namespace Character_Morpher
 			#region Merge results
 
 			//add non-existent bones to other lists
-			if(boneSplitCheck())
+			if(boneSplitCheck(true))
 			{
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("balancing bone lists...");
@@ -1618,7 +1613,7 @@ namespace Character_Morpher
 
 		}
 
-		private void AbmxSettings(bool reset, bool initReset, BoneController boneCtrl)
+		public void AbmxSettings(bool reset, bool initReset, BoneController boneCtrl)
 		{
 			if(!m_data1.abmx.isSplit || !m_data2.abmx.isSplit) return;
 
@@ -1728,6 +1723,7 @@ namespace Character_Morpher
 						}
 					}
 
+					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
 					UpdateBoneModifier(ref current, bone1, bone2, modVal, index: a,
 						sectVal: (cfg.linkOverallABMXSliders.Value ?
 						GetControlValue("body", fullVal: initReset) : 1) *
@@ -1797,6 +1793,7 @@ namespace Character_Morpher
 						break;
 					}
 
+					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
 					UpdateBoneModifier(ref current, bone1, bone2, modVal, index: a,
 						sectVal: (cfg.linkOverallABMXSliders.Value ?
 						GetControlValue("face", fullVal: initReset) : 1) *
@@ -1807,9 +1804,8 @@ namespace Character_Morpher
 
 				//  CharaMorpher_Core.Logger.LogDebug("");
 			}
-
-			boneCtrl.NeedsBaselineUpdate = true;
 		}
+
 
 		private void SetDefaultSliders(int delay = 3)
 		{
@@ -1902,7 +1898,6 @@ namespace Character_Morpher
 			{
 
 				int count = 0;//may use this in other mods
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
 				foreach(var mod in current?.CoordinateModifiers)
 				{
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"in for loop");
@@ -1948,10 +1943,13 @@ namespace Character_Morpher
 #else
 				current.Apply(boneCtrl.CurrentCoordinate.Value, null, true);
 #endif
+
+				boneCtrl.NeedsBaselineUpdate = true;
 			}
 			catch
 			{
 			}
+
 		}
 	}
 
