@@ -1323,9 +1323,10 @@ namespace Character_Morpher
 			var tmp = controls.all.ToList();
 			if(fullVal)
 				tmp = controls.full.ToList();
-
-			return abmx ? tmp.Find(m => m.Key.ToLower().Contains("abmx") && m.Key.ToLower().Contains(contain.ToLower())).Value :
-				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && m.Key.ToLower().Contains(contain.ToLower())).Value;
+			
+			return abmx ?
+				tmp.Find(m => m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)).Value :
+				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)).Value;
 		}
 
 		private void MorphValuesUpdate(bool reset, bool initReset = false, bool abmx = true)
@@ -1348,10 +1349,10 @@ namespace Character_Morpher
 					enable * GetControlValue("body") * GetControlValue("Boobs"));
 
 				charaCtrl.fileBody.bustSoftness = Mathf.LerpUnclamped(m_data1.main.custom.body.bustSoftness, m_data2.main.custom.body.bustSoftness,
-					enable * GetControlValue("body") * GetControlValue("Boobs"));
+					enable * GetControlValue("body") * GetControlValue("Boob Phys."));
 
 				charaCtrl.fileBody.bustWeight = Mathf.LerpUnclamped(m_data1.main.custom.body.bustWeight, m_data2.main.custom.body.bustWeight,
-					enable * GetControlValue("body") * GetControlValue("Boobs"));
+					enable * GetControlValue("body") * GetControlValue("Boob Phys."));
 
 				//Skin Colour
 #if KOI_API
@@ -1467,15 +1468,12 @@ namespace Character_Morpher
 						// enable * controls.body * controls.arms);//lerp, may change it later
 						else
 						if(cfg.brestIndex.FindIndex(find => (find.Value == a)) >= 0)
-						{
+
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("body", fullVal: initReset) * GetControlValue("boobs", fullVal: initReset));
+						//result = MyLerp(d1, d2,
+						//   enable * controls.body * controls.boobs);//lerp, may change it later
 
-							//	charaCtrl.fileBody.shapeValueBody[a] = result;
-
-							//result = MyLerp(d1, d2,
-							//   enable * controls.body * controls.boobs);//lerp, may change it later
-						}
 
 						else
 							result = Mathf.LerpUnclamped(d1, d2,
