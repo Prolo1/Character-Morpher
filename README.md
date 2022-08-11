@@ -24,6 +24,7 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
  * Morph ABMX body features
  * Morph ABMX face features
  * Added QoL file explorer search for morph target in maker
+ * Added QoL easy morph buttons
  * Can choose to enable/disable in-game use (this affects all but male character[s])
  * Can choose to enable/disable use in male maker
 
@@ -45,7 +46,7 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 
 ## Known Issues
 * ~~changing morph values to far extremes may cause issues loading subsequent characters in maker. When this happens just close maker and open it back up (this isn't a problem in game since you cant use the sliders)~~ (Fixed this to the best of my knowlage)
-* With KK[S], trying to change OG face and body sliders may change bust values to original state, that's because the original sliders don't update when values change internally so keep that in mind (using the character morpher sliders will turn it back)
+* ~~With KK[S], trying to change OG face and body sliders may change bust values to original state, that's because the original sliders don't update when values change internally so keep that in mind (using the character morpher sliders will turn it back)~~ (This should be fixed too)
 
 ## Issues / Requests ?
 Want to request a new feature or report a bug you found? Add your request / issue to the [Git Issues](https://github.com/Prolo1/Character-Morpher/issues) page and I'll see what I can do  
