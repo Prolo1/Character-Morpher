@@ -28,7 +28,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\Builds\[AI]_Character_Morpher\BepInEx\plugins\Prolo\</OutputPath>
     <DefineConstants>TRACE;AI HONEY_API</DefineConstants>
@@ -87,6 +87,10 @@
       <HintPath>..\packages\IllusionLibs.AIGirl.UniRx.2020.5.29.4\lib\net46\UniRx.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Unity.TextMeshPro, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.AIGirl.Unity.TextMeshPro.2018.2.21.4\lib\net46\Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.AIGirl.UnityEngine.CoreModule.2018.2.21.4\lib\net46\UnityEngine.dll</HintPath>
       <Private>False</Private>
@@ -138,6 +142,7 @@
     <Error Condition="!Exists('..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets'))" />
     <Error Condition="!Exists('..\packages\IllusionLibs.AIGirl.UnityEngine.AudioModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.AudioModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.AIGirl.UnityEngine.AudioModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.AudioModule.targets'))" />
     <Error Condition="!Exists('..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\build\IllusionLibs.AIGirl.UnityExtensions.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\build\IllusionLibs.AIGirl.UnityExtensions.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.AIGirl.Unity.TextMeshPro.2018.2.21.4\build\IllusionLibs.AIGirl.Unity.TextMeshPro.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.AIGirl.Unity.TextMeshPro.2018.2.21.4\build\IllusionLibs.AIGirl.Unity.TextMeshPro.targets'))" />
   </Target>
   <Import Project="..\packages\IllusionLibs.AIGirl.Assembly-CSharp-firstpass.2020.5.29.4\build\IllusionLibs.AIGirl.Assembly-CSharp-firstpass.targets" Condition="Exists('..\packages\IllusionLibs.AIGirl.Assembly-CSharp-firstpass.2020.5.29.4\build\IllusionLibs.AIGirl.Assembly-CSharp-firstpass.targets')" />
   <Import Project="..\packages\IllusionLibs.AIGirl.Sirenix.Serialization.2020.5.29.4\build\IllusionLibs.AIGirl.Sirenix.Serialization.targets" Condition="Exists('..\packages\IllusionLibs.AIGirl.Sirenix.Serialization.2020.5.29.4\build\IllusionLibs.AIGirl.Sirenix.Serialization.targets')" />
@@ -150,4 +155,8 @@
   <Import Project="..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets" Condition="Exists('..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets')" />
   <Import Project="..\packages\IllusionLibs.AIGirl.UnityEngine.AudioModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.AudioModule.targets" Condition="Exists('..\packages\IllusionLibs.AIGirl.UnityEngine.AudioModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.AudioModule.targets')" />
   <Import Project="..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\build\IllusionLibs.AIGirl.UnityExtensions.targets" Condition="Exists('..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\build\IllusionLibs.AIGirl.UnityExtensions.targets')" />
+  <Import Project="..\packages\IllusionLibs.AIGirl.Unity.TextMeshPro.2018.2.21.4\build\IllusionLibs.AIGirl.Unity.TextMeshPro.targets" Condition="Exists('..\packages\IllusionLibs.AIGirl.Unity.TextMeshPro.2018.2.21.4\build\IllusionLibs.AIGirl.Unity.TextMeshPro.targets')" />
+  <PropertyGroup>
+    <PostBuildEvent>call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\" "$(TargetDir)..\..\..\..\[AI]_Character_Morpher.zip"</PostBuildEvent>
+  </PropertyGroup>
 </Project>

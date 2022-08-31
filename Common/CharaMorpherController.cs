@@ -37,271 +37,19 @@ using MessagePack;
 
 namespace Character_Morpher
 {
+
 	public class CharaMorpherController : CharaCustomFunctionController
 	{
-		internal class MorphData
-		{
-			internal class AMBXSections
-			{
-				public List<BoneModifier> body = new List<BoneModifier>();
-				public List<BoneModifier> face = new List<BoneModifier>();
-
-				//public List<BoneModifier> newModifiers = new List<BoneModifier>();
-				public bool isLoaded { get; private set; } = false;
-				public bool isSplit { get; private set; } = false;
-				//public List<BoneModifier> other = new List<BoneModifier>();
-
-				public void Populate(CharaMorpherController morphControl, bool morph = false)
-				{
-
-					var boneCtrl = morph ? morphTarget.extraCharacter.GetComponent<BoneController>() : morphControl.GetComponent<BoneController>();
-					var charaCtrl = morphControl.ChaControl;
-
-					if(isLoaded) return;
-					//Store Bonemod Extended Data
-					{//helps get rid of data sooner
-
-
-
-						if(!boneCtrl) CharaMorpher_Core.Logger.LogDebug("Bone controller don't exist");
-						if(!morphControl.ChaControl) CharaMorpher_Core.Logger.LogDebug("Character controller don't exist");
-
-						//This is the second dumbest fix
-						//(I was changing the the first character's bones when this was true ¯\_(ツ)_/¯)
-						//#if KKS || AI
-						var data = boneCtrl?.GetExtendedData(!morph);
-						//#else
-						//						var data = boneCtrl?.GetExtendedData(false);
-						//#endif
-
-						var newModifiers = ReadBoneModifiers(data);
-						body = new List<BoneModifier>(newModifiers);
-						face = new List<BoneModifier>(newModifiers);
-						isLoaded = true;
-					}
-
-					if(morph) CharaMorpher_Core.Logger.LogDebug("Character 2:");
-					else CharaMorpher_Core.Logger.LogDebug("Character 1:");
-					foreach(var part in body) CharaMorpher_Core.Logger.LogDebug("Bone: " + part.BoneName);
-
-
-
-					BoneSplit(morphControl, charaCtrl);
-
-				}
-
-				//split up body & head bones
-				public void BoneSplit(CharaMorpherController charaControl, ChaControl charaCtrl)
-				{
-					var ChaControl = charaControl.GetComponent<ChaControl>();
-					var ChaFileControl = ChaControl.chaFile;
-
-					//charaCtrl = morph ? morphTarget.extraCharacter : charaCtrl;
-
-					if(!charaCtrl.objHeadBone) return;
-					if(isSplit || !isLoaded) return;
-
-
-					CharaMorpher_Core.Logger.LogDebug("Splitting bones apart");
-					//if(!charaCtrl.objHeadBone) await Task.Run(() => { while(!charaCtrl.objHeadBone) ; });
-					//#if HONEY_API
-					//                    var headRoot = charaCtrl.transform.FindLoop("cf_J_Head");
-					//#else
-					//					var headRoot = charaCtrl.transform.FindLoop("cf_j_head");
-					//#endif
-					var headRoot = charaCtrl.objHeadBone.transform.parent.parent;
-
-					var headBones = new HashSet<string>(headRoot.GetComponentsInChildren<Transform>().Select(x => x.name)) { /*Additional*/headRoot.name };
-
-					//Load Body
-					body.RemoveAll(x => headBones.Contains(x.BoneName));
-					//body.AddRange(newModifiers.Where(x => headBones.Contains(x.BoneName)));
-
-					//Load face
-					var bodyBones = new HashSet<string>(charaCtrl.objTop.transform.
-						GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
-					face.RemoveAll(x => bodyBones.Contains(x.BoneName));
-					//face.AddRange(newModifiers.Where(x => bodyBones.Contains(x.BoneName)));
-
-					isSplit = true;
-
-
-					//	charaControl.MorphChangeUpdate(updateValues: false);
-					//	yield break;
-				}
-
-				public void ResetSplitStatus() => isSplit = false;
-
-
-				public void Clear()
-				{
-					body?.Clear();
-					face?.Clear();
-					//other?.Clear();
-					isLoaded = false;
-					isSplit = false;
-				}
-
-				public AMBXSections Copy()
-				{
-					return new AMBXSections()
-					{
-						body = new List<BoneModifier>(body ?? new List<BoneModifier>()),
-						face = new List<BoneModifier>(face ?? new List<BoneModifier>()),
-						//other = new List<BoneModifier>(other ?? new List<BoneModifier>()),
-						isSplit = isSplit,
-						isLoaded = isLoaded,
-					};
-				}
-			}
-
-			public ChaFile main = new ChaFile();
-			public AMBXSections abmx = new AMBXSections();
-
-
-			public void Clear()
-			{
-
-				main = new ChaFile();
-				abmx.Clear();
-			}
-
-			public MorphData Clone()
-			{
-				var tmp = new ChaFile();
-				try
-				{
-					tmp.CopyAll(main);
-				}
-				catch { }
-#if HONEY_API
-				//CopyAll will not copy this data in hs2
-				tmp.dataID = main.dataID;
-#endif
-
-				return new MorphData() { main = tmp, abmx = abmx.Copy() };
-			}
-
-			public void Copy(MorphData data)
-			{
-				if(data == null) return;
-
-				try
-				{
-					main.CopyAll(data.main);
-				}
-				catch { }
-				abmx = data.abmx.Copy();
-
-			}
-
-			public void Copy(CharaMorpherController data, bool morph = false)
-			{
-
-#if HONEY_API
-				//CopyAll will not copy this data in hs2
-				main.dataID = morph ? morphTarget.chaFile.dataID : data.ChaControl.chaFile.dataID;
-#endif
-
-				try
-				{
-					main.CopyAll(morph ? morphTarget.chaFile : data.ChaFileControl);
-				}
-				catch { }
-
-				//IEnumerator CoPopulate(CharaMorpherController _data, bool _morph, int delay = 5)
-				//{
-				//	for(int a = 0; a < delay; ++a)
-				//		yield return null;
-				//	abmx.Populate(_data, _morph);
-				//}
-				//
-				//data.StartCoroutine(CoPopulate(data, morph));
-
-				abmx.Populate(data, morph);
-			}
-		}
-
-		internal class MorphControls
-		{
-			Dictionary<string, float> _all, _lastAll;
-			Coroutine post;
-			public Dictionary<string, float> all
-			{
-				get
-				{
-					if(_all == null)
-					{
-						_all = new Dictionary<string, float>();
-						_lastAll = new Dictionary<string, float>();
-					}
-
-					//var ctrl = this;
-					IEnumerator CoPost()
-					{
-						for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-							yield return null;
-						// CharaMorpher_Core.Logger.LogDebug("post called in controls");
-
-						bool Check()
-						{
-							if(_all.Count != _lastAll.Count)
-								return false;
-
-							for(int a = 0; a < _all.Count; ++a)
-								if(_all[_all.Keys.ElementAt(a)] != _lastAll[_lastAll.Keys.ElementAt(a)])
-									return true;
-
-							//CharaMorpher_Core.Logger.LogDebug("All values the same ");
-							return false;
-						}
-
-						if(Check())
-							OnSliderValueChange.Invoke();
-
-						_lastAll = new Dictionary<string, float>(_all);
-					}
-
-					if(post != null)
-						Instance.StopCoroutine(post);
-
-					post = Instance.StartCoroutine(CoPost());
-					return _all;
-				}
-				set { _all = value; }
-			}
-
-			/// <summary>
-			/// each value is set to one
-			/// </summary>
-			public Dictionary<string, float> full
-			{
-				get
-				{
-					var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
-					for(int a = 0; a < tmp.Count; ++a)
-						tmp[tmp.Keys.ElementAt(a)] = 1;
-					return tmp;
-				}
-			}
-			/// <summary>
-			/// list of every control with an "overall" name
-			/// </summary>
-			public IEnumerable<KeyValuePair<string, float>> overall
-			{
-				get
-				=> all.Where((p) => Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
-			}
-
-		}
-		internal MorphControls controls = new MorphControls();
 
 		private static MorphData charData = null;
 		private static string lastCharDir = "";
 		private static DateTime lastDT = new DateTime();
 
+		internal MorphControls controls = new MorphControls();
+		internal static readonly MorphTarget morphTarget = new MorphTarget();
+		internal static bool faceBonemodTgl = true, bodyBonemodTgl = true;
 
-		internal readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
+		public readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
 
 
 		/// <summary>
@@ -314,246 +62,194 @@ namespace Character_Morpher
 		/// </summary>
 		public bool reloading { get; internal set; } = false;
 
-		internal static readonly MorphTarget morphTarget = new MorphTarget();
-		internal class MorphTarget
-		{
-			private static ChaControl _extraCharacter = null;
-
-			public static bool initalize
-			{
-				set
-				{
-					if(value)
-					{
-						if(_extraCharacter == null)
-						{
-
-							Transform parent = null;
-							foreach(var hnd in CharacterApi.RegisteredHandlers)
-								if(hnd.ControllerType == typeof(CharaMorpherController))
-									if(hnd.Instances.Count() > 0)
-										parent = hnd.Instances.First().transform.parent;
+		/// <summary>
+		/// makes sure most main functins don't run when creating template character
+		/// </summary>
+		public bool dummy { get; internal set; } = false;
 
 
-							//_extraCharacter = new ChaControl();//this is needed!!!
-							_extraCharacter =
-
-#if HONEY_API
-							Character.Instance.CreateChara(1, parent?.gameObject, -10);
-#elif KK
-							Character.Instance.CreateFemale(parent?.gameObject, -10, hiPoly: false);
-#elif KKS
-							Character.CreateFemale(parent?.gameObject, -10, hiPoly: false);
-#endif
-
-							Destroy(morphTarget.extraCharacter.GetComponent<CharaMorpherController>());
-							_extraCharacter.gameObject.SetActive(false);
-							CharaMorpher_Core.Logger.LogDebug("created new character instance");
-						}
-
-						return;
-					}
-#if KKS
-					Character.DeleteChara(_extraCharacter);
-#else
-					Character.Instance?.DeleteChara(_extraCharacter);
-#endif
-					_extraCharacter = null;
-				}
-				get { return _extraCharacter != null; }
-			}
-			public ChaControl extraCharacter { get => _extraCharacter; }
-
-			public ChaFileControl chaFile { get { return extraCharacter?.chaFile; } }
-		}
-
-
-
-		//this is a tuple list btw (of bones found in abmx mod and online... somewhere)
 #if KOI_API
 		public static readonly List<KeyValuePair<string, string>> boneDatabaseCatagories = new List<KeyValuePair<string, string>>()
 #else
+		//this is a tuple list btw (of bones found in abmx mod and online... somewhere)
 		public static readonly List<(string, string)> bonecatagories = new List<(string, string)>()
 #endif
 
-#if KOI_API
+#if KOI_API		
 		#region KKBones
 		{
-             //ABMX
-        
-                 //other head
-	new KeyValuePair<string, string>("cf_J_megane_rx_ear", ""    ),
-
-   //Head;
-	new KeyValuePair<string, string>("cf_j_head",     "" ),
-	new KeyValuePair<string, string>("cf_s_neck"         , ""  ),
-	new KeyValuePair<string, string>("cf_J_FaceBase"     , ""     ),
-	new KeyValuePair<string, string>("cf_s_head"         , ""     ),
-	new KeyValuePair<string, string>("cf_J_FaceUp_ty"    , ""     ),
-	new KeyValuePair<string, string>("cf_J_FaceUp_tz"    , ""     ),
-	new KeyValuePair<string, string>("cf_J_FaceLow_sx"   , ""     ),
-	new KeyValuePair<string, string>("cf_J_FaceLow_tz"   , ""     ),
-	new KeyValuePair<string, string>("cf_hit_head"       , ""     ),
-	new KeyValuePair<string, string>("cf_J_Chin_Base"    , ""     ),
-	new KeyValuePair<string, string>("cf_J_ChinLow"      , ""     ),
-	new KeyValuePair<string, string>("cf_J_ChinTip_Base" , ""     ),
-	new KeyValuePair<string, string>("cf_J_CheekUpBase"  , ""     ),
-	new KeyValuePair<string, string>("cf_J_CheekUp2_L"   , ""     ),
-	new KeyValuePair<string, string>("cf_J_CheekUp_s_L"  , ""     ),
-	new KeyValuePair<string, string>("cf_J_CheekLow_s_L" , ""     ),
-   
-	//Nose;
-    new KeyValuePair<string, string>("cf_J_NoseBase_rx"  , "nose"    ),
-	new KeyValuePair<string, string>("cf_J_Nose_tip"     , "nose"    ),
-	new KeyValuePair<string, string>("cf_J_NoseBridge_rx", "nose"    ),
-	new KeyValuePair<string, string>("cf_J_NoseBridge_ty", "nose"    ),
-
-    //Mouth;
-    new KeyValuePair<string, string>("cf_J_MouthBase_rx" ,"mouth" ),
-	new KeyValuePair<string, string>("cf_J_MouthBase_ty" ,"mouth" ),
-	new KeyValuePair<string, string>("cf_J_Mouth_L"      ,"mouth" ),
-	new KeyValuePair<string, string>("cf_J_Mouthup"      ,"mouth" ),
-	new KeyValuePair<string, string>("cf_J_MouthLow"     ,"mouth" ),
-	new KeyValuePair<string, string>("cf_J_MouthCavity"  ,"mouth" ),
-
-
-   //Ears;
-
-	new KeyValuePair<string, string>("cf_J_EarBase_ry_L" , "ears" ),
-	new KeyValuePair<string, string>("cf_J_EarUp_L"      , "ears" ),
-	new KeyValuePair<string, string>("cf_J_EarLow_L"     , "ears" ),
-   
-    //Eyes;
-    new KeyValuePair<string, string>("cf_J_Mayu_L"       , "eyes"),
-	new KeyValuePair<string, string>("cf_J_MayuMid_s_L"  , "eyes"),
-	new KeyValuePair<string, string>("cf_J_MayuTip_s_L"  , "eyes"),
-	new KeyValuePair<string, string>("cf_J_Eye_tz"       , "eyes"),
-	new KeyValuePair<string, string>("cf_J_Eye_rz_L"     , "eyes"),
-	new KeyValuePair<string, string>("cf_J_Eye_tx_L"     , "eyes"),
-	new KeyValuePair<string, string>("cf_J_Eye01_s_L"    , "eyes"),
-	new KeyValuePair<string, string>("cf_J_Eye02_s_L"    , "eyes"),
-	new KeyValuePair<string, string>("cf_J_Eye03_s_L"    , "eyes"),
-	new KeyValuePair<string, string>("cf_J_Eye04_s_L"    , "eyes"),
-	new KeyValuePair<string, string>("cf_J_Eye05_s_L"    , "eyes"),
-	new KeyValuePair<string, string>("cf_J_Eye06_s_L"    , "eyes"),
-	new KeyValuePair<string, string>("cf_J_Eye07_s_L"    , "eyes"),
-	new KeyValuePair<string, string>("cf_J_Eye08_s_L"    , "eyes"),
-  
-    //Body;
-    new KeyValuePair<string, string>("cf_n_height"       , ""  ),
-	new KeyValuePair<string, string>("cf_d_sk_top"       , ""      ),
-	new KeyValuePair<string, string>("cf_d_sk_00_00"     , ""      ),
-	new KeyValuePair<string, string>("cf_d_sk_07_00"     , ""      ),
-	new KeyValuePair<string, string>("cf_d_sk_06_00"     , ""      ),
-	new KeyValuePair<string, string>("cf_d_sk_05_00"     , ""      ),
-	new KeyValuePair<string, string>("cf_d_sk_04_00"     , ""      ),
-   
-    //Boobs;
-    new KeyValuePair<string, string>("cf_d_bust01_L"     , "boobs"   ),
-	new KeyValuePair<string, string>("cf_d_bust02_L"     , "boobs"   ),
-	new KeyValuePair<string, string>("cf_d_bust03_L"     , "boobs"   ),
-	new KeyValuePair<string, string>("cf_s_bust00_L"     , "boobs"   ),
-	new KeyValuePair<string, string>("cf_s_bust01_L"     , "boobs"   ),
-	new KeyValuePair<string, string>("cf_s_bust02_L"     , "boobs"   ),
-	new KeyValuePair<string, string>("cf_s_bust03_L"     , "boobs"   ),
-	new KeyValuePair<string, string>("cf_hit_bust02_L"   , "boobs"   ),
-	new KeyValuePair<string, string>("cf_s_bnip01_L"     , "boobs"   ),
-	new KeyValuePair<string, string>("cf_s_bnip025_L"    , "boobs"   ),
-	new KeyValuePair<string, string>("cf_d_bnip01_L"     , "boobs"   ),
-	new KeyValuePair<string, string>("cf_s_bnip02_L"     , "boobs"   ),
-	new KeyValuePair<string, string>("cf_s_bnipacc_L"    , "boobs"   ),
- 
-    //Torso;
-    new KeyValuePair<string, string>("cf_s_spine03"      , "torso"  ),
-	new KeyValuePair<string, string>("cf_s_spine02"      , "torso"  ),
-	new KeyValuePair<string, string>("cf_s_spine01"      , "torso"  ),
-	new KeyValuePair<string, string>("cf_hit_spine01"    , "torso"  ),
-	new KeyValuePair<string, string>("cf_hit_spine02_L"  , "torso"  ),
-	new KeyValuePair<string, string>("cf_hit_berry"      , "torso"  ),
-	new KeyValuePair<string, string>("cf_hit_waist_L"    , "torso"  ),
-	new KeyValuePair<string, string>("cf_j_spine01"      , "torso"  ),
-	new KeyValuePair<string, string>("cf_j_spine02"      , "torso"  ),
-	new KeyValuePair<string, string>("cf_j_spine03"      , "torso"  ),
-	new KeyValuePair<string, string>("cf_s_waist01"      , "torso"  ),
-	new KeyValuePair<string, string>("cf_s_waist02"      , "torso"  ),
-   
-    //Butt;
-	new KeyValuePair<string, string>("cf_t_hips"         , "butt" ),
-	new KeyValuePair<string, string>("cf_s_siri_L"       , "butt"),
-	new KeyValuePair<string, string>("cf_hit_siri_L"     , "butt"),
- 
-    //Arms;
-    new KeyValuePair<string, string>("cf_s_shoulder02_L" , "arms"  ),
-	new KeyValuePair<string, string>("cf_hit_shoulder_L" , "arms"  ),
-	new KeyValuePair<string, string>("cf_j_shoulder_L"   , "arms"  ),
-	new KeyValuePair<string, string>("cf_j_arm00_L"      , "arms"  ),
-	new KeyValuePair<string, string>("cf_s_arm01_L"      , "arms"  ),
-	new KeyValuePair<string, string>("cf_s_arm02_L"      , "arms"  ),
-	new KeyValuePair<string, string>("cf_s_arm03_L"      , "arms"  ),
-	new KeyValuePair<string, string>("cf_j_forearm01_L"  , "arms"  ),
-	new KeyValuePair<string, string>("cf_s_forearm01_L"  , "arms"  ),
-	new KeyValuePair<string, string>("cf_s_forearm02_L"  , "arms"  ),
-	new KeyValuePair<string, string>("cf_s_wrist_L"      , "arms"  ),
-	new KeyValuePair<string, string>("k_f_armupL_00"     , "arms" ),
-	new KeyValuePair<string, string>("k_f_armupL_01"     , "arms" ),
-	new KeyValuePair<string, string>("k_f_armupL_02"     , "arms" ),
-	new KeyValuePair<string, string>("k_f_armupL_03"     , "arms" ),
-	new KeyValuePair<string, string>("k_f_armupR_00"     , "arms" ),
-	new KeyValuePair<string, string>("k_f_armupR_01"     , "arms" ),
-	new KeyValuePair<string, string>("k_f_armupR_02"     , "arms" ),
-	new KeyValuePair<string, string>("k_f_armupR_03"     , "arms" ),
-    
-    //Hands;
-    new KeyValuePair<string, string>("cf_j_hand_L" , "hands"),
-	new KeyValuePair<string, string>("cf_s_hand_L" , "hands"),
-	new KeyValuePair<string, string>("cf_hit_arm_L", "hands"),
-	new KeyValuePair<string, string>("k_f_handL_00", "hands" ),
-	new KeyValuePair<string, string>("k_f_handL_01", "hands" ),
-	new KeyValuePair<string, string>("k_f_handL_02", "hands" ),
-	new KeyValuePair<string, string>("k_f_handL_03", "hands" ),
-	new KeyValuePair<string, string>("k_f_handR_00", "hands" ),
-	new KeyValuePair<string, string>("k_f_handR_01", "hands" ),
-	new KeyValuePair<string, string>("k_f_handR_02", "hands" ),
-	new KeyValuePair<string, string>("k_f_handR_03", "hands" ),
-  
-    //Legs;
-    new KeyValuePair<string, string>("cf_j_waist01"      , "legs"  ),
-	new KeyValuePair<string, string>("cf_j_waist02"      , "legs"  ),
-	new KeyValuePair<string, string>("cf_j_thigh00_L"    , "legs"  ),
-	new KeyValuePair<string, string>("cf_s_thigh01_L"    , "legs"  ),
-	new KeyValuePair<string, string>("cf_s_thigh02_L"    , "legs"  ),
-	new KeyValuePair<string, string>("cf_s_thigh03_L"    , "legs"  ),
-	new KeyValuePair<string, string>("cf_hit_thigh01_L"  , "legs"  ),
-	new KeyValuePair<string, string>("cf_hit_thigh02_L"  , "legs"  ),
-	new KeyValuePair<string, string>("cf_j_leg01_L"      , "legs"  ),
-	new KeyValuePair<string, string>("cf_s_leg01_L"      , "legs"  ),
-	new KeyValuePair<string, string>("cf_s_leg02_L"      , "legs"  ),
-	new KeyValuePair<string, string>("cf_s_leg03_L"      , "legs"  ),
-	new KeyValuePair<string, string>("k_f_legupL_00"     , "legs" ),
-	new KeyValuePair<string, string>("k_f_legupR_00"     , "legs" ),
-	new KeyValuePair<string, string>("k_f_leglowL_00"    ,"legs" ),
-	new KeyValuePair<string, string>("k_f_leglowL_01"    ,"legs" ),
-	new KeyValuePair<string, string>("k_f_leglowL_02"    ,"legs" ),
-	new KeyValuePair<string, string>("k_f_leglowL_03"    ,"legs" ),
-	new KeyValuePair<string, string>("k_f_leglowR_00"    ,"legs" ),
-	new KeyValuePair<string, string>("k_f_leglowR_01"    ,"legs" ),
-	new KeyValuePair<string, string>("k_f_leglowR_02"    ,"legs" ),
-	new KeyValuePair<string, string>("k_f_leglowR_03"    ,"legs" ),
-
-   //Feet;
-    new KeyValuePair<string, string>("cf_j_foot_L"       , "feet"),
-	new KeyValuePair<string, string>("cf_j_leg03_L"      , "feet"),
-	new KeyValuePair<string, string>("cf_j_toes_L"       , "feet"),
-
-  //Genitals;
-    new KeyValuePair<string, string>("cf_d_kokan"        , "genitals"),
-	new KeyValuePair<string, string>("cf_j_kokan"        , "genitals"),
-	new KeyValuePair<string, string>("cm_J_dan100_00"    , "genitals"),
-	new KeyValuePair<string, string>("cm_J_dan109_00"    , "genitals"),
-	new KeyValuePair<string, string>("cm_J_dan_f_L"      , "genitals"),
-	new KeyValuePair<string, string>("cf_j_ana"          , "genitals"),
-
-
+            //ABMX
+		   
+			//Body;
+		    new KeyValuePair<string, string>("cf_n_height"       , ""  ),
+			new KeyValuePair<string, string>("cf_d_sk_top"       , ""      ),
+			new KeyValuePair<string, string>("cf_d_sk_00_00"     , ""      ),
+			new KeyValuePair<string, string>("cf_d_sk_07_00"     , ""      ),
+			new KeyValuePair<string, string>("cf_d_sk_06_00"     , ""      ),
+			new KeyValuePair<string, string>("cf_d_sk_05_00"     , ""      ),
+			new KeyValuePair<string, string>("cf_d_sk_04_00"     , ""      ),
+		   
+		    //Boobs;
+		    new KeyValuePair<string, string>("cf_d_bust01_L"     , "boobs"   ),
+			new KeyValuePair<string, string>("cf_d_bust02_L"     , "boobs"   ),
+			new KeyValuePair<string, string>("cf_d_bust03_L"     , "boobs"   ),
+			new KeyValuePair<string, string>("cf_s_bust00_L"     , "boobs"   ),
+			new KeyValuePair<string, string>("cf_s_bust01_L"     , "boobs"   ),
+			new KeyValuePair<string, string>("cf_s_bust02_L"     , "boobs"   ),
+			new KeyValuePair<string, string>("cf_s_bust03_L"     , "boobs"   ),
+			new KeyValuePair<string, string>("cf_hit_bust02_L"   , "boobs"   ),
+			new KeyValuePair<string, string>("cf_s_bnip01_L"     , "boobs"   ),
+			new KeyValuePair<string, string>("cf_s_bnip025_L"    , "boobs"   ),
+			new KeyValuePair<string, string>("cf_d_bnip01_L"     , "boobs"   ),
+			new KeyValuePair<string, string>("cf_s_bnip02_L"     , "boobs"   ),
+			new KeyValuePair<string, string>("cf_s_bnipacc_L"    , "boobs"   ),
+		 
+		    //Torso;
+		    new KeyValuePair<string, string>("cf_s_spine03"      , "torso"  ),
+			new KeyValuePair<string, string>("cf_s_spine02"      , "torso"  ),
+			new KeyValuePair<string, string>("cf_s_spine01"      , "torso"  ),
+			new KeyValuePair<string, string>("cf_hit_spine01"    , "torso"  ),
+			new KeyValuePair<string, string>("cf_hit_spine02_L"  , "torso"  ),
+			new KeyValuePair<string, string>("cf_hit_berry"      , "torso"  ),
+			new KeyValuePair<string, string>("cf_j_spine01"      , "torso"  ),
+			new KeyValuePair<string, string>("cf_j_spine02"      , "torso"  ),
+			new KeyValuePair<string, string>("cf_j_spine03"      , "torso"  ),
+		   
+		    //Arms;
+		    new KeyValuePair<string, string>("cf_s_shoulder02_L" , "arms"  ),
+			new KeyValuePair<string, string>("cf_hit_shoulder_L" , "arms"  ),
+			new KeyValuePair<string, string>("cf_j_shoulder_L"   , "arms"  ),
+			new KeyValuePair<string, string>("cf_j_arm00_L"      , "arms"  ),
+			new KeyValuePair<string, string>("cf_s_arm01_L"      , "arms"  ),
+			new KeyValuePair<string, string>("cf_s_arm02_L"      , "arms"  ),
+			new KeyValuePair<string, string>("cf_s_arm03_L"      , "arms"  ),
+			new KeyValuePair<string, string>("cf_j_forearm01_L"  , "arms"  ),
+			new KeyValuePair<string, string>("cf_s_forearm01_L"  , "arms"  ),
+			new KeyValuePair<string, string>("cf_s_forearm02_L"  , "arms"  ),
+			new KeyValuePair<string, string>("cf_s_wrist_L"      , "arms"  ),
+			new KeyValuePair<string, string>("k_f_armupL_00"     , "arms" ),
+			new KeyValuePair<string, string>("k_f_armupL_01"     , "arms" ),
+			new KeyValuePair<string, string>("k_f_armupL_02"     , "arms" ),
+			new KeyValuePair<string, string>("k_f_armupL_03"     , "arms" ),
+			new KeyValuePair<string, string>("k_f_armupR_00"     , "arms" ),
+			new KeyValuePair<string, string>("k_f_armupR_01"     , "arms" ),
+			new KeyValuePair<string, string>("k_f_armupR_02"     , "arms" ),
+			new KeyValuePair<string, string>("k_f_armupR_03"     , "arms" ),
+		    
+		    //Hands;
+		    new KeyValuePair<string, string>("cf_j_hand_L" , "hands"),
+			new KeyValuePair<string, string>("cf_s_hand_L" , "hands"),
+			new KeyValuePair<string, string>("cf_hit_arm_L", "hands"),
+			new KeyValuePair<string, string>("k_f_handL_00", "hands" ),
+			new KeyValuePair<string, string>("k_f_handL_01", "hands" ),
+			new KeyValuePair<string, string>("k_f_handL_02", "hands" ),
+			new KeyValuePair<string, string>("k_f_handL_03", "hands" ),
+			new KeyValuePair<string, string>("k_f_handR_00", "hands" ),
+			new KeyValuePair<string, string>("k_f_handR_01", "hands" ),
+			new KeyValuePair<string, string>("k_f_handR_02", "hands" ),
+			new KeyValuePair<string, string>("k_f_handR_03", "hands" ),
+		  
+		    //Butt;
+			new KeyValuePair<string, string>("cf_t_hips"         , "butt"),
+			new KeyValuePair<string, string>("cf_s_siri_L"       , "butt"),
+			new KeyValuePair<string, string>("cf_hit_siri_L"     , "butt"),
+		 
+		    //Legs;
+			new KeyValuePair<string, string>("cf_hit_waist_L"    , "legs"),
+			new KeyValuePair<string, string>("cf_s_waist01"      , "legs"),
+			new KeyValuePair<string, string>("cf_s_waist02"      , "legs"),
+			new KeyValuePair<string, string>("cf_j_waist01"      , "legs"),
+			new KeyValuePair<string, string>("cf_j_waist02"      , "legs"),
+			new KeyValuePair<string, string>("cf_j_thigh00_L"    , "legs"),
+			new KeyValuePair<string, string>("cf_s_thigh01_L"    , "legs"),
+			new KeyValuePair<string, string>("cf_s_thigh02_L"    , "legs"),
+			new KeyValuePair<string, string>("cf_s_thigh03_L"    , "legs"),
+			new KeyValuePair<string, string>("cf_hit_thigh01_L"  , "legs"),
+			new KeyValuePair<string, string>("cf_hit_thigh02_L"  , "legs"),
+			new KeyValuePair<string, string>("cf_j_leg01_L"      , "legs"),
+			new KeyValuePair<string, string>("cf_s_leg01_L"      , "legs"),
+			new KeyValuePair<string, string>("cf_s_leg02_L"      , "legs"),
+			new KeyValuePair<string, string>("k_f_legupL_00"     , "legs"),
+			new KeyValuePair<string, string>("k_f_legupR_00"     , "legs"),
+			new KeyValuePair<string, string>("k_f_leglowL_00"    ,"legs" ),
+			new KeyValuePair<string, string>("k_f_leglowL_01"    ,"legs" ),
+			new KeyValuePair<string, string>("k_f_leglowL_02"    ,"legs" ),
+			new KeyValuePair<string, string>("k_f_leglowL_03"    ,"legs" ),
+			new KeyValuePair<string, string>("k_f_leglowR_00"    ,"legs" ),
+			new KeyValuePair<string, string>("k_f_leglowR_01"    ,"legs" ),
+			new KeyValuePair<string, string>("k_f_leglowR_02"    ,"legs" ),
+			new KeyValuePair<string, string>("k_f_leglowR_03"    ,"legs" ),
+		
+		   //Feet;
+		    new KeyValuePair<string, string>("cf_j_foot_L"       , "feet"),
+			new KeyValuePair<string, string>("cf_j_leg03_L"      , "feet"),
+			new KeyValuePair<string, string>("cf_s_leg03_L"      , "feet"),
+			new KeyValuePair<string, string>("cf_j_toes_L"       , "feet"),
+		
+		  //Genitals;
+		    new KeyValuePair<string, string>("cf_d_kokan"        , "genitals"),
+			new KeyValuePair<string, string>("cf_j_kokan"        , "genitals"),
+			new KeyValuePair<string, string>("cm_J_dan100_00"    , "genitals"),
+			new KeyValuePair<string, string>("cm_J_dan109_00"    , "genitals"),
+			new KeyValuePair<string, string>("cm_J_dan_f_L"      , "genitals"),
+			new KeyValuePair<string, string>("cf_j_ana"          , "genitals"),
+		
+		
+			 //Head;
+			new KeyValuePair<string, string>("cf_j_head",     "" ),
+			new KeyValuePair<string, string>("cf_s_head"         , ""     ),
+			new KeyValuePair<string, string>("cf_hit_head"       , ""     ),
+			new KeyValuePair<string, string>("cf_s_neck"         , ""  ),
+			new KeyValuePair<string, string>("cf_J_FaceBase"     , ""     ),
+			new KeyValuePair<string, string>("cf_J_FaceUp_ty"    , ""     ),
+			new KeyValuePair<string, string>("cf_J_FaceUp_tz"    , ""     ),
+			new KeyValuePair<string, string>("cf_J_FaceLow_sx"   , ""     ),
+			new KeyValuePair<string, string>("cf_J_FaceLow_tz"   , ""     ),
+			new KeyValuePair<string, string>("cf_J_Chin_Base"    , ""     ),
+			new KeyValuePair<string, string>("cf_J_ChinLow"      , ""     ),
+			new KeyValuePair<string, string>("cf_J_ChinTip_Base" , ""     ),
+			new KeyValuePair<string, string>("cf_J_CheekUpBase"  , ""     ),
+			new KeyValuePair<string, string>("cf_J_CheekUp2_L"   , ""     ),
+			new KeyValuePair<string, string>("cf_J_CheekUp_s_L"  , ""     ),
+			new KeyValuePair<string, string>("cf_J_CheekLow_s_L" , ""     ),
+		   
+			//Nose;
+		    new KeyValuePair<string, string>("cf_J_NoseBase_rx"  , "nose"    ),
+			new KeyValuePair<string, string>("cf_J_Nose_tip"     , "nose"    ),
+			new KeyValuePair<string, string>("cf_J_NoseBridge_rx", "nose"    ),
+			new KeyValuePair<string, string>("cf_J_NoseBridge_ty", "nose"    ),
+		
+		    //Mouth;
+		    new KeyValuePair<string, string>("cf_J_MouthBase_rx" ,"mouth" ),
+			new KeyValuePair<string, string>("cf_J_MouthBase_ty" ,"mouth" ),
+			new KeyValuePair<string, string>("cf_J_Mouth_L"      ,"mouth" ),
+			new KeyValuePair<string, string>("cf_J_Mouthup"      ,"mouth" ),
+			new KeyValuePair<string, string>("cf_J_MouthLow"     ,"mouth" ),
+			new KeyValuePair<string, string>("cf_J_MouthCavity"  ,"mouth" ),
+		
+		
+		   //Ears;
+			new KeyValuePair<string, string>("cf_J_megane_rx_ear", "ears" ),//this should be an ear
+			new KeyValuePair<string, string>("cf_J_EarBase_ry_L" , "ears" ),
+			new KeyValuePair<string, string>("cf_J_EarUp_L"      , "ears" ),
+			new KeyValuePair<string, string>("cf_J_EarLow_L"     , "ears" ),
+		   
+		    //Eyes;
+		    new KeyValuePair<string, string>("cf_J_Mayu_L"       , "eyes"),
+			new KeyValuePair<string, string>("cf_J_MayuMid_s_L"  , "eyes"),
+			new KeyValuePair<string, string>("cf_J_MayuTip_s_L"  , "eyes"),
+			new KeyValuePair<string, string>("cf_J_Eye_tz"       , "eyes"),
+			new KeyValuePair<string, string>("cf_J_Eye_rz_L"     , "eyes"),
+			new KeyValuePair<string, string>("cf_J_Eye_tx_L"     , "eyes"),
+			new KeyValuePair<string, string>("cf_J_Eye01_s_L"    , "eyes"),
+			new KeyValuePair<string, string>("cf_J_Eye02_s_L"    , "eyes"),
+			new KeyValuePair<string, string>("cf_J_Eye03_s_L"    , "eyes"),
+			new KeyValuePair<string, string>("cf_J_Eye04_s_L"    , "eyes"),
+			new KeyValuePair<string, string>("cf_J_Eye05_s_L"    , "eyes"),
+			new KeyValuePair<string, string>("cf_J_Eye06_s_L"    , "eyes"),
+			new KeyValuePair<string, string>("cf_J_Eye07_s_L"    , "eyes"),
+			new KeyValuePair<string, string>("cf_J_Eye08_s_L"    , "eyes"),
+		
 		}
 		#endregion
 #elif HONEY_API
@@ -613,44 +309,6 @@ namespace Character_Morpher
 
 
 
-                //Butt
-				("cf_hit_Kosi02_s,False,1,1,1,1 Hitbox - Hips                                ",   "butt"),
-				("cf_hit_Siri_s_L,False,1,1,1,1 Hitbox - Butt (Left)                         ",   "butt"),
-				("cf_hit_Siri_s_R,False,1,1,1,1 Hitbox - Butt (Right)                        ",   "butt"),
-				("cf_J_Hips,False,1,1,1,1 Scale                                              ",   "butt"),
-				("cf_J_SiriDam_L,False,1,1,1,1 Butt (Left)                                   ",   "butt"),
-				("cf_J_SiriDam_R,False,1,1,1,1 Butt (Right)                                  ",   "butt"),
-				("cf_J_SiriDam00_L,False,1,1,1,1                                             ",   "butt"),
-				("cf_J_SiriDam01_L,False,1,1,1,1                                             ",   "butt"),
-				("cf_J_SiriDam01_R,False,1,1,1,1                                             ",   "butt"),
-				("cf_J_SiriDam02_L,False,1,1,1,1                                             ",   "butt"),
-				("cf_J_Sirilow_L,False,1,1,1,1                                               ",   "butt"),
-				("cf_J_Sirilow_s_L,False,1,1,1,1                                             ",   "butt"),
-				("cf_J_Siriopen_s_L,False,1,1,1,1 Butt Apart (Left)                          ",   "butt"),
-				("cf_J_Siriopen_s_R,False,1,1,1,1 Butt Apart (Right)                         ",   "butt"),
-				("cf_J_SiriTop_L,False,1,1,1,1                                               ",   "butt"),
-				("cf_J_Siriulow_L,False,1,1,1,1                                              ",   "butt"),
-				("cf_J_Siriulow_s_L,False,1,1,1,1                                            ",   "butt"),
-				("cf_J_Siriup_L,False,1,1,1,1                                                ",   "butt"),
-				("cf_J_SiriUp_L,False,1,1,1,1                                                ",   "butt"),
-				("cf_J_SiriUP_L,False,1,1,1,1                                                ",   "butt"),
-				("cf_J_SiriUP_R,False,1,1,1,1                                                ",   "butt"),
-				("cf_J_Siriup00_L,False,1,1,1,1                                              ",   "butt"),
-				("cf_J_SiriUp00_L,False,1,1,1,1                                              ",   "butt"),
-				("cf_J_SiriUp00_R,False,1,1,1,1                                              ",   "butt"),
-				("cf_J_SiriUp01_L,False,1,1,1,1                                              ",   "butt"),
-				("cf_J_SiriUP01_L,False,1,1,1,1                                              ",   "butt"),
-				("cf_J_SiriUP01_R,False,1,1,1,1                                              ",   "butt"),
-				("cf_J_SiriUp01_s_L,False,1,1,1,1                                            ",   "butt"),
-				("cf_J_Siriups_L,False,1,1,1,1                                               ",   "butt"),
-				("cf_J_Siri_L,False,1,1,1,1 Overall Butt (Left)                              ",   "butt"),
-				("cf_J_Siri_R,False,1,1,1,1 Overall Butt (Right)                             ",   "butt"),
-				("cf_J_Siri_s_L,False,1,1,1,1 Overall Butt/Butt Tone (Left) [Ignores Skirt]  ",   "butt"),
-				("cf_J_Siri_s_R,False,1,1,1,1 Overall Butt/Butt Tone (Right) [Ignores Skirt] ",   "butt"),
-
-            
-
-
                 //Arms                                
                 ("cf_J_ArmElbo_low_s_L,False,1,1,1,1 Elbow (Left)                             ","arms"),
 				("cf_J_ArmElbo_low_s_R,False,1,1,1,1 Elbow (Right)                            ","arms"),
@@ -683,22 +341,48 @@ namespace Character_Morpher
 				("cf_J_Hand_s_R,False,1,1,1,1 Hand (Right)                                   ","hands"),
 				("cf_J_Hand_Wrist_s_L,False,1,1,1,1 Wirst (Left)                             ","hands"),
 				("cf_J_Hand_Wrist_s_R,False,1,1,1,1 Wirst (Right)                            ","hands"),
+			
+				
+				
+				//Butt
+				("cf_hit_Siri_s_L,False,1,1,1,1 Hitbox - Butt (Left)                         ",   "butt"),
+				("cf_hit_Siri_s_R,False,1,1,1,1 Hitbox - Butt (Right)                        ",   "butt"),
+				("cf_J_SiriDam_L,False,1,1,1,1 Butt (Left)                                   ",   "butt"),
+				("cf_J_SiriDam_R,False,1,1,1,1 Butt (Right)                                  ",   "butt"),
+				("cf_J_SiriDam00_L,False,1,1,1,1                                             ",   "butt"),
+				("cf_J_SiriDam01_L,False,1,1,1,1                                             ",   "butt"),
+				("cf_J_SiriDam01_R,False,1,1,1,1                                             ",   "butt"),
+				("cf_J_SiriDam02_L,False,1,1,1,1                                             ",   "butt"),
+				("cf_J_Sirilow_L,False,1,1,1,1                                               ",   "butt"),
+				("cf_J_Sirilow_s_L,False,1,1,1,1                                             ",   "butt"),
+				("cf_J_Siriopen_s_L,False,1,1,1,1 Butt Apart (Left)                          ",   "butt"),
+				("cf_J_Siriopen_s_R,False,1,1,1,1 Butt Apart (Right)                         ",   "butt"),
+				("cf_J_SiriTop_L,False,1,1,1,1                                               ",   "butt"),
+				("cf_J_Siriulow_L,False,1,1,1,1                                              ",   "butt"),
+				("cf_J_Siriulow_s_L,False,1,1,1,1                                            ",   "butt"),
+				("cf_J_Siriup_L,False,1,1,1,1                                                ",   "butt"),
+				("cf_J_SiriUp_L,False,1,1,1,1                                                ",   "butt"),
+				("cf_J_SiriUP_L,False,1,1,1,1                                                ",   "butt"),
+				("cf_J_SiriUP_R,False,1,1,1,1                                                ",   "butt"),
+				("cf_J_Siriup00_L,False,1,1,1,1                                              ",   "butt"),
+				("cf_J_SiriUp00_L,False,1,1,1,1                                              ",   "butt"),
+				("cf_J_SiriUp00_R,False,1,1,1,1                                              ",   "butt"),
+				("cf_J_SiriUp01_L,False,1,1,1,1                                              ",   "butt"),
+				("cf_J_SiriUP01_L,False,1,1,1,1                                              ",   "butt"),
+				("cf_J_SiriUP01_R,False,1,1,1,1                                              ",   "butt"),
+				("cf_J_SiriUp01_s_L,False,1,1,1,1                                            ",   "butt"),
+				("cf_J_Siriups_L,False,1,1,1,1                                               ",   "butt"),
+				("cf_J_Siri_L,False,1,1,1,1 Overall Butt (Left)                              ",   "butt"),
+				("cf_J_Siri_R,False,1,1,1,1 Overall Butt (Right)                             ",   "butt"),
+				("cf_J_Siri_s_L,False,1,1,1,1 Overall Butt/Butt Tone (Left) [Ignores Skirt]  ",   "butt"),
+				("cf_J_Siri_s_R,False,1,1,1,1 Overall Butt/Butt Tone (Right) [Ignores Skirt] ",   "butt"),
 
 
-                //genitals
-                ("cf_J_Kokan,False,1,1,1,1 Pussy                                             ","genitals"),
-				("cf_J_Ana,False,1,1,1,1 Anus                                                ","genitals"),
-				("cm_J_dan_s,False,1,1,1,1 (Penis & Balls)                                   ","genitals"),
-				("cm_J_dan100_00,False,1,1,1,1 (Penis)                                       ","genitals"),
-				("cm_J_dan101_00															 ","genitals"),
-				("cm_J_dan109_00															 ","genitals"),
-				("cm_J_dan_f_top,False,1,1,1,1 (Balls)                                       ","genitals"),
-				("cm_J_dan_f_L,False,1,1,1,1 (Left Nut)                                      ","genitals"),
-				("cm_J_dan_f_R,False,1,1,1,1 (Right Nut)                                     ","genitals"),
-             
-                //legs
+				//legs
                 ("cf_hit_LegUp01_s_L,False,1,1,1,1 Hitbox - Thigh (Left)                     ", "legs"),
 				("cf_hit_LegUp01_s_R,False,1,1,1,1 Hitbox - Thigh (Right)                    ", "legs"),
+				("cf_hit_Kosi02_s,False,1,1,1,1 Hitbox - Hips                                ", "legs"),
+				("cf_J_Hips,False,1,1,1,1 Scale                                              ", "legs"),
 				("cf_J_Kosi01,False,1,1,1,1 Waist & Below                                    ", "legs"),
 				("cf_J_Kosi01_s,False,1,1,1,1 Pelvis [Ignores Skirt]                         ", "legs"),
 				("cf_J_Kosi02,False,1,1,1,1 Hips & Below                                     ", "legs"),
@@ -778,6 +462,7 @@ namespace Character_Morpher
 				("cf_J_Legsk_07_04",            "legs"),
 				("cf_J_Legsk_07_05",            "legs"),
 
+
                 //feet              
                 ("cf_J_Foot01_L,False,1,1,1,1 Foot & Ankle (Left)                            ","feet"),
 				("cf_J_Foot01_R,False,1,1,1,1 Foot & Ankle (Right)                           ","feet"),
@@ -786,6 +471,20 @@ namespace Character_Morpher
 				("cf_J_Toes01_L,False,1,1,1,1 Toes (Left)                                    ","feet"),
 				("cf_J_Toes01_R,False,1,1,1,1 Toes (Right)                                   ","feet"),
 				
+
+
+				 //genitals
+                ("cf_J_Kokan,False,1,1,1,1 Pussy                                             ","genitals"),
+				("cf_J_Ana,False,1,1,1,1 Anus                                                ","genitals"),
+				("cm_J_dan_s,False,1,1,1,1 (Penis & Balls)                                   ","genitals"),
+				("cm_J_dan100_00,False,1,1,1,1 (Penis)                                       ","genitals"),
+				("cm_J_dan101_00															 ","genitals"),
+				("cm_J_dan109_00															 ","genitals"),
+				("cm_J_dan_f_top,False,1,1,1,1 (Balls)                                       ","genitals"),
+				("cm_J_dan_f_L,False,1,1,1,1 (Left Nut)                                      ","genitals"),
+				("cm_J_dan_f_R,False,1,1,1,1 (Right Nut)                                     ","genitals"),
+             
+
             
                 //eyes
                 ("cf_J_Eye_r_L,False,1,1,1,1 Eye (Left)                                      ","eyes"),
@@ -920,6 +619,19 @@ namespace Character_Morpher
 		#endregion
 #endif
 ;
+		public IEnumerator CoABMXFullRefresh(int delay = 5)
+		{
+			for(int a = 0; a < delay; ++a)
+				yield return null;
+
+			var boneCtrl = GetComponent<BoneController>();
+
+			yield return new WaitWhile(() => boneCtrl.NeedsFullRefresh || boneCtrl.NeedsBaselineUpdate);
+
+			if(reloading) yield break;
+
+			boneCtrl.NeedsFullRefresh = true;
+		}
 
 		private IEnumerator CoReloadChara()
 		{
@@ -950,12 +662,9 @@ namespace Character_Morpher
 		//Coroutine coFullRefresh;
 		public IEnumerator CoMorphUpdate(int delay = 6, bool forceReset = false, bool initReset = false, bool forceChange = false)
 		{
-			//var tmp = reloading;
-
 			for(int a = 0; a < delay; ++a)
 				yield return null;
 
-			//CharaMorpher_Core.Logger.LogDebug("Updating morph values after card save/load");
 			if(!reloading || forceChange)
 			{
 				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
@@ -973,18 +682,18 @@ namespace Character_Morpher
 
 		public IEnumerator CoMorphAfterABMX(int delayExtra = 5, bool forcereset = false, bool forceChange = false)
 		{
-			var boneCtrl = ChaControl.GetComponent<BoneController>();
+			var boneCtrl = GetComponent<BoneController>();
 
 			yield return new WaitWhile(() => boneCtrl.NeedsFullRefresh || boneCtrl.NeedsBaselineUpdate);
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Updating morph values after ABMX");
-			//MorphChangeUpdate(forcereset);
 
 			yield return StartCoroutine(CoMorphUpdate(delayExtra, forcereset, forceChange: forceChange));
 
 
 			yield break;
 		}
+
 		//bool forcedReload = false;
 		Coroutine coForceReload;
 		public void ForceCardReload()
@@ -1022,12 +731,12 @@ namespace Character_Morpher
 
 		}
 
-		private static string MakeDirPath(string path) => CharaMorpher_Core.MakeDirPath(path);
-
 
 		protected override void Awake()
 		{
 			base.Awake();
+
+			if(dummy) return;
 
 			var core = Instance;
 
@@ -1036,21 +745,18 @@ namespace Character_Morpher
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
 
-			MorphTarget.initalize = false;//just in-case
+			if(!MorphTarget.initalize) faceBonemodTgl = bodyBonemodTgl = true;
+
 		}
 
-		void LateUpdate()
+		public void LateUpdate()
 		{
+			if(dummy) return;
+
 			if((!m_data1.abmx.isSplit || !m_data2.abmx.isSplit)
 				&& initLoadFinished && boneSplitCheck())
 				MorphChangeUpdate();
 		}
-
-
-
-		void HoneyReload(object m, CharaReloadEventArgs n) =>
-			StartCoroutine(CoReloadChara());
-
 
 
 		bool boneSplitCheck(bool onlycheck = false)
@@ -1068,13 +774,12 @@ namespace Character_Morpher
 				{
 					if(!m_data2.abmx.isLoaded)
 						m_data2.abmx.Populate(this, true);
-					m_data2.abmx.BoneSplit(this, ChaControl);
+					m_data2.abmx.BoneSplit(this, ChaControl, true);
 
 				}
 			}
 			return m_data1.abmx.isSplit && m_data2.abmx.isSplit;
 		}
-
 
 
 		/// <summary>
@@ -1084,15 +789,15 @@ namespace Character_Morpher
 		/// <param name="abmxOnly">Only change ABMX data for current character (base character data is not changed)</param>
 		public void OnCharaReload(GameMode currentGameMode)
 		{
-			if(reloading) return;
+			if(reloading || dummy) return;
 
 			reloading = true;
 
 			var boneCtrl = GetComponent<BoneController>();
 
 
+			//clear original data
 			{
-				//clear original data
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("clear data");
 				m_data1.Clear();
 				m_data2.Clear();
@@ -1118,10 +823,9 @@ namespace Character_Morpher
 			{
 				//	if(MakerAPI.InsideMaker)
 				for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-					MorphChangeUpdate(initReset: true);
+					MorphChangeUpdate(forceReset: !initLoadFinished, initReset: initLoadFinished);
 
 			}
-
 
 			for(int a = -1; a < cfg.multiUpdateTest.Value + 6; ++a)
 				StartCoroutine(CoMorphAfterABMX(delayExtra: 20 + a + 1, forceChange: true));
@@ -1146,15 +850,21 @@ namespace Character_Morpher
 			StartCoroutine(CoLaterStatus(11, boneCtrl));//I just need to do this stuff later
 		}
 
+		/// <summary>
+		/// updates the morphtarget to a specified target if path has changed or card has been updated
+		/// </summary>
+		/// <param name="ctrl"></param>
 		public static void MorphTargetUpdate(CharaMorpherController ctrl)
 		{
+			if(ctrl.dummy) return;
 
 			//create path to morph target
-			string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
+			string path = Path.Combine(MyUtil.MakeDirPath(cfg.charDir.Value), MyUtil.MakeDirPath(cfg.imageName.Value));
 
 
 			//Get referenced character data (only needs to be loaded once)
 			if(File.Exists(path))
+
 				if(/*charData == null ||*/
 					!MorphTarget.initalize ||
 					lastCharDir != path ||
@@ -1171,10 +881,6 @@ namespace Character_Morpher
 					//initialize secondary model
 					MorphTarget.initalize = true;
 
-					var bonectrl = morphTarget.extraCharacter.GetComponent<BoneController>();
-					//this is the stupidest fix I've ever done (this allows the original ABMX sliders to work)
-					if(bonectrl) bonectrl.hideFlags = HideFlags.DontSave;
-
 					morphTarget.extraCharacter?.gameObject?.SetActive(false);
 
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("load morph target");
@@ -1186,7 +892,10 @@ namespace Character_Morpher
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("replace data 2");
 			ctrl.m_data2.Copy(charData);
+
 		}
+
+
 
 		/// <inheritdoc/>
 		protected override void OnReload(GameMode currentGameMode, bool keepState)
@@ -1215,7 +924,11 @@ namespace Character_Morpher
 			//		StartCoroutine(CoMorphUpdate(delay: 10));
 		}
 
-		//Taken from ABMX to get the data from card more easily 
+		/// <summary>
+		/// Taken from ABMX to get the data from card more easily 
+		/// </summary>
+		/// <param name="data"></param>
+		/// <returns></returns>
 		internal static List<BoneModifier> ReadBoneModifiers(PluginData data)
 		{
 			if(data != null)
@@ -1253,12 +966,12 @@ namespace Character_Morpher
 		/// <param name="forceReset: ">reset regardless of other perimeters</param>
 		public void MorphChangeUpdate(bool forceReset = false, bool initReset = false, bool updateValues = true)
 		{
+			if(dummy) return;
 
 			var currGameMode = KoikatuAPI.GetCurrentGameMode();
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"is data copied check?");
 			if(m_data1?.main == null) return;
-
 
 			var charaCtrl = ChaControl;
 			var boneCtrl = charaCtrl.GetComponent<BoneController>();
@@ -1323,7 +1036,7 @@ namespace Character_Morpher
 			var tmp = controls.all.ToList();
 			if(fullVal)
 				tmp = controls.full.ToList();
-			
+
 			return abmx ?
 				tmp.Find(m => m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)).Value :
 				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)).Value;
@@ -1341,7 +1054,7 @@ namespace Character_Morpher
 			float enable = (reset ? 0 : 1);
 
 
-			//update obscure values
+			//update obscure values//
 			{
 
 				//not sure how to update this :\ (well it works so don't question it)
@@ -1407,10 +1120,7 @@ namespace Character_Morpher
 			}
 
 
-
-			//float MyLerp(float a, float b, float t) => a + t * (b - a);//this is not right but needed it for testing
-
-			//value update loop
+			//value update loops//
 
 			//Main
 			for(int a = 0; a < Mathf.Max(new float[]
@@ -1422,13 +1132,10 @@ namespace Character_Morpher
 			{
 				float result = 0;
 
-
 				enable = (reset ? (initReset ? cfg.initialMorphTest.Value : 0) : 1);
 
-
-
 				//Body Shape
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"updating body");
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"updating body Shape");
 				if(a < m_data1.main.custom.body.shapeValueBody.Length)
 				{
 					//Value Update
@@ -1440,57 +1147,38 @@ namespace Character_Morpher
 						if(cfg.headIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("body", fullVal: initReset) * GetControlValue("head", fullVal: initReset));
-						//result = MyLerp(d1, d2,
-						//	  enable * controls.body * controls.head);//lerp, may change it later
 						else
 						if(cfg.torsoIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("body", fullVal: initReset) * GetControlValue("torso", fullVal: initReset));
-						//result = MyLerp(d1, d2,
-						//  enable * controls.body * controls.torso);//lerp, may change it later
 						else
 						if(cfg.buttIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("body", fullVal: initReset) * GetControlValue("butt", fullVal: initReset));
-						//result = MyLerp(d1, d2,
-						//enable * controls.body * controls.butt);//lerp, may change it later
 						else
 						if(cfg.legIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("body", fullVal: initReset) * GetControlValue("legs", fullVal: initReset));
-						//result = MyLerp(d1, d2,
-						// enable * controls.body * controls.legs);//lerp, may change it later
 						else
 						if(cfg.armIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("body", fullVal: initReset) * GetControlValue("arms", fullVal: initReset));
-						//result = MyLerp(d1, d2,
-						// enable * controls.body * controls.arms);//lerp, may change it later
 						else
 						if(cfg.brestIndex.FindIndex(find => (find.Value == a)) >= 0)
 
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("body", fullVal: initReset) * GetControlValue("boobs", fullVal: initReset));
-						//result = MyLerp(d1, d2,
-						//   enable * controls.body * controls.boobs);//lerp, may change it later
-
-
 						else
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("body", fullVal: initReset));
-						//result = MyLerp(d1, d2,
-						//enable * controls.body);//lerp, may change it later
 					}
-
-					// CharaMorpher_Core.Logger.LogDebug($"Loaded Body Part 1: {m_data1.main.custom.body.shapeValueBody[a]} at index {a}");
-					//CharaMorpher.Logger.LogDebug($"Loaded Body Part 2: {m_data2.main.custom.body.shapeValueBody[a]} at index {a}");
 
 					//load values to character
 					charaCtrl.SetShapeBodyValue(a, result);
 				}
 
 				//Face Shape
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"updating face");
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"updating face Shape");
 				if(a < m_data1.main.custom.face.shapeValueFace.Length)
 				{
 					//Value Update
@@ -1498,25 +1186,18 @@ namespace Character_Morpher
 						float
 							d1 = m_data1.main.custom.face.shapeValueFace[a],
 							d2 = m_data2.main.custom.face.shapeValueFace[a];
-						//	var tmp =  d1 + enable * controls.face * controls.eyes*(d2 - d1);//test equasion
 
 						if(cfg.eyeIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("face", fullVal: initReset) * GetControlValue("eyes", fullVal: initReset));
-						//result = MyLerp(d1, d2,
-						//	enable * controls.face * controls.eyes);
 						else
 						 if(cfg.mouthIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("face", fullVal: initReset) * GetControlValue("mouth", fullVal: initReset));
-						//result = MyLerp(d1, d2,
-						// enable * controls.face * controls.mouth);
 						else
 						  if(cfg.earIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("face", fullVal: initReset) * GetControlValue("ears", fullVal: initReset));
-						//result = MyLerp(d1, d2,
-						// enable * controls.face * controls.ears);
 						else
 						 if(cfg.noseIndex.FindIndex(find => (find.Value == a)) >= 0)
 							result = Mathf.LerpUnclamped(d1, d2,
@@ -1524,33 +1205,20 @@ namespace Character_Morpher
 						else
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * GetControlValue("face", fullVal: initReset));
-						//result = MyLerp(d1, d2,
-						//  enable * controls.face);
 					}
 
-					// CharaMorpher_Core.Logger.LogDebug($"Loaded Face Part 1: {m_data1.main.custom.face.shapeValueFace[a]} at index {a}");
-					//CharaMorpher.Logger.LogDebug($"Loaded Face Part 2: {m_data1.main.custom.face.shapeValueFace[a]}");
-
-
 					//load values to character
-					//charaCtrl.chaFile.custom.face.shapeValueFace[a] = result;
 					charaCtrl.SetShapeFaceValue(a, result);
 				}
-				//#endregion
-
-				//  CharaMorpher_Core.Logger.LogDebug("");
 			}
 
 			//ABMX
 			if(abmx)
 				AbmxSettings(reset, initReset, boneCtrl);
 
-
 			//Slider Defaults set
 			if(MakerAPI.InsideMaker)
 				SetDefaultSliders();
-
-
 
 			//colour update
 			if(initLoadFinished)
@@ -1583,31 +1251,6 @@ namespace Character_Morpher
 				charaCtrl.CreateBodyTexture();
 				charaCtrl.CreateFaceTexture();
 			}
-
-#if HONEY_API
-			//  charaCtrl.ChangeNipColor();
-			//  charaCtrl.ChangeNipGloss();
-			//  charaCtrl.ChangeNipKind();
-			//  charaCtrl.ChangeNipScale();
-
-
-			//boneCtrl.NeedsFullRefresh = true;//may need to be called after slider movement
-			//boneCtrl.NeedsBaselineUpdate = true;
-
-#elif KOI_API
-			//	charaCtrl.ChangeSettingBodyDetail();
-			//	charaCtrl.ChangeSettingFaceDetail();
-			//	charaCtrl.ChangeSettingAreolaSize();
-			//	charaCtrl.ChangeSettingNipColor();
-			//	charaCtrl.ChangeSettingNipGlossPower();
-			//	charaCtrl.ChangeSettingNip();
-			//	charaCtrl.ChangeSettingEyeTilt();
-
-#endif
-
-			//charaCtrl.UpdateBustSoftnessAndGravity();
-			//charaCtrl.UpdateForce();//will update voice?
-			//charaCtrl.LateUpdateForce();//will update everything else?
 
 		}
 
@@ -1805,11 +1448,8 @@ namespace Character_Morpher
 		}
 
 
-		private void SetDefaultSliders(int delay = 3)
+		private void SetDefaultSliders()
 		{
-			//for(int a = 0; a < delay; ++a)
-			//	yield return null;
-
 			var mkBase = MakerAPI.GetMakerBase();
 			var bodycustum = CharaMorpherGUI.bodyCustom;
 			var facecustum = CharaMorpherGUI.faceCustom;
@@ -1832,8 +1472,6 @@ namespace Character_Morpher
 #endif
 
 			}
-
-			//yield break;
 		}
 
 		/// <summary>
@@ -1949,6 +1587,322 @@ namespace Character_Morpher
 			}
 
 		}
+
+		protected override void OnDestroy()
+		{
+			if(!dummy)
+				MorphTarget.initalize = false;
+
+			base.OnDestroy();
+		}
+
+	}
+
+	internal class MorphTarget
+	{
+		private static ChaControl _extraCharacter = null;
+		private static BoneController _bonectrl = null;
+
+		public static bool initalize
+		{
+			set
+			{
+				if(value)
+				{
+					if(_extraCharacter == null)
+					{
+
+						Transform parent = null;
+						parent = MyUtil.GetFuncCtrlOfType<CharaMorpherController>().First()?.transform.parent ?? null;
+
+
+						_extraCharacter =
+
+#if HONEY_API
+							Character.Instance.CreateChara(1, parent?.gameObject, -10);
+#elif KK
+							Character.Instance.CreateFemale(parent?.gameObject, -10, hiPoly: false);
+#elif KKS
+							Character.CreateFemale(parent?.gameObject, -10, hiPoly: false);
+#endif
+
+						//remove character from internal list
+#if KKS
+						Character.DeleteChara(_extraCharacter, entryOnly:true);		
+#else
+						Character.Instance?.DeleteChara(_extraCharacter, entryOnly: true);
+#endif
+
+						_bonectrl = _extraCharacter?.GetComponent<BoneController>();
+
+						//This is needed so extracharacter is not imidiately destroyed
+						var ctrler = _extraCharacter?.GetComponent<CharaMorpherController>();
+						if(ctrler)
+						{
+							ctrler.dummy = true;
+							GameObject.Destroy(ctrler);
+						}
+
+						_extraCharacter.gameObject.SetActive(false);
+						CharaMorpher_Core.Logger.LogDebug("created new character instance");
+					}
+
+					if(_bonectrl) _bonectrl.hideFlags = HideFlags.HideAndDontSave;
+
+					return;
+				}
+
+
+				if(_bonectrl) _bonectrl.hideFlags = HideFlags.None;
+				if(_extraCharacter) GameObject.Destroy(_extraCharacter?.gameObject);
+
+				_extraCharacter = null;
+			}
+			get { return _extraCharacter != null; }
+		}
+		public ChaControl extraCharacter { get => _extraCharacter; }
+
+		public ChaFileControl chaFile { get { return extraCharacter?.chaFile; } }
+	}
+
+	public class MorphData
+	{
+		public class AMBXSections
+		{
+			public List<BoneModifier> body = new List<BoneModifier>();
+			public List<BoneModifier> face = new List<BoneModifier>();
+
+			//public List<BoneModifier> newModifiers = new List<BoneModifier>();
+			public bool isLoaded { get; private set; } = false;
+			public bool isSplit { get; private set; } = false;
+			//public List<BoneModifier> other = new List<BoneModifier>();
+
+			public void Populate(CharaMorpherController morphControl, bool morph = false)
+			{
+
+				var boneCtrl = morph ? morphTarget.extraCharacter.GetComponent<BoneController>() : morphControl.GetComponent<BoneController>();
+				var charaCtrl = morphControl.ChaControl;
+
+				if(isLoaded) return;
+				//Store Bonemod Extended Data
+				{//helps get rid of data sooner
+
+					if(!boneCtrl) CharaMorpher_Core.Logger.LogDebug("Bone controller don't exist");
+					if(!morphControl.ChaControl) CharaMorpher_Core.Logger.LogDebug("Character controller don't exist");
+
+					//This is the second dumbest fix
+					//(I was changing the player character's bones when this was true ¯\_(ツ)_/¯)
+					var data = boneCtrl?.GetExtendedData(!morph);
+
+					var newModifiers = ReadBoneModifiers(data);
+					if(morph || bodyBonemodTgl)
+						body = new List<BoneModifier>(newModifiers);
+					if(morph || faceBonemodTgl)
+						face = new List<BoneModifier>(newModifiers);
+					isLoaded = true;
+				}
+
+				if(cfg.debug.Value)
+				{
+					if(morph) CharaMorpher_Core.Logger.LogDebug("Character 2:");
+					else CharaMorpher_Core.Logger.LogDebug("Character 1:");
+					foreach(var part in body) CharaMorpher_Core.Logger.LogDebug("Bone: " + part.BoneName);
+				}
+
+
+				BoneSplit(morphControl, charaCtrl, morph);
+
+			}
+
+			//split up body & head bones
+			public void BoneSplit(CharaMorpherController charaControl, ChaControl charaCtrl, bool morph = false)
+			{
+				var ChaControl = charaControl.GetComponent<ChaControl>();
+				var ChaFileControl = ChaControl.chaFile;
+
+				if(!charaCtrl.objHeadBone) return;
+				if(isSplit || !isLoaded) return;
+
+
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Splitting bones apart");
+
+				var headRoot = charaCtrl.objHeadBone.transform.parent.parent;
+
+				var headBones = new HashSet<string>(headRoot.GetComponentsInChildren<Transform>().Select(x => x.name)) { /*Additional*/headRoot.name };
+
+				//Load Body
+				if(morph || bodyBonemodTgl)
+					body.RemoveAll(x => headBones.Contains(x.BoneName));
+
+				//Load face
+				if(morph || faceBonemodTgl)
+				{
+					var bodyBones = new HashSet<string>(charaCtrl.objTop.transform.
+						GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
+					face.RemoveAll(x => bodyBones.Contains(x.BoneName));
+				}
+
+				isSplit = true;
+			}
+
+			public void ResetSplitStatus() { isSplit = false; isLoaded = false; }
+
+
+			public void Clear()
+			{
+
+				if(bodyBonemodTgl)
+					body?.Clear();
+				if(faceBonemodTgl)
+					face?.Clear();
+				//other?.Clear();
+
+
+				isLoaded = false;
+				isSplit = false;
+			}
+
+			public AMBXSections Copy()
+			{
+				return new AMBXSections()
+				{
+					body = new List<BoneModifier>(body ?? new List<BoneModifier>()),
+					face = new List<BoneModifier>(face ?? new List<BoneModifier>()),
+					//other = new List<BoneModifier>(other ?? new List<BoneModifier>()),
+					isSplit = isSplit,
+					isLoaded = isLoaded,
+				};
+			}
+		}
+
+		public ChaFile main = new ChaFile();
+		public AMBXSections abmx = new AMBXSections();
+
+
+		public void Clear()
+		{
+
+			main = new ChaFile();
+			abmx.Clear();
+		}
+
+		public MorphData Clone()
+		{
+			var tmp = new ChaFile();
+			try
+			{
+				tmp.CopyAll(main);
+			}
+			catch { }
+#if HONEY_API
+			//CopyAll will not copy this data in hs2
+			tmp.dataID = main.dataID;
+#endif
+
+			return new MorphData() { main = tmp, abmx = abmx.Copy() };
+		}
+
+		public void Copy(MorphData data)
+		{
+			if(data == null) return;
+
+			try
+			{
+				main.CopyAll(data.main);
+			}
+			catch { }
+			abmx = data.abmx.Copy();
+
+		}
+
+		public void Copy(CharaMorpherController data, bool morph = false)
+		{
+
+#if HONEY_API
+			//CopyAll will not copy this data in hs2
+			main.dataID = morph ? morphTarget.chaFile.dataID : data.ChaControl.chaFile.dataID;
+#endif
+
+			try
+			{
+				main.CopyAll(morph ? morphTarget.chaFile : data.ChaFileControl);
+			}
+			catch { }
+
+			abmx.Populate(data, morph);
+		}
+	}
+	internal class MorphControls
+	{
+		Dictionary<string, float> _all, _lastAll;
+		Coroutine post;
+		public Dictionary<string, float> all
+		{
+			get
+			{
+				if(_all == null)
+				{
+					_all = new Dictionary<string, float>();
+					_lastAll = new Dictionary<string, float>();
+				}
+
+				//var ctrl = this;
+				IEnumerator CoPost()
+				{
+					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+						yield return null;
+					// CharaMorpher_Core.Logger.LogDebug("post called in controls");
+
+					bool Check()
+					{
+						if(_all.Count != _lastAll.Count)
+							return false;
+
+						for(int a = 0; a < _all.Count; ++a)
+							if(_all[_all.Keys.ElementAt(a)] != _lastAll[_lastAll.Keys.ElementAt(a)])
+								return true;
+
+						//CharaMorpher_Core.Logger.LogDebug("All values the same ");
+						return false;
+					}
+
+					if(Check())
+						OnSliderValueChange.Invoke();
+
+					_lastAll = new Dictionary<string, float>(_all);
+				}
+
+				if(post != null)
+					Instance.StopCoroutine(post);
+
+				post = Instance.StartCoroutine(CoPost());
+				return _all;
+			}
+			set { _all = value; }
+		}
+
+		/// <summary>
+		/// each value is set to one
+		/// </summary>
+		public Dictionary<string, float> full
+		{
+			get
+			{
+				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
+				for(int a = 0; a < tmp.Count; ++a)
+					tmp[tmp.Keys.ElementAt(a)] = 1;
+				return tmp;
+			}
+		}
+		/// <summary>
+		/// list of every control with an "overall" name
+		/// </summary>
+		public IEnumerable<KeyValuePair<string, float>> overall
+		{
+			get
+			=> all.Where((p) => Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
+		}
+
 	}
 
 	/// <summary>

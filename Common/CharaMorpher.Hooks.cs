@@ -62,20 +62,57 @@ namespace Character_Morpher
 					yield break;
 				}
 
-				foreach(var hnd in CharacterApi.RegisteredHandlers)
-					if(hnd.ControllerType == typeof(CharaMorpherController))
-						foreach(CharaMorpherController ctrl in hnd.Instances)
+				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
 						{
 							//if(m_lastpngload != null)
 							//	Instance.StopCoroutine(m_lastpngload);
 #if !KK
 							if(ctrl.ChaControl.chaFile == __instance)
 #endif
-							Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
+								Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
 						}
 
 			}
 #endif
+			[HarmonyPostfix]
+			[HarmonyPatch(typeof(Toggle), nameof(Toggle.OnPointerClick))]
+			static void OnPostToggleClick(Toggle __instance)
+			{
+				if(!__instance.interactable) return;
+
+				if(!MakerAPI.InsideMaker) return;
+
+				Logger.LogDebug("toggle was pressed");
+				OnFaceBonemodToggleClick(__instance);
+				OnBodyBonemodToggleClick(__instance);
+			}
+
+			static void OnFaceBonemodToggleClick(Toggle __instance)
+			{
+				var txtPro = __instance?.GetComponentInChildren<TMPro.TMP_Text>();
+				var txt = __instance?.GetComponentInChildren<Text>();
+
+				if(txtPro ? txtPro.text.ToLower().Contains("face bonemod") : false ||
+					txt ? txt.text.ToLower().Contains("face bonemod") : false)
+				{
+					if(cfg.debug.Value) Logger.LogDebug("Change to face bonemod toggle");
+					CharaMorpherController.faceBonemodTgl = __instance.isOn;
+				}
+			}
+
+			static void OnBodyBonemodToggleClick(Toggle __instance)
+			{
+				var txtPro = __instance.GetComponentInChildren<TMPro.TMP_Text>();
+				var txt = __instance.GetComponentInChildren<Text>();
+
+				if(txtPro ? txtPro.text.ToLower().Contains("body bonemod") : false ||
+					txt ? txt.text.ToLower().Contains("body bonemod") : false)
+				{
+					CharaMorpherController.bodyBonemodTgl = __instance.isOn;
+					if(cfg.debug.Value) Logger.LogDebug("Change to body bonemod toggle");
+				}
+			}
+
 
 			[HarmonyPrefix]
 			[HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
@@ -110,17 +147,19 @@ namespace Character_Morpher
 				if(ctrler.GetComponentInParent<CustomCharaFile>())
 					if(ctrler.name.ToLower().Contains("load"))
 #endif
-						foreach(var hnd in CharacterApi.RegisteredHandlers)
-							if(hnd.ControllerType == typeof(CharaMorpherController))
-								foreach(CharaMorpherController ctrl in hnd.Instances)
-								{
-									Logger.LogDebug("The Chara Load Button was called!!!");
+						foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+						{
+							Logger.LogDebug("The Chara Load Button was called!!!");
 
-									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-										ctrl.MorphChangeUpdate(forceReset: true);
-								}
+							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+								ctrl.MorphChangeUpdate(forceReset: true);
+						}
 			}
 
+			/// <summary>
+			/// 
+			/// </summary>
+			/// <param name="__instance"></param>
 			static void OnCoordLoadClick(Button __instance)
 			{
 				var ctrler = __instance.gameObject;
@@ -134,17 +173,19 @@ namespace Character_Morpher
 				if(ctrler.GetComponentInParent<CustomCoordinateFile>())
 					if(ctrler.name.ToLower().Contains("load"))
 #endif
-						foreach(var hnd in CharacterApi.RegisteredHandlers)
-							if(hnd.ControllerType == typeof(CharaMorpherController))
-								foreach(CharaMorpherController ctrl in hnd.Instances)
-								{
-									Logger.LogDebug("The Coord Load Button was called!!!");
+						foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+						{
+							Logger.LogDebug("The Coord Load Button was called!!!");
 
-									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-										ctrl.MorphChangeUpdate();
-								}
+							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+								ctrl.MorphChangeUpdate();
+						}
 			}
 
+			/// <summary>
+			/// 
+			/// </summary>
+			/// <param name="__instance"></param>
 			static void OnSaveLoadClick(Button __instance)
 			{
 
@@ -163,17 +204,19 @@ namespace Character_Morpher
 						if(cfg.enable.Value && !cfg.saveWithMorph.Value)
 							if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
 								if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
-									foreach(var hnd in CharacterApi.RegisteredHandlers)
-										if(hnd.ControllerType == typeof(CharaMorpherController))
-											foreach(CharaMorpherController ctrl in hnd.Instances)
-											{
-												if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
+									foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+									{
+										if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
 
-												for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-													ctrl.MorphChangeUpdate(forceReset: true);
-											}
+										for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+											ctrl.MorphChangeUpdate(forceReset: true);
+									}
 			}
 
+			/// <summary>
+			/// 
+			/// </summary>
+			/// <param name="__instance"></param>
 			static void OnExitSaveClick(Button __instance)
 			{
 				//Set character back to normal if save was canceled
@@ -187,15 +230,14 @@ namespace Character_Morpher
 					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
 						if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
 							if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
-								foreach(var hnd in CharacterApi.RegisteredHandlers)
-									if(hnd.ControllerType == typeof(CharaMorpherController))
-										foreach(CharaMorpherController ctrl in hnd.Instances)
-										{
-											if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
 
-											for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-												ctrl.MorphChangeUpdate();
-										}
+								foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+								{
+									if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
+
+									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+										ctrl.MorphChangeUpdate();
+								}
 			}
 		}
 	}

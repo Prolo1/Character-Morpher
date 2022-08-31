@@ -79,8 +79,8 @@ namespace Character_Morpher
 		internal static new ManualLogSource Logger;
 		internal static OnNewImage OnNewTargetImage = new OnNewImage();
 		internal static OnValueChange OnSliderValueChange = new OnValueChange();
-		//internal static Subject<string> OnNewTargetImage = new Subject<string>();
 
+		public List<KeyValuePair<int, string>> controlCategories = new List<KeyValuePair<int, string>>();
 		public static MyConfig cfg;
 		public struct MyConfig
 		{
@@ -125,7 +125,6 @@ namespace Character_Morpher
 		}
 
 
-		public List<KeyValuePair<int, string>> controlCategories = new List<KeyValuePair<int, string>>();
 		void Awake()
 		{
 			Instance = this;
@@ -177,12 +176,12 @@ namespace Character_Morpher
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Boobs")).Key , Browsable=false})),
 					Config.Bind("Defaults", "Boob Phys. Default", 50f, new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Boob Phys.")).Key , Browsable=false})),
-					Config.Bind("Defaults", "Butt  Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Butt")).Key, Browsable=false })),
 					Config.Bind("Defaults", "Torso Default", 50f, new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Torso")).Key , Browsable=false})),
 					Config.Bind("Defaults", "Arms  Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Arms")).Key, Browsable=false })),
+					Config.Bind("Defaults", "Butt  Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Butt")).Key, Browsable=false })),
 					Config.Bind("Defaults", "Legs  Default" , 50f, new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex , "Legs")).Key, Browsable=false })),
 
@@ -238,11 +237,11 @@ namespace Character_Morpher
 			{
 				cfg.debug = Config.Bind("_Testing_", "Debug Logging", false, new ConfigDescription("Allows debug logs to be written to the log file", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true })).ConfigDefaulter();
 
+				cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.47f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH (0.47 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 #if KOI_API
-				cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 1.00f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH (0.47 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 #elif HONEY_API
-				cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 1.00f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH (0.0 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//	cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.00f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH (0.0 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 #endif
 				cfg.fullBoneResetTest = Config.Bind("_Testing_", "Full Bone Reset Delay", 3u, new ConfigDescription("Used to determine how long to wait for full bone reset. RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
@@ -422,90 +421,81 @@ namespace Character_Morpher
 			};
 
 
-			//	Logger.enable = cfg.debug multiUpdateTest  .Value;
-			//	cfg.debug.SettingChanged  fullBoneResetTest+= (m,n) => { Logger.enable = cfg.debug.Value; };
-
 			cfg.charDir.SettingChanged += (m, n) =>
 			{
 
-				foreach(var hnd in CharacterApi.RegisteredHandlers)
-					if(hnd.ControllerType == typeof(CharaMorpherController))
-						foreach(CharaMorpherController ctrl in hnd.Instances)
+				string path = Path.Combine(MyUtil.MakeDirPath(cfg.charDir.Value), MyUtil.MakeDirPath(cfg.imageName.Value));
+				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				{
+					if(File.Exists(path))
+						if(ctrl.initLoadFinished)
 						{
-
-							if(ctrl.initLoadFinished)
-								StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-
+							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
+							StartCoroutine(ctrl?.CoABMXFullRefresh(6 + (int)cfg.multiUpdateTest.Value));
 						}
-				//Logger.LogDebug("");
-				string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
+				}
+
 				if(File.Exists(path))
 					OnNewTargetImage.Invoke(path);
 			};
 
 			cfg.imageName.SettingChanged += (m, n) =>
 			{
-				foreach(var hnd in CharacterApi.RegisteredHandlers)
-					if(hnd.ControllerType == typeof(CharaMorpherController))
-						foreach(CharaMorpherController ctrl in hnd.Instances)
+				string path = Path.Combine(MyUtil.MakeDirPath(cfg.charDir.Value), MyUtil.MakeDirPath(cfg.imageName.Value));
+				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				{
+
+					if(File.Exists(path))
+						if(ctrl.initLoadFinished)
 						{
-							//StopAllCoroutines();
-							if(ctrl.initLoadFinished)
-								StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-							//	StartCoroutine(ctrl?.CoFullBoneRrfresh(6 + (int)cfg.fullBoneResetTest.Value));
-							///	StartCoroutine(ctrl?.CoMorphReload(abmxOnly: true));
+							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
+							StartCoroutine(ctrl?.CoABMXFullRefresh(6 + (int)cfg.multiUpdateTest.Value));
 						}
-				string path = Path.Combine(MakeDirPath(cfg.charDir.Value), MakeDirPath(cfg.imageName.Value));
+
+				}
 				if(File.Exists(path))
 					OnNewTargetImage.Invoke(path);
 			};
 
 			cfg.enable.SettingChanged += (m, n) =>
 			{
-				foreach(var hnd in CharacterApi.RegisteredHandlers)
-					if(hnd.ControllerType == typeof(CharaMorpherController))
-						foreach(CharaMorpherController ctrl in hnd.Instances)
-						{
-							//	StopAllCoroutines();
-							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-								StartCoroutine(ctrl?.CoMorphUpdate(3 + a + 1));
+				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				{
+					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
 
-							//	StartCoroutine(ctrl?.CoFullBoneRrfresh(3 + (int)cfg.fullBoneResetTest.Value));
-
-						}
+					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+				}
 			};
+
 			cfg.enableInGame.SettingChanged += (m, n) =>
 			{
-				foreach(var hnd in CharacterApi.RegisteredHandlers)
-					if(hnd.ControllerType == typeof(CharaMorpherController))
-						foreach(CharaMorpherController ctrl in hnd.Instances)
-						{
-							//	StopAllCoroutines();
-							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-								StartCoroutine(ctrl?.CoMorphUpdate(3 + a + 1));
 
-							//	StartCoroutine(ctrl?.CoFullBoneRrfresh(3 + (int)cfg.fullBoneResetTest.Value));
+				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				{
+					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
 
-						}
+					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+
+				}
 			};
 
 			cfg.enableABMX.SettingChanged += (m, n) =>
 			{
-				foreach(var hnd in CharacterApi.RegisteredHandlers)
-					if(hnd.ControllerType == typeof(CharaMorpherController))
-						foreach(CharaMorpherController ctrl in hnd.Instances)
-						{
-							//	StopAllCoroutines();
-							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-								StartCoroutine(ctrl?.CoMorphUpdate(3 + a + 1));
-							//	StartCoroutine(ctrl?.CoFullBoneRrfresh(3 + (int)cfg.fullBoneResetTest.Value));
+				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				{
+					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
 
-						}
+					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+				}
 			};
 
 
 
 			if(StudioAPI.InsideStudio) return;
+
 			/*
 				Register your logic that depends on a character.
 				A new instance of this component will be added to ALL characters in the game.
@@ -513,8 +503,6 @@ namespace Character_Morpher
 				cards, scenes and game saves, so make sure it's unique and do not change it!
 			 */
 			CharacterApi.RegisterExtraBehaviour<CharaMorpherController>(GUID);
-
-
 			CharaMorpherGUI.Initialize();
 			Hooks.Init();
 
@@ -527,21 +515,10 @@ namespace Character_Morpher
 		/// </summary>
 		/// <param name="dir"></param>
 		/// <returns></returns>
-		public static string MakeDirPath(string dir)
-		{
-			dir = dir.Trim().Replace('\\', '/').Replace("//", "/");
-
-			if((dir.LastIndexOf('.') < dir.LastIndexOf('/'))
-				&& dir.Last() != '/')
-				dir += '/';
-
-			return dir;
-		}
-
-		public class OnValueChange : UnityEvent { }
-		public class OnNewImage : UnityEvent<string> { }
 	}
 
+	public class OnValueChange : UnityEvent { }
+	public class OnNewImage : UnityEvent<string> { }
 
 	/// <summary>
 	/// utility to bring process to foreground (mainly the game after file select)
@@ -592,6 +569,31 @@ namespace Character_Morpher
 		{
 			list.Add(val);
 			return list.Last();
+		}
+
+		public static string MakeDirPath(string dir)
+		{
+			dir = dir.Trim().Replace('\\', '/').Replace("//", "/");
+
+			if((dir.LastIndexOf('.') < dir.LastIndexOf('/'))
+				&& dir.Last() != '/')
+				dir += '/';
+
+			return dir;
+		}
+
+		/// <summary>
+		/// Returns a list of the regestered handeler specified. returns default list otherwise 
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		public static IEnumerable<T> GetFuncCtrlOfType<T>()
+		{
+			foreach(var hnd in CharacterApi.RegisteredHandlers)
+				if(hnd.ControllerType == typeof(T))
+					return hnd.Instances.Cast<T>();
+
+			return new T[] { };
 		}
 
 		/// <summary>
