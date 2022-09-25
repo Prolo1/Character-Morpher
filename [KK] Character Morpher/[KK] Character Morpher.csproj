@@ -46,7 +46,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\Builds\[KK]_Character_Morpher\BepInEx\plugins\Prolo\</OutputPath>
     <DefineConstants>TRACE;KK KOI_API</DefineConstants>
@@ -151,4 +151,7 @@
   <Import Project="..\packages\IllusionLibs.Koikatu.TextMeshPro.2019.4.27.4\build\IllusionLibs.Koikatu.TextMeshPro.targets" Condition="Exists('..\packages\IllusionLibs.Koikatu.TextMeshPro.2019.4.27.4\build\IllusionLibs.Koikatu.TextMeshPro.targets')" />
   <Import Project="..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets" Condition="Exists('..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets')" />
   <Import Project="..\packages\IllusionLibs.KoikatsuParty.Assembly-CSharp.2021.3.25\build\IllusionLibs.KoikatsuParty.Assembly-CSharp.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuParty.Assembly-CSharp.2021.3.25\build\IllusionLibs.KoikatsuParty.Assembly-CSharp.targets')" />
+  <PropertyGroup>
+    <PostBuildEvent>call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\" "$(TargetDir)..\..\..\..\[KK]_Character_Morpher.zip"</PostBuildEvent>
+  </PropertyGroup>
 </Project>
