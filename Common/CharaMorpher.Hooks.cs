@@ -63,14 +63,14 @@ namespace Character_Morpher
 				}
 
 				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
-						{
-							//if(m_lastpngload != null)
-							//	Instance.StopCoroutine(m_lastpngload);
+				{
+					//if(m_lastpngload != null)
+					//	Instance.StopCoroutine(m_lastpngload);
 #if !KK
 							if(ctrl.ChaControl.chaFile == __instance)
 #endif
-								Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
-						}
+					Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
+				}
 
 			}
 #endif
@@ -201,16 +201,16 @@ namespace Character_Morpher
 					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
 #endif
 
-						if(cfg.enable.Value && !cfg.saveWithMorph.Value)
-							if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
-								if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
-									foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
-									{
-										if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
+					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
+						if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
+							if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
+								foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+								{
+									if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
 
-										for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-											ctrl.MorphChangeUpdate(forceReset: true);
-									}
+									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+										ctrl.MorphChangeUpdate(forceReset: true);
+								}
 			}
 
 			/// <summary>

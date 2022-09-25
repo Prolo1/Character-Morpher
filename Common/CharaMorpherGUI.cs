@@ -40,13 +40,12 @@ namespace Character_Morpher
 	class CharaMorpherGUI
 	{
 		private static MakerCategory category;
-	
+
 		private static Coroutine lastExtent;
 		internal static void Initialize()
 		{
 			MakerAPI.RegisterCustomSubCategories += (s, e) =>
 			{
-				sliders.Clear();
 				//Create custom category 
 
 #if HS2 || AI
@@ -125,8 +124,8 @@ namespace Character_Morpher
 		static public CvsFaceShapeAll faceCustom = null;
 #endif
 		private static int abmxIndex = -1;
-		private static List<MakerSlider> sliders = new List<MakerSlider>();
-
+		private readonly static List<MakerSlider> sliders = new List<MakerSlider>();
+		private readonly static List<MakerDropdown> modes = new List<MakerDropdown>();
 
 		private static IEnumerator CoOnGUIExists(BaseGuiEntry gui, UnityAction act)
 		{
@@ -137,6 +136,9 @@ namespace Character_Morpher
 
 		private static void AddCharaMorpherMenu(RegisterCustomControlsEvent e)
 		{
+			sliders.Clear();
+			modes.Clear();
+
 			var inst = Instance;
 
 			if(MakerAPI.GetMakerSex() == 0 && !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
@@ -163,6 +165,11 @@ namespace Character_Morpher
 			saveWithMorph.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.saveWithMorph.Value,
 				(ctrl, val) => { cfg.saveWithMorph.Value = val; });
+
+			var enableQuadManip = e.AddControl(new MakerToggle(category, "Enable Quadratic Manip.", cfg.enableQuadManip.Value, CharaMorpher_Core.Instance));
+			saveWithMorph.BindToFunctionController<CharaMorpherController, bool>(
+				(ctrl) => cfg.enableQuadManip.Value,
+				(ctrl, val) => { cfg.enableQuadManip.Value = val; });
 
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
@@ -206,19 +213,46 @@ namespace Character_Morpher
 				//setup slider
 				var currSlider = sliders.AddNReturn(e.AddControl(new MakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[index].Value * .01f, CharaMorpher_Core.Instance)));
 				currSlider.BindToFunctionController<CharaMorpherController, float>(
-							(ctrl) => ctrl.controls.all[settingName],
-							(ctrl, val) =>
-							{
-								if(!ctrl) return;
-								if(!ctrl.initLoadFinished) return;
-								if(ctrl.controls.all[settingName] == (float)Math.Round(val, 2)) return;
+						(ctrl) => ctrl.controls.all[settingName].Item1,
+						(ctrl, val) =>
+						{
+							if(!ctrl) return;
+							if(!ctrl.initLoadFinished) return;
+							if(ctrl.controls.all[settingName].Item1 == (float)Math.Round(val, 2)) return;
 
-								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {ctrl.controls.all[settingName]}");
-								ctrl.controls.all[settingName] = (float)Math.Round(val, 2);
+							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {(float)Math.Round(val, 2)}");
+							ctrl.controls.all[settingName] = Tuple.Create((float)Math.Round(val, 2), ctrl.controls.all[settingName].Item2);
 
-								for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-									ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: a));//this may be necessary (it is)
-							});
+							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+								ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: a));//this may be necessary (it is)
+						});
+
+				//mode toggles
+
+				var ting = new string[] { "Linear", "Quadratic" };
+				var currMode = modes.AddNReturn(e.AddControl(new MakerDropdown("", ting,category, 0,CharaMorpher_Core.Instance)));
+				currMode.BindToFunctionController<CharaMorpherController, int>(
+						(ctrl) => (int)ctrl.controls.all[settingName].Item2,
+						(ctrl, val) =>
+						{
+							if(!ctrl) return;
+							if(!ctrl.initLoadFinished) return;
+							if((int)ctrl.controls.all[settingName].Item2 == val) return;
+
+							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {val}");
+							ctrl.controls.all[settingName] = Tuple.Create(ctrl.controls.all[settingName].Item1, (MorphCalcType)val);
+
+							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+								ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: a));//this may be necessary (it is)
+						});
+				
+				
+				////Make sure toggles stay on
+				//inst.StartCoroutine(CoOnGUIExists(currMode, () =>
+				//{
+				//	foreach(var tgl in currMode.Buttons)
+				//		tgl.OnPointerClickAsObservable().Subscribe((t) => { if(!tgl.isOn) tgl.isOn = true; });
+				//}));
 
 				//make sure values can be changed internally
 				OnSliderValueChange.AddListener(() =>
@@ -227,11 +261,18 @@ namespace Character_Morpher
 
 					foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())//first one only
 					{
-						if(currSlider.Value != ctrl.controls.all[settingName])
+						if(currSlider.Value != ctrl.controls.all[settingName].Item1)
 							if(currSlider.ControlObject)
 							{
-								currSlider.Value = ctrl.controls.all[settingName];
-								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("control changed");
+								currSlider.Value = ctrl.controls.all[settingName].Item1;
+								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Slider control changed");
+							}
+
+						if(currMode.Value != (int)ctrl.controls.all[settingName].Item2)
+							if(currMode.ControlObject)
+							{
+								currMode.Value = (int)ctrl.controls.all[settingName].Item2;
+								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Calc control changed");
 							}
 
 						break;
@@ -348,7 +389,7 @@ namespace Character_Morpher
 			IEnumerator CoSliderDisable(bool val, uint start = 0, uint end = int.MaxValue)
 			{
 
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"CoSlider Called!");
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"CoSliderDisable Called!");
 				yield return new WaitWhile(() =>
 				{
 					for(int a = (int)start; a < Math.Min(sliders.Count, (int)end); ++a)
@@ -356,9 +397,34 @@ namespace Character_Morpher
 					return false;
 				});
 
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"sliders are visable: {val}");
-				for(int a = (int)start; a < sliders.Count; ++a) sliders?[a]?.ControlObject?.SetActive(val);
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"sliders are visible: {val}");
+				for(int a = (int)start; a < sliders.Count; ++a)
+				{
+					sliders?[a]?.ControlObject?.SetActive(val);
+					modes?[a]?.ControlObject?.SetActive(val);
+				}
+
+				inst.StartCoroutine(CoModeDisable(cfg.enableQuadManip.Value));
 			}
+
+			IEnumerator CoModeDisable(bool val, uint start = 0, uint end = int.MaxValue)
+			{
+
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"CoModeDisable Called!");
+				yield return new WaitWhile(() =>
+				{
+					for(int a = (int)start; a < Math.Min(modes.Count, (int)end); ++a)
+						if(modes?[a]?.ControlObject == null) return true;
+					return false;
+				});
+
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Modes are visible: {val}");
+				for(int a = (int)start; a < modes.Count; ++a)
+					if((bool)sliders?[a]?.ControlObject?.activeSelf)
+						modes?[a]?.ControlObject?.SetActive(val);
+
+			}
+
 
 			void ShowEnabledSliders()
 			{
@@ -369,11 +435,11 @@ namespace Character_Morpher
 
 			enable.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.enable.Value,
-				(ctrl, val) =>
-				{
-					cfg.enable.Value = val;
-					ShowEnabledSliders();
-				});
+					(ctrl, val) =>
+					{
+						cfg.enable.Value = val;
+						ShowEnabledSliders();
+					});
 
 			enableabmx.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.enableABMX.Value,
@@ -381,6 +447,19 @@ namespace Character_Morpher
 				{
 					cfg.enableABMX.Value = val;
 					ShowEnabledSliders();
+				});
+
+			enableQuadManip.BindToFunctionController<CharaMorpherController, bool>(
+				(ctrl) => cfg.enableQuadManip.Value,
+				(ctrl, val) =>
+				{
+					cfg.enableQuadManip.Value = val;
+					ShowEnabledSliders();
+
+					if(!ctrl.initLoadFinished) return;
+					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+						ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: a));//this may be necessary (it is)
+
 				});
 
 			ShowEnabledSliders();
@@ -396,6 +475,11 @@ namespace Character_Morpher
 				   int count = 0;
 				   foreach(var def in cfg.defaults)
 					   def.Value = sliders[count++].Value * 100f;
+
+				   count = 0;
+				   foreach(var def in cfg.defaultModes)
+					   def.Value = modes[count++].Value;
+
 				   CharaMorpher_Core.Logger.LogMessage("Saved as CharaMorpher default");
 
 				   Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
@@ -409,11 +493,13 @@ namespace Character_Morpher
 				  {
 					  for(int a = 0; a < ctrl.controls.all.Count; ++a)
 					  {
-						  ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = (float)cfg.defaults[a].Value * .01f;
-
-						  for(int b = -1; b < cfg.multiUpdateTest.Value; ++b)
-							  ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: 0));//this may be necessary 
+						  var cal = (MorphCalcType)cfg.defaultModes[a].Value;
+						  ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create((float)cfg.defaults[a].Value * .01f, cal);
 					  }
+				
+					  for(int b = -1; b < cfg.multiUpdateTest.Value;)
+						  ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: ++b));//this may be necessary 
+				
 					  break;
 				  }
 				  int count = 0;
@@ -506,11 +592,16 @@ namespace Character_Morpher
 				{
 					//	ctrl.StopAllCoroutines();
 					for(int a = 0; a < ctrl.controls.all.Count; ++a)
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 1;
-
+					{
+						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
+						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
+					}
 					var tmp = ctrl.controls.overall;
 					for(int a = 0; a < tmp.Count(); ++a)
-						ctrl.controls.all[tmp.ElementAt(a).Key] = 0;
+					{
+						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
+						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(0f, cal);
+					}
 
 					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 						ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
@@ -527,12 +618,16 @@ namespace Character_Morpher
 				{
 					//	ctrl.StopAllCoroutines();
 					for(int a = 0; a < ctrl.controls.all.Count; ++a)
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 1;
-
+					{
+						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
+						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
+					}
 					var tmp = ctrl.controls.overall;
 					for(int a = 0; a < tmp.Count(); ++a)
-						ctrl.controls.all[tmp.ElementAt(a).Key] = .25f;
-
+					{
+						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
+						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(0.25f, cal);
+					}
 					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 						ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
 					CharaMorpher_Core.Logger.LogMessage("Morphed to 25%");
@@ -548,11 +643,17 @@ namespace Character_Morpher
 				{
 					//	ctrl.StopAllCoroutines();
 					for(int a = 0; a < ctrl.controls.all.Count; ++a)
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 1;
+					{
+						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
+						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
+					}
 
 					var tmp = ctrl.controls.overall;
 					for(int a = 0; a < tmp.Count(); ++a)
-						ctrl.controls.all[tmp.ElementAt(a).Key] = 0.5f;
+					{
+						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
+						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(0.5f, cal);
+					}
 
 					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 						ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
@@ -571,11 +672,17 @@ namespace Character_Morpher
 				{
 					//	ctrl.StopAllCoroutines();
 					for(int a = 0; a < ctrl.controls.all.Count; ++a)
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 1;
+					{
+						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
+						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
+					}
 
 					var tmp = ctrl.controls.overall;
 					for(int a = 0; a < tmp.Count(); ++a)
-						ctrl.controls.all[tmp.ElementAt(a).Key] = 0.75f;
+					{
+						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
+						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(0.75f, cal);
+					}
 
 					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 						ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
@@ -594,7 +701,10 @@ namespace Character_Morpher
 				{
 					//	ctrl.StopAllCoroutines();
 					for(int a = 0; a < ctrl.controls.all.Count; ++a)
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = 1;
+					{
+						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
+						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
+					}
 
 					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 						ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
@@ -604,7 +714,6 @@ namespace Character_Morpher
 				}
 				Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
 			});
-
 
 			//Add Ending
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
