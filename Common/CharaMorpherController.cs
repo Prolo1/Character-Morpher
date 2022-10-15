@@ -1047,7 +1047,7 @@ namespace Character_Morpher
 				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)).Value;
 		}
 
-		MotionIK motion = null;
+		//MotionIK motion = null;
 		private void MorphValuesUpdate(bool reset, bool initReset = false, bool abmx = true)
 		{
 
