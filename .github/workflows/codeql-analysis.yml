@@ -19,23 +19,17 @@ on:
     branches: [ "main" ]
   schedule:
     - cron: '32 22 * * 6'
+env:
+  dotNetVersion: net6.0
+  dotNetConfiguration: Release
+  runtimeTarget: win-x64
 
+  
 jobs:
-  analyze:
-    name: Analyze
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'csharp' ]
-        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
-        # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
-
+   build:
+    name: Build Stuff
+    runs-on: windows-latest
+    
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -53,20 +47,14 @@ jobs:
         # queries: security-extended,security-and-quality
 
         
-    # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
-    # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v2
-
-    # ℹ️ Command-line programs to run using the OS shell.
-    # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
-
-    #   If the Autobuild fails above, remove it and uncomment the following three lines. 
-    #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
-
-    # - run: |
-    #   echo "Run, Build Application using script"
-    #   ./location_of_script_within_repo/buildscript.sh
-
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+    - name: .Net Build
+      # You may pin to the exact commit or the version.
+      # uses: EasyDesk/action-dotnet-build@d2c47d8701e3ea8db03dcabaacb37204fe123a22
+      uses: EasyDesk/action-dotnet-build@v1.0.0
+      with:
+        # Additional build arguments to pass to 'dotnet build'.
+        build-args: dotnet nuget add source "https://pkgs.dev.azure.com/IllusionMods/Nuget/_packaging/IllusionMods/nuget/v3/index.json"
+       # # The build configuration to use (defaults to 'Release').
+       # build-configuration: # optional, default is Release
+       # # The path to the project or solution to build (defaults to the current directory).
+       # path: # optional, default is .
