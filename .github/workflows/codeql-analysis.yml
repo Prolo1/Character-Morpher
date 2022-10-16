@@ -56,5 +56,5 @@ jobs:
         build-args: dotnet nuget add source "https://pkgs.dev.azure.com/IllusionMods/Nuget/_packaging/IllusionMods/nuget/v3/index.json"
        # # The build configuration to use (defaults to 'Release').
        # build-configuration: # optional, default is Release
-       # # The path to the project or solution to build (defaults to the current directory).
-       # path: # optional, default is .
+        # The path to the project or solution to build (defaults to the current directory).
+        path: "Character-Morpher/[HS2] Character Morpher/[HS2] Character Morpher.csproj"
