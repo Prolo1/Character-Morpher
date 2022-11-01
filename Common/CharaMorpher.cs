@@ -187,6 +187,8 @@ namespace Character_Morpher
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Butt")).Key, Browsable = false })),
 					Config.Bind("Defaults", "Legs  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Legs")).Key, Browsable = false })),
+					Config.Bind("Defaults", "Body Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Body Other")).Key, Browsable = false })),
 
 					Config.Bind("Defaults", "Face  Default", (100f), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Face")).Key, Browsable = false })),
@@ -198,6 +200,8 @@ namespace Character_Morpher
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Nose")).Key, Browsable = false })),
 					Config.Bind("Defaults", "Mouth Default", (50f), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Mouth")).Key, Browsable = false })),
+					Config.Bind("Defaults", "Face Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Face Other")).Key, Browsable = false })),
 
 
 					Config.Bind("Defaults", "ABMX  Body Default", (100f), new ConfigDescription("Set default value on maker startup", null,
@@ -218,6 +222,8 @@ namespace Character_Morpher
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Feet")).Key, Browsable = false })),
 					Config.Bind("Defaults", "ABMX  Genitals Default", (50f), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Genitals")).Key, Browsable = false })),
+					Config.Bind("Defaults", "ABMX  Body Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Body Other")).Key, Browsable = false })),
 
 
 					Config.Bind("Defaults", "ABMX  Head Default", (100f), new ConfigDescription("Set default value on maker startup", null,
@@ -232,6 +238,8 @@ namespace Character_Morpher
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Mouth")).Key, Browsable = false })),
 					Config.Bind("Defaults", "ABMX  Hair Default", (50f), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Hair")).Key, Browsable = false })),
+					Config.Bind("Defaults", "ABMX  Head Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Head Other")).Key, Browsable = false })),
 
 				},
 				defaultModes = new List<ConfigEntry<int>>(),//will link up with the defaults

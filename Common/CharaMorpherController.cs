@@ -74,10 +74,10 @@ namespace Character_Morpher
 #if KOI_API
 		public static readonly List<KeyValuePair<string, string>> boneDatabaseCatagories = new List<KeyValuePair<string, string>>()
 #else
+
 		//this is a tuple list btw (of bones found in abmx mod and online... somewhere)
 		public static readonly List<(string, string)> boneDatabaseCatagories = new List<(string, string)>()
 #endif
-
 #if KOI_API		
 		#region KKBones
 		{
@@ -382,88 +382,88 @@ namespace Character_Morpher
 
 
 				//legs
-                ("cf_hit_LegUp01_s_L,False,1,1,1,1 Hitbox - Thigh (Left)                     ", "legs"),
-				("cf_hit_LegUp01_s_R,False,1,1,1,1 Hitbox - Thigh (Right)                    ", "legs"),
-				("cf_hit_Kosi02_s,False,1,1,1,1 Hitbox - Hips                                ", "legs"),
-				("cf_J_Hips,False,1,1,1,1 Scale                                              ", "legs"),
-				("cf_J_Kosi01,False,1,1,1,1 Waist & Below                                    ", "legs"),
-				("cf_J_Kosi01_s,False,1,1,1,1 Pelvis [Ignores Skirt]                         ", "legs"),
-				("cf_J_Kosi02,False,1,1,1,1 Hips & Below                                     ", "legs"),
-				("cf_J_Kosi02_s,False,1,1,1,1 Hips [Ignores Skirt]                           ", "legs"),
-				("cf_J_Kosi03,False,1,1,1,1                                                  ", "legs"),
-				("cf_J_Kosi03_s,False,1,1,1,1                                                ", "legs"),
-				("cf_J_Kosi04_s,False,1,1,1,1                                                ", "legs"),
-				("cf_J_LegDam_L,False,1,1,1,1                                                ", "legs"),
-				( "cf_J_LegKnee_back_s_L,False,1,1,1,1 Back of Knee (Left)                    ","legs"),
-				("cf_J_LegKnee_back_s_R,False,1,1,1,1 Back of Knee (Right)                   ", "legs"),
-				("cf_J_LegKnee_dam_L,False,1,1,1,1 Front of Knee (Left)                      ", "legs"),
-				("cf_J_LegKnee_dam_R,False,1,1,1,1 Front of Knee (Right)                     ", "legs"),
-				("cf_J_LegKnee_low_s_L,False,1,1,1,1 Knee Tone (Left)                        ", "legs"),
-				("cf_J_LegKnee_low_s_R,False,1,1,1,1 Knee Tone (Right)                       ", "legs"),
-				("cf_J_LegLow01_L,False,1,1,1,1 Knees & Below                                ", "legs"),
-				("cf_J_LegLow01_R,False,1,1,1,1 Knees & Below                                ", "legs"),
-				("cf_J_LegLow01_s_L,False,1,1,1,1 Calf (Left)                                ", "legs"),
-				("cf_J_LegLow01_s_R,False,1,1,1,1 Calf (Right)                               ", "legs"),
-				("cf_J_LegLow02_s_L,False,1,1,1,1 Lower Calf (Left)                          ", "legs"),
-				("cf_J_LegLow02_s_R,False,1,1,1,1 Lower Calf (Right)                         ", "legs"),
-				("cf_J_LegLow03_s_L,False,1,1,1,1 Ankle (Left)                               ", "legs"),
-				("cf_J_LegLow03_s_R,False,1,1,1,1 Ankle (Right)                              ", "legs"),
-				("cf_J_LegLowDam_L,False,1,1,1,1                                             ", "legs"),
-				("cf_J_LegLowRoll_L,False,1,1,1,1 Lower Leg Length (Left)                    ", "legs"),
-				("cf_J_LegLowRoll_R,False,1,1,1,1 Lower Leg Length (Right)                   ", "legs"),
-				("cf_J_LegUp_L,False,1,1,1,1                                                 ", "legs"),
-				("cf_J_LegUp00_L,False,1,1,1,1 Overall Leg (Left)                            ", "legs"),
-				("cf_J_LegUp00_R,False,1,1,1,1 Overall Leg (Right)                           ", "legs"),
-				("cf_J_LegUp01_s_L,False,1,1,1,1 Upper Thigh (Left)                          ", "legs"),
-				("cf_J_LegUp01_s_R,False,1,1,1,1 Upper Thigh (Right)                         ", "legs"),
-				("cf_J_LegUp02_s_L,False,1,1,1,1 Lower Thigh (Left)                          ", "legs"),
-				("cf_J_LegUp02_s_R,False,1,1,1,1 Lower Thigh (Right)                         ", "legs"),
-				("cf_J_LegUp03_L,False,1,1,1,1 Knee (Left)                                   ", "legs"),
-				("cf_J_LegUp03_R,False,1,1,1,1 Knee (Right)                                  ", "legs"),
-				("cf_J_LegUp03_s_L,False,1,1,1,1 Above the Knee (Left)                       ", "legs"),
-				("cf_J_LegUp03_s_R,False,1,1,1,1 Above the Knee (Right)                      ", "legs"),
-				("cf_J_LegUpDam_L,False,1,1,1,1 Upper Hip (Left)                             ", "legs"),
-				("cf_J_LegUpDam_R,False,1,1,1,1 Upper Hip (Right)                            ", "legs"),
-				("cf_J_LegUpDam_s_L,False,1,1,1,1 Upper Hip (Left) [Not as good]             ", "legs"),
-				("cf_J_LegUpDam_s_R,False,1,1,1,1 Upper Hip (Right) [Not as good]            ", "legs"),
-				("cf_J_LegUpLow_R,False,1,1,1,1                                              ", "legs"),
-				("cf_J_LegUpLow_s_L,False,1,1,1,1                                            ", "legs"),
-				("cf_J_Legsk_01_00",            "legs"),
-				("cf_J_Legsk_01_01",            "legs"),
-				("cf_J_Legsk_01_02",            "legs"),
-				("cf_J_Legsk_01_03",            "legs"),
-				("cf_J_Legsk_01_04",            "legs"),
-				("cf_J_Legsk_01_05",            "legs"),
-				("cf_J_Legsk_02_00",            "legs"),
-				("cf_J_Legsk_02_01",            "legs"),
-				("cf_J_Legsk_02_02",            "legs"),
-				("cf_J_Legsk_02_03",            "legs"),
-				("cf_J_Legsk_02_04",            "legs"),
-				("cf_J_Legsk_02_05",            "legs"),
-				("cf_J_Legsk_03_00",            "legs"),
-				("cf_J_Legsk_03_01",            "legs"),
-				("cf_J_Legsk_03_02",            "legs"),
-				("cf_J_Legsk_03_03",            "legs"),
-				("cf_J_Legsk_03_04",            "legs"),
-				("cf_J_Legsk_03_05",            "legs"),
-				("cf_J_Legsk_05_00",            "legs"),
-				("cf_J_Legsk_05_01",            "legs"),
-				("cf_J_Legsk_05_02",            "legs"),
-				("cf_J_Legsk_05_03",            "legs"),
-				("cf_J_Legsk_05_04",            "legs"),
-				("cf_J_Legsk_05_05",            "legs"),
-				("cf_J_Legsk_06_00",            "legs"),
-				("cf_J_Legsk_06_01",            "legs"),
-				("cf_J_Legsk_06_02",            "legs"),
-				("cf_J_Legsk_06_03",            "legs"),
-				("cf_J_Legsk_06_04",            "legs"),
-				("cf_J_Legsk_06_05",            "legs"),
-				("cf_J_Legsk_07_00",            "legs"),
-				("cf_J_Legsk_07_01",            "legs"),
-				("cf_J_Legsk_07_02",            "legs"),
-				("cf_J_Legsk_07_03",            "legs"),
-				("cf_J_Legsk_07_04",            "legs"),
-				("cf_J_Legsk_07_05",            "legs"),
+                ("cf_hit_LegUp01_s_L,False,1,1,1,1 Hitbox - Thigh (Left)                     "  , "legs"),
+				("cf_hit_LegUp01_s_R,False,1,1,1,1 Hitbox - Thigh (Right)                    "  , "legs"),
+				("cf_hit_Kosi02_s,False,1,1,1,1 Hitbox - Hips                                "  , "legs"),
+				("cf_J_Hips,False,1,1,1,1 Scale                                              "  , "legs"),
+				("cf_J_Kosi01,False,1,1,1,1 Waist & Below                                    "  , "legs"),
+				("cf_J_Kosi01_s,False,1,1,1,1 Pelvis [Ignores Skirt]                         "  , "legs"),
+				("cf_J_Kosi02,False,1,1,1,1 Hips & Below                                     "  , "legs"),
+				("cf_J_Kosi02_s,False,1,1,1,1 Hips [Ignores Skirt]                           "  , "legs"),
+				("cf_J_Kosi03,False,1,1,1,1                                                  "  , "legs"),
+				("cf_J_Kosi03_s,False,1,1,1,1                                                "  , "legs"),
+				("cf_J_Kosi04_s,False,1,1,1,1                                                "  , "legs"),
+				("cf_J_LegDam_L,False,1,1,1,1                                                "  , "legs"),
+				( "cf_J_LegKnee_back_s_L,False,1,1,1,1 Back of Knee (Left)                   "  ,"legs"),
+				("cf_J_LegKnee_back_s_R,False,1,1,1,1 Back of Knee (Right)                   "  , "legs"),
+				("cf_J_LegKnee_dam_L,False,1,1,1,1 Front of Knee (Left)                      "  , "legs"),
+				("cf_J_LegKnee_dam_R,False,1,1,1,1 Front of Knee (Right)                     "  , "legs"),
+				("cf_J_LegKnee_low_s_L,False,1,1,1,1 Knee Tone (Left)                        "  , "legs"),
+				("cf_J_LegKnee_low_s_R,False,1,1,1,1 Knee Tone (Right)                       "  , "legs"),
+				("cf_J_LegLow01_L,False,1,1,1,1 Knees & Below                                "  , "legs"),
+				("cf_J_LegLow01_R,False,1,1,1,1 Knees & Below                                "  , "legs"),
+				("cf_J_LegLow01_s_L,False,1,1,1,1 Calf (Left)                                "  , "legs"),
+				("cf_J_LegLow01_s_R,False,1,1,1,1 Calf (Right)                               "  , "legs"),
+				("cf_J_LegLow02_s_L,False,1,1,1,1 Lower Calf (Left)                          "  , "legs"),
+				("cf_J_LegLow02_s_R,False,1,1,1,1 Lower Calf (Right)                         "  , "legs"),
+				("cf_J_LegLow03_s_L,False,1,1,1,1 Ankle (Left)                               "  , "legs"),
+				("cf_J_LegLow03_s_R,False,1,1,1,1 Ankle (Right)                              "  , "legs"),
+				("cf_J_LegLowDam_L,False,1,1,1,1                                             "  , "legs"),
+				("cf_J_LegLowRoll_L,False,1,1,1,1 Lower Leg Length (Left)                    "  , "legs"),
+				("cf_J_LegLowRoll_R,False,1,1,1,1 Lower Leg Length (Right)                   "  , "legs"),
+				("cf_J_LegUp_L,False,1,1,1,1                                                 "  , "legs"),
+				("cf_J_LegUp00_L,False,1,1,1,1 Overall Leg (Left)                            "  , "legs"),
+				("cf_J_LegUp00_R,False,1,1,1,1 Overall Leg (Right)                           "  , "legs"),
+				("cf_J_LegUp01_s_L,False,1,1,1,1 Upper Thigh (Left)                          "  , "legs"),
+				("cf_J_LegUp01_s_R,False,1,1,1,1 Upper Thigh (Right)                         "  , "legs"),
+				("cf_J_LegUp02_s_L,False,1,1,1,1 Lower Thigh (Left)                          "  , "legs"),
+				("cf_J_LegUp02_s_R,False,1,1,1,1 Lower Thigh (Right)                         "  , "legs"),
+				("cf_J_LegUp03_L,False,1,1,1,1 Knee (Left)                                   "  , "legs"),
+				("cf_J_LegUp03_R,False,1,1,1,1 Knee (Right)                                  "  , "legs"),
+				("cf_J_LegUp03_s_L,False,1,1,1,1 Above the Knee (Left)                       "  , "legs"),
+				("cf_J_LegUp03_s_R,False,1,1,1,1 Above the Knee (Right)                      "  , "legs"),
+				("cf_J_LegUpDam_L,False,1,1,1,1 Upper Hip (Left)                             "  , "legs"),
+				("cf_J_LegUpDam_R,False,1,1,1,1 Upper Hip (Right)                            "  , "legs"),
+				("cf_J_LegUpDam_s_L,False,1,1,1,1 Upper Hip (Left) [Not as good]             "  , "legs"),
+				("cf_J_LegUpDam_s_R,False,1,1,1,1 Upper Hip (Right) [Not as good]            "  , "legs"),
+				("cf_J_LegUpLow_R,False,1,1,1,1                                              "  , "legs"),
+				("cf_J_LegUpLow_s_L,False,1,1,1,1                                            "  , "legs"),
+				("cf_J_Legsk_01_00"                                                             , "legs"),
+				("cf_J_Legsk_01_01"                                                             , "legs"),
+				("cf_J_Legsk_01_02"                                                             , "legs"),
+				("cf_J_Legsk_01_03"                                                             , "legs"),
+				("cf_J_Legsk_01_04"                                                             , "legs"),
+				("cf_J_Legsk_01_05"                                                             , "legs"),
+				("cf_J_Legsk_02_00"                                                             , "legs"),
+				("cf_J_Legsk_02_01"                                                             , "legs"),
+				("cf_J_Legsk_02_02"                                                             , "legs"),
+				("cf_J_Legsk_02_03"                                                             , "legs"),
+				("cf_J_Legsk_02_04"                                                             , "legs"),
+				("cf_J_Legsk_02_05"                                                             , "legs"),
+				("cf_J_Legsk_03_00"                                                             , "legs"),
+				("cf_J_Legsk_03_01"                                                             , "legs"),
+				("cf_J_Legsk_03_02"                                                             , "legs"),
+				("cf_J_Legsk_03_03"                                                             , "legs"),
+				("cf_J_Legsk_03_04"                                                             , "legs"),
+				("cf_J_Legsk_03_05"                                                             , "legs"),
+				("cf_J_Legsk_05_00"                                                             , "legs"),
+				("cf_J_Legsk_05_01"                                                             , "legs"),
+				("cf_J_Legsk_05_02"                                                             , "legs"),
+				("cf_J_Legsk_05_03"                                                             , "legs"),
+				("cf_J_Legsk_05_04"                                                             , "legs"),
+				("cf_J_Legsk_05_05"                                                             , "legs"),
+				("cf_J_Legsk_06_00"                                                             , "legs"),
+				("cf_J_Legsk_06_01"                                                             , "legs"),
+				("cf_J_Legsk_06_02"                                                             , "legs"),
+				("cf_J_Legsk_06_03"                                                             , "legs"),
+				("cf_J_Legsk_06_04"                                                             , "legs"),
+				("cf_J_Legsk_06_05"                                                             , "legs"),
+				("cf_J_Legsk_07_00"                                                             , "legs"),
+				("cf_J_Legsk_07_01"                                                             , "legs"),
+				("cf_J_Legsk_07_02"                                                             , "legs"),
+				("cf_J_Legsk_07_03"                                                             , "legs"),
+				("cf_J_Legsk_07_04"                                                             , "legs"),
+				("cf_J_Legsk_07_05"                                                             , "legs"),
 
 
                 //feet              
@@ -844,9 +844,12 @@ namespace Character_Morpher
 				reloading = true;
 				for(int a = 0; a < delayFrames; ++a)
 					yield return null;
-			
+
 				initLoadFinished = true;
 				reloading = false;
+
+				ChaControl.fileFace.headId++;
+				ChaControl.fileFace.headId--;
 
 				_boneCtrl.NeedsFullRefresh = true;
 
@@ -1040,7 +1043,7 @@ namespace Character_Morpher
 		{
 			var tmp = controls.all.ToList();
 			if(fullVal)
-				tmp = controls.full.ToList();
+				tmp = controls.fullVal.ToList();
 
 			return abmx ?
 				tmp.Find(m => m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)).Value :
@@ -1193,7 +1196,7 @@ namespace Character_Morpher
 						}
 						else
 						{
-							var val = GetControlValue("body", fullVal: initReset).Item1;
+							var val = GetControlValue("body other", fullVal: initReset).Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * val * (GetControlValue("body", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
 						}
@@ -1242,7 +1245,7 @@ namespace Character_Morpher
 						}
 						else
 						{
-							var val = GetControlValue("face", fullVal: initReset).Item1;
+							var val = GetControlValue("face other", fullVal: initReset).Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
 								enable * val * (GetControlValue("face", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
 						}
@@ -1402,7 +1405,7 @@ namespace Character_Morpher
 							break;
 
 						default:
-							modVal = Tuple.Create(1f, MorphCalcType.LINEAR);
+							modVal = GetControlValue("body other", true, fullVal: initReset);
 							break;
 						}
 					}
@@ -1411,7 +1414,7 @@ namespace Character_Morpher
 					UpdateBoneModifier(ref current, bone1, bone2, modVal, index: a,
 						sectVal: (cfg.linkOverallABMXSliders.Value ?
 						GetControlValue("body", fullVal: initReset).Item1 : 1) *
-						GetControlValue("Body", true, fullVal: initReset).Item1,
+						GetControlValue("Body", abmx: true, fullVal: initReset).Item1,
 						enable: enable);
 				}
 
@@ -1473,7 +1476,7 @@ namespace Character_Morpher
 
 
 					default:
-						modVal = Tuple.Create(1f, MorphCalcType.LINEAR);
+						modVal = GetControlValue("head other", true, fullVal: initReset);
 						break;
 					}
 
@@ -1575,6 +1578,10 @@ namespace Character_Morpher
 		{
 			try
 			{
+				var lerpVal = Mathf.Clamp(enable, 0, 1) *
+					sectVal * modVal.Item1 *
+					(modVal.Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(modVal.Item1) : 1f);
+
 				int count = 0;//may use this in other mods
 				foreach(var mod in current?.CoordinateModifiers)
 				{
@@ -1582,21 +1589,24 @@ namespace Character_Morpher
 					var inRange1 = count < bone1.CoordinateModifiers.Length;
 					var inRange2 = count < bone2.CoordinateModifiers.Length;
 
-
-					mod.PositionModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].PositionModifier, bone2.CoordinateModifiers[inRange2 ? count : 0].PositionModifier,
-						Mathf.Clamp(enable, 0, 1) * sectVal * modVal.Item1 * (modVal.Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(modVal.Item1) : 1f));
-
-
-					mod.RotationModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].RotationModifier, bone2.CoordinateModifiers[inRange2 ? count : 0].RotationModifier,
-						Mathf.Clamp(enable, 0, 1) * sectVal * modVal.Item1 * (modVal.Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(modVal.Item1) : 1f));
+					mod.PositionModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].PositionModifier, 
+																bone2.CoordinateModifiers[inRange2 ? count : 0].PositionModifier,
+																lerpVal);
 
 
-					mod.ScaleModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].ScaleModifier, bone2.CoordinateModifiers[inRange2 ? count : 0].ScaleModifier,
-						Mathf.Clamp(enable, 0, 1) * sectVal * modVal.Item1 * (modVal.Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(modVal.Item1) : 1f));
+					mod.RotationModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].RotationModifier, 
+																bone2.CoordinateModifiers[inRange2 ? count : 0].RotationModifier,
+																lerpVal);
 
 
-					mod.LengthModifier = Mathf.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].LengthModifier, bone2.CoordinateModifiers[inRange2 ? count : 0].LengthModifier,
-						Mathf.Clamp(enable, 0, 1) * sectVal * modVal.Item1 * (modVal.Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(modVal.Item1) : 1f));
+					mod.ScaleModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].ScaleModifier, 
+															bone2.CoordinateModifiers[inRange2 ? count : 0].ScaleModifier,
+															lerpVal);
+
+
+					mod.LengthModifier = Mathf.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].LengthModifier, 
+															bone2.CoordinateModifiers[inRange2 ? count : 0].LengthModifier,
+															lerpVal);
 
 					if(cfg.debug.Value)
 					{
@@ -1938,7 +1948,7 @@ namespace Character_Morpher
 		/// <summary>
 		/// each value is set to one
 		/// </summary>
-		public Dictionary<string, Tuple<float, MorphCalcType>> full
+		public Dictionary<string, Tuple<float, MorphCalcType>> fullVal
 		{
 			get
 			{
@@ -1948,6 +1958,7 @@ namespace Character_Morpher
 				return tmp;
 			}
 		}
+
 		/// <summary>
 		/// list of every control with an "overall" name
 		/// </summary>
@@ -1955,6 +1966,15 @@ namespace Character_Morpher
 		{
 			get
 			=> all.Where((p) => Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
+		}
+
+		/// <summary>
+		/// list of every control w/o an "overall" name
+		/// </summary>
+		public IEnumerable<KeyValuePair<string, Tuple<float, MorphCalcType>>> notOverall
+		{
+			get
+			=> all.Where((p) => !Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
 		}
 
 	}

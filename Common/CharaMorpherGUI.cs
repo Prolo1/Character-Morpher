@@ -192,7 +192,7 @@ namespace Character_Morpher
 				{
 					e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 
-					string part = Regex.Replace(visualName, searchHits[0], "", RegexOptions.IgnoreCase);
+					string part = Regex.Replace(visualName, searchHits[0], "Base", RegexOptions.IgnoreCase);
 					part = Regex.Replace(part, "  ", " ", RegexOptions.IgnoreCase);
 					e.AddControl(new MakerText($"{part} Controls".Trim(), category, CharaMorpher_Core.Instance));
 				}
@@ -205,10 +205,14 @@ namespace Character_Morpher
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"ABMX index: {abmxIndex}");
 				}
 
-				//remove search hits from the slider name
-				foreach(var hit in searchHits)
-					if(hit != searchHits[0])
-						visualName = Regex.Replace(visualName, hit, "", RegexOptions.IgnoreCase);
+				if(Regex.Match(visualName, "other", RegexOptions.IgnoreCase).Success)
+					visualName = "Other";
+				else
+					//remove search hits from the slider name
+					foreach(var hit in searchHits)
+						if(hit != searchHits[0])
+							visualName = Regex.Replace(visualName, hit, "", RegexOptions.IgnoreCase);
+
 
 				//setup slider
 				var currSlider = sliders.AddNReturn(e.AddControl(new MakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[index].Value * .01f, CharaMorpher_Core.Instance)));
@@ -227,10 +231,11 @@ namespace Character_Morpher
 								ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: a));//this may be necessary (it is)
 						});
 
-				//mode toggles
 
+
+				//mode dropdown 
 				var ting = new string[] { "Linear", "Quadratic" };
-				var currMode = modes.AddNReturn(e.AddControl(new MakerDropdown("", ting,category, 0,CharaMorpher_Core.Instance)));
+				var currMode = modes.AddNReturn(e.AddControl(new MakerDropdown("", ting, category, 0, CharaMorpher_Core.Instance)));
 				currMode.BindToFunctionController<CharaMorpherController, int>(
 						(ctrl) => (int)ctrl.controls.all[settingName].Item2,
 						(ctrl, val) =>
@@ -245,8 +250,8 @@ namespace Character_Morpher
 							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 								ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: a));//this may be necessary (it is)
 						});
-				
-				
+
+
 				////Make sure toggles stay on
 				//inst.StartCoroutine(CoOnGUIExists(currMode, () =>
 				//{
@@ -496,10 +501,10 @@ namespace Character_Morpher
 						  var cal = (MorphCalcType)cfg.defaultModes[a].Value;
 						  ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create((float)cfg.defaults[a].Value * .01f, cal);
 					  }
-				
+
 					  for(int b = -1; b < cfg.multiUpdateTest.Value;)
 						  ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: ++b));//this may be necessary 
-				
+
 					  break;
 				  }
 				  int count = 0;
@@ -584,136 +589,57 @@ namespace Character_Morpher
 			//e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			//e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 
+
+			var tgl = e.AddControl(new MakerToggle(category, "Control overall sliders with Morph Buttons", true, owner));
+			var tgl2 = e.AddControl(new MakerToggle(category, "Other values default to 100%", true, owner));
+
+			void CreateMorphButton(int percent)
+			{
+				var button = e.AddControl(new MakerButton($"Morph {percent}%", category, owner));
+				button.OnClick.AddListener(() =>
+				{
+					bool swap = true, reset = true;
+					if(tgl.Exists)
+						swap = tgl.Value;
+					if(tgl2.Exists)
+						reset = tgl2.Value;
+
+					foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+					{
+						//	ctrl.StopAllCoroutines();
+						if(reset)
+							for(int a = 0; a < ctrl.controls.all.Count; ++a)
+							{
+								var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
+								ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
+							}
+
+						var tmp = swap ? ctrl.controls.overall : ctrl.controls.notOverall;
+						for(int a = 0; a < tmp.Count(); ++a)
+						{
+							var cal = ctrl.controls.all[tmp.ElementAt(a).Key].Item2;
+							ctrl.controls.all[tmp.ElementAt(a).Key] = Tuple.Create(percent * .01f, cal);
+						}
+
+						for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+							ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
+
+						CharaMorpher_Core.Logger.LogMessage($"Morphed to {percent}%");
+						break;
+					}
+					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
+				});
+
+			}
+
 			// easy morph buttons
-			var button = e.AddControl(new MakerButton($"Morph 0%", category, owner));
-			button.OnClick.AddListener(() =>
-			{
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
-				{
-					//	ctrl.StopAllCoroutines();
-					for(int a = 0; a < ctrl.controls.all.Count; ++a)
-					{
-						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
-					}
-					var tmp = ctrl.controls.overall;
-					for(int a = 0; a < tmp.Count(); ++a)
-					{
-						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(0f, cal);
-					}
+			CreateMorphButton(0);
+			CreateMorphButton(25);
+			CreateMorphButton(50);
+			CreateMorphButton(75);
+			CreateMorphButton(100);
 
-					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-						ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
-					CharaMorpher_Core.Logger.LogMessage("Morphed to 0%");
-					break;
-				}
-				Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
-			});
 
-			button = e.AddControl(new MakerButton($"Morph 25%", category, owner));
-			button.OnClick.AddListener(() =>
-			{
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
-				{
-					//	ctrl.StopAllCoroutines();
-					for(int a = 0; a < ctrl.controls.all.Count; ++a)
-					{
-						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
-					}
-					var tmp = ctrl.controls.overall;
-					for(int a = 0; a < tmp.Count(); ++a)
-					{
-						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(0.25f, cal);
-					}
-					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-						ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
-					CharaMorpher_Core.Logger.LogMessage("Morphed to 25%");
-					break;
-				}
-				Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
-			});
-
-			button = e.AddControl(new MakerButton($"Morph 50%", category, owner));
-			button.OnClick.AddListener(() =>
-			{
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
-				{
-					//	ctrl.StopAllCoroutines();
-					for(int a = 0; a < ctrl.controls.all.Count; ++a)
-					{
-						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
-					}
-
-					var tmp = ctrl.controls.overall;
-					for(int a = 0; a < tmp.Count(); ++a)
-					{
-						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(0.5f, cal);
-					}
-
-					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-						ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
-
-					CharaMorpher_Core.Logger.LogMessage("Morphed to 50%");
-
-					break;
-				}
-				Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
-			});
-
-			button = e.AddControl(new MakerButton($"Morph 75%", category, owner));
-			button.OnClick.AddListener(() =>
-			{
-				foreach(var ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
-				{
-					//	ctrl.StopAllCoroutines();
-					for(int a = 0; a < ctrl.controls.all.Count; ++a)
-					{
-						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
-					}
-
-					var tmp = ctrl.controls.overall;
-					for(int a = 0; a < tmp.Count(); ++a)
-					{
-						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(0.75f, cal);
-					}
-
-					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-						ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
-
-					CharaMorpher_Core.Logger.LogMessage("Morphed to 75%");
-
-					break;
-				}
-				Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
-			});
-
-			button = e.AddControl(new MakerButton($"Morph 100%", category, owner));
-			button.OnClick.AddListener(() =>
-			{
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
-				{
-					//	ctrl.StopAllCoroutines();
-					for(int a = 0; a < ctrl.controls.all.Count; ++a)
-					{
-						var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
-						ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
-					}
-
-					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-						ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
-					CharaMorpher_Core.Logger.LogMessage("Morphed to 100%");
-
-					break;
-				}
-				Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
-			});
 
 			//Add Ending
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
