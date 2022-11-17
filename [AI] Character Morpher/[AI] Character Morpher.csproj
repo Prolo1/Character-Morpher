@@ -157,6 +157,6 @@
   <Import Project="..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\build\IllusionLibs.AIGirl.UnityExtensions.targets" Condition="Exists('..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\build\IllusionLibs.AIGirl.UnityExtensions.targets')" />
   <Import Project="..\packages\IllusionLibs.AIGirl.Unity.TextMeshPro.2018.2.21.4\build\IllusionLibs.AIGirl.Unity.TextMeshPro.targets" Condition="Exists('..\packages\IllusionLibs.AIGirl.Unity.TextMeshPro.2018.2.21.4\build\IllusionLibs.AIGirl.Unity.TextMeshPro.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\" "$(TargetDir)..\..\..\..\[AI]_Character_Morpher.zip"</PostBuildEvent>
+    <PostBuildEvent>call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\..\[AI]_Character_Morpher.zip" "$(TargetDir)..\..\..\" "$(SolutionDir)Readme.md"</PostBuildEvent>
   </PropertyGroup>
 </Project>

@@ -38,6 +38,23 @@ namespace Character_Morpher
 
 #if KOI_API
 			[HarmonyPostfix]
+			[HarmonyPatch(typeof(Manager.Character), nameof(Manager.Character.CreateChara)),]
+			static void FastReload(ChaControl __instance)
+			{
+				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				{
+					if(ctrl.ChaFileControl != __instance.chaFile ||
+						CharaMorpherController.morphTarget?.extraCharacter?.chaFile == ctrl.ChaFileControl) continue;
+
+					CharaMorpher_Core.Logger.LogDebug("Please load first... I kinda need this");
+					ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode());
+
+					break;
+				}
+			}
+
+
+			[HarmonyPostfix]
 			[HarmonyPatch(typeof(ChaFile), nameof(ChaFile.LoadFile),
 				new Type[] { typeof(BinaryReader), typeof(bool), typeof(bool) }),]
 			static void GetCharaPngs(ChaFile __instance)
@@ -67,9 +84,9 @@ namespace Character_Morpher
 					//if(m_lastpngload != null)
 					//	Instance.StopCoroutine(m_lastpngload);
 #if !KK
-							if(ctrl.ChaControl.chaFile == __instance)
+					if(ctrl.ChaControl.chaFile == __instance)
 #endif
-					Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
+						Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
 				}
 
 			}
@@ -197,6 +214,7 @@ namespace Character_Morpher
 					if(ctrler.name.ToLower().Contains("overwrite") || ctrler.name.ToLower().Contains("save"))
 #elif KOI_API
 				//	if(ctrler.transform.parent.parent.GetComponentInParent<ChaCustom.cvs>())
+				if(ctrler.name.ToLower().Contains("reload")) return;
 				if(ctrler.name.ToLower().Contains("override") || ctrler.name.ToLower().Contains("save")
 					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
 #endif

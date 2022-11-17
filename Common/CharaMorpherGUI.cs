@@ -74,7 +74,6 @@ namespace Character_Morpher
 				faceCustom = (CvsFaceShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsFaceShapeAll))[0];
 #endif
 
-				//charactortop
 			};
 
 			cfg.sliderExtents.SettingChanged += (m, n) =>
@@ -161,12 +160,12 @@ namespace Character_Morpher
 						ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: a));//this may be necessary (it is)
 				});
 
-			var saveWithMorph = e.AddControl(new MakerToggle(category, "Enable Save With Morph", cfg.saveWithMorph.Value, CharaMorpher_Core.Instance));
+			var saveWithMorph = e.AddControl(new MakerToggle(category, "Enable Save As Seen", cfg.saveWithMorph.Value, CharaMorpher_Core.Instance));
 			saveWithMorph.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.saveWithMorph.Value,
 				(ctrl, val) => { cfg.saveWithMorph.Value = val; });
 
-			var enableQuadManip = e.AddControl(new MakerToggle(category, "Enable Quadratic Manip.", cfg.enableQuadManip.Value, CharaMorpher_Core.Instance));
+			var enableQuadManip = e.AddControl(new MakerToggle(category, "Enable Calculation Types", cfg.enableQuadManip.Value, CharaMorpher_Core.Instance));
 			saveWithMorph.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.enableQuadManip.Value,
 				(ctrl, val) => { cfg.enableQuadManip.Value = val; });
@@ -552,7 +551,7 @@ namespace Character_Morpher
 				ForeGrounder.SetCurrentForground();
 
 				{
-
+					
 					var paths = OpenFileDialog.ShowDialog("Set Morph Target",
 						TargetDirectory,
 						FileFilter,
@@ -590,19 +589,24 @@ namespace Character_Morpher
 			//e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 
 
-			var tgl = e.AddControl(new MakerToggle(category, "Control overall sliders with Morph Buttons", true, owner));
+			var tgl = e.AddControl(new MakerToggle(category, "Control overall sliders with Morph Buttons", cfg.easyMorphBtnOverallSet.Value, owner));
+			tgl.BindToFunctionController<CharaMorpherController, bool>(
+				(ctrl) => cfg.easyMorphBtnOverallSet.Value,
+				(ctrl, val) => cfg.easyMorphBtnOverallSet.Value = val
+				);
 			var tgl2 = e.AddControl(new MakerToggle(category, "Other values default to 100%", true, owner));
-
+			tgl2.BindToFunctionController<CharaMorpherController, bool>(
+				(ctrl) => cfg.easyMorphBtnEnableDefaulting.Value,
+				(ctrl, val) => cfg.easyMorphBtnEnableDefaulting.Value = val
+				);
 			void CreateMorphButton(int percent)
 			{
 				var button = e.AddControl(new MakerButton($"Morph {percent}%", category, owner));
 				button.OnClick.AddListener(() =>
 				{
-					bool swap = true, reset = true;
-					if(tgl.Exists)
-						swap = tgl.Value;
-					if(tgl2.Exists)
-						reset = tgl2.Value;
+					bool					
+					swap = cfg.easyMorphBtnOverallSet.Value,
+					reset = cfg.easyMorphBtnEnableDefaulting.Value;
 
 					foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
 					{
@@ -685,7 +689,7 @@ namespace Character_Morpher
 			get
 			{
 				var tmp = MakeDirPath(Path.GetFileName(cfg.imageName.Value));
-				tmp.Substring(tmp.LastIndexOf('/') + 1);
+				//tmp.Substring(tmp.LastIndexOf('/') + 1);
 				var path = Path.Combine(MakeDirPath(Path.GetDirectoryName(cfg.charDir.Value)), tmp);
 
 				return File.Exists(path) ? path : Path.Combine(_defaultOverlayDirectory, tmp);

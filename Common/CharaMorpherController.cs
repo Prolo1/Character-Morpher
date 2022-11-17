@@ -822,7 +822,7 @@ namespace Character_Morpher
 
 
 #if !HONEY_API
-		//	if(initLoadFinished)
+			//	if(initLoadFinished)
 #endif
 			{
 				//	if(MakerAPI.InsideMaker)
@@ -910,9 +910,19 @@ namespace Character_Morpher
 		{
 			if(keepState || reloading) return;
 
-			reloading = false;
-			CharaMorpher_Core.Logger.LogDebug("new Chara loaded");
-			OnCharaReload(currentGameMode);
+			IEnumerator TestThis()
+			{
+
+				for(uint a = 0; a < cfg.reloadTest.Value; ++a)
+					yield return null;//wait a frame
+
+				reloading = false;
+
+				CharaMorpher_Core.Logger.LogDebug("new Chara loaded");
+				OnCharaReload(currentGameMode);
+				yield break;
+			}
+			StartCoroutine(TestThis());
 		}
 
 		/// <inheritdoc/>
@@ -1298,6 +1308,55 @@ namespace Character_Morpher
 				charaCtrl.CreateFaceTexture();
 			}
 
+
+
+		}
+
+		/// <summary>
+		/// Don't ask me why this works it just does
+		/// </summary>
+		public void ResetHeight()
+		{
+			//reset the height using shoes
+
+#if KOI_API
+			bool tmpstate1 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_inner] == 0;
+			bool tmpstate2 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_outer] == 0;
+			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, (byte)(tmpstate1 ? 1 : 0));
+			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, (byte)(tmpstate2 ? 1 : 0));
+#else
+			bool tmpstate = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes] == 0;
+			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, (byte)(tmpstate ? 1 : 0));
+#endif
+
+
+#if KOI_API
+			IEnumerator heightReset(bool shoestate1, bool shoestate2)
+#else
+			IEnumerator heightReset(bool shoestate)
+#endif
+			{
+				for(int a = 0; a < 5; ++a)
+					yield return null;
+
+
+#if KOI_API
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, (byte)(!shoestate1 ? 1 : 0));
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, (byte)(!shoestate2 ? 1 : 0));
+#else
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, (byte)(shoestate ? 0 : 1));
+#endif
+				//	ChaControl.UpdateClothesStateAll();
+				yield break;
+			}
+
+
+#if KOI_API
+			StartCoroutine(heightReset(tmpstate1, tmpstate2));
+#else
+			StartCoroutine(heightReset(tmpstate));
+#endif
+			//	ChaControl.UpdateClothesStateAll();
 		}
 
 		public void AbmxSettings(bool reset, bool initReset, BoneController boneCtrl)
@@ -1589,22 +1648,22 @@ namespace Character_Morpher
 					var inRange1 = count < bone1.CoordinateModifiers.Length;
 					var inRange2 = count < bone2.CoordinateModifiers.Length;
 
-					mod.PositionModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].PositionModifier, 
+					mod.PositionModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].PositionModifier,
 																bone2.CoordinateModifiers[inRange2 ? count : 0].PositionModifier,
 																lerpVal);
 
 
-					mod.RotationModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].RotationModifier, 
+					mod.RotationModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].RotationModifier,
 																bone2.CoordinateModifiers[inRange2 ? count : 0].RotationModifier,
 																lerpVal);
 
 
-					mod.ScaleModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].ScaleModifier, 
+					mod.ScaleModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].ScaleModifier,
 															bone2.CoordinateModifiers[inRange2 ? count : 0].ScaleModifier,
 															lerpVal);
 
 
-					mod.LengthModifier = Mathf.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].LengthModifier, 
+					mod.LengthModifier = Mathf.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].LengthModifier,
 															bone2.CoordinateModifiers[inRange2 ? count : 0].LengthModifier,
 															lerpVal);
 
@@ -1632,7 +1691,7 @@ namespace Character_Morpher
 #if HS2
 				current.Apply(boneCtrl.CurrentCoordinate.Value, null, !MakerAPI.InsideMaker);
 #else
-				current.Apply(boneCtrl.CurrentCoordinate.Value, null, true);
+				current.Apply(boneCtrl.CurrentCoordinate.Value, null, false);
 #endif
 
 				boneCtrl.NeedsBaselineUpdate = true;
@@ -1690,7 +1749,7 @@ namespace Character_Morpher
 
 						//remove character from internal list
 #if KKS
-						Character.DeleteChara(_extraCharacter, entryOnly:true);		
+						Character.DeleteChara(_extraCharacter, entryOnly: true);
 #else
 						Character.Instance?.DeleteChara(_extraCharacter, entryOnly: true);
 #endif

@@ -152,6 +152,6 @@
   <Import Project="..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets" Condition="Exists('..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets')" />
   <Import Project="..\packages\IllusionLibs.KoikatsuParty.Assembly-CSharp.2021.3.25\build\IllusionLibs.KoikatsuParty.Assembly-CSharp.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuParty.Assembly-CSharp.2021.3.25\build\IllusionLibs.KoikatsuParty.Assembly-CSharp.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\" "$(TargetDir)..\..\..\..\[KK]_Character_Morpher.zip"</PostBuildEvent>
+    <PostBuildEvent>call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\..\[KK]_Character_Morpher.zip" "$(TargetDir)..\..\..\" "$(SolutionDir)Readme.md"</PostBuildEvent>
   </PropertyGroup>
 </Project>

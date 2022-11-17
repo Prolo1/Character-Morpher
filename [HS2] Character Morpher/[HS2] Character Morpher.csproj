@@ -179,6 +179,6 @@
   <Import Project="..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets" Condition="Exists('..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets')" />
   <Import Project="..\packages\IllusionLibs.HoneySelect2.Unity.TextMeshPro.2018.4.11.4\build\IllusionLibs.HoneySelect2.Unity.TextMeshPro.targets" Condition="Exists('..\packages\IllusionLibs.HoneySelect2.Unity.TextMeshPro.2018.4.11.4\build\IllusionLibs.HoneySelect2.Unity.TextMeshPro.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\" "$(TargetDir)..\..\..\..\[HS2]_Character_Morpher.zip"</PostBuildEvent>
+    <PostBuildEvent>call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\..\[HS2]_Character_Morpher.zip" "$(TargetDir)..\..\..\" "$(SolutionDir)Readme.md"</PostBuildEvent>
   </PropertyGroup>
 </Project>
