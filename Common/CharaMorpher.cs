@@ -503,7 +503,7 @@ namespace Character_Morpher
 					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
 
-					ctrl?.ResetHeight();
+				//	ctrl?.ResetHeight();
 
 					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
 				}
@@ -517,7 +517,7 @@ namespace Character_Morpher
 					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
 
-					ctrl?.ResetHeight();
+					//ctrl?.ResetHeight();
 
 					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
 

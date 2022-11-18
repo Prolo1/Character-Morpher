@@ -634,6 +634,8 @@ namespace Character_Morpher
 			if(reloading) yield break;
 
 			boneCtrl.NeedsFullRefresh = true;
+
+			ResetHeight();
 		}
 
 		private IEnumerator CoReloadChara()
@@ -1344,9 +1346,8 @@ namespace Character_Morpher
 				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, (byte)(!shoestate1 ? 1 : 0));
 				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, (byte)(!shoestate2 ? 1 : 0));
 #else
-				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, (byte)(shoestate ? 0 : 1));
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, (byte)(!shoestate ? 1 : 0));
 #endif
-				//	ChaControl.UpdateClothesStateAll();
 				yield break;
 			}
 
@@ -1356,7 +1357,7 @@ namespace Character_Morpher
 #else
 			StartCoroutine(heightReset(tmpstate));
 #endif
-			//	ChaControl.UpdateClothesStateAll();
+
 		}
 
 		public void AbmxSettings(bool reset, bool initReset, BoneController boneCtrl)
