@@ -185,18 +185,16 @@ publish/
 PublishScripts/
 
 # NuGet Packages
-#*.nupkg
+*.nupkg
 # NuGet Symbol Packages
 *.snupkg
 # The packages folder can be ignored because of Package Restore
-**/[Pp]ackages/**/lib
-**/[Pp]ackages/**/tools
-**/[Pp]ackages/**/analyzers
-**/[Pp]ackages/**/build
+**/[Pp]ackages/*
+
 # except build/, which is used as an MSBuild target.
 !**/[Pp]ackages/build/
 # Uncomment if necessary however generally it will be regenerated when needed
-!**/[Pp]ackages/repositories.config
+#!**/[Pp]ackages/repositories.config
 # NuGet v3's project.json files produces more ignorable files
 *.nuget.props
 *.nuget.targets
