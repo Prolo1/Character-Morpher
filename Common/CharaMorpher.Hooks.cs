@@ -37,6 +37,7 @@ namespace Character_Morpher
 			}
 
 #if KOI_API
+			/*
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(Manager.Character), nameof(Manager.Character.CreateChara)),]
 			static void FastReload(ChaControl __instance)
@@ -52,6 +53,23 @@ namespace Character_Morpher
 					break;
 				}
 			}
+			*/
+			/*
+			//static Coroutine coFaceFix=null;
+			[HarmonyPostfix]
+			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState))
+				]
+			static void faceFix(ChaControl __instance)
+			{
+				var ctrl = __instance?.GetComponent<CharaMorpherController>();
+				if(MakerAPI.InsideMaker || ((!ctrl?.initLoadFinished) ?? true)) return;
+				if((ctrl?.reloading ?? true) || (__instance.updateShapeFace || __instance.updateShapeBody)) return;
+
+
+				//	if(coFaceFix != null) Instance.StopCoroutine(coFaceFix);
+				ctrl?.MorphChangeUpdate();
+			}
+			*/
 
 
 			[HarmonyPostfix]
@@ -91,6 +109,8 @@ namespace Character_Morpher
 
 			}
 #endif
+
+
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(Toggle), nameof(Toggle.OnPointerClick))]
 			static void OnPostToggleClick(Toggle __instance)
@@ -125,8 +145,8 @@ namespace Character_Morpher
 				if(txtPro ? txtPro.text.ToLower().Contains("body bonemod") : false ||
 					txt ? txt.text.ToLower().Contains("body bonemod") : false)
 				{
-					CharaMorpherController.bodyBonemodTgl = __instance.isOn;
 					if(cfg.debug.Value) Logger.LogDebug("Change to body bonemod toggle");
+					CharaMorpherController.bodyBonemodTgl = __instance.isOn;
 				}
 			}
 
@@ -170,6 +190,7 @@ namespace Character_Morpher
 
 							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 								ctrl.MorphChangeUpdate(forceReset: true);
+
 						}
 			}
 

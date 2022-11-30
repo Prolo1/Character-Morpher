@@ -50,7 +50,17 @@ namespace Character_Morpher
 
 		internal MorphControls controls = new MorphControls();
 		internal static readonly MorphTarget morphTarget = new MorphTarget();
-		internal static bool faceBonemodTgl = true, bodyBonemodTgl = true;
+		private static bool m_faceBonemodTgl = true, m_bodyBonemodTgl = true;
+		internal static bool faceBonemodTgl
+		{
+			get { if(MakerAPI.InsideMaker) return m_faceBonemodTgl; else return true; }
+			set { m_faceBonemodTgl = value; }
+		}
+		internal static bool bodyBonemodTgl
+		{
+			get { if(MakerAPI.InsideMaker) return m_bodyBonemodTgl; else return true; }
+			set { m_bodyBonemodTgl = value; }
+		}
 
 		public readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
 
@@ -63,7 +73,7 @@ namespace Character_Morpher
 		/// <summary>
 		/// In the process of reloading. set to false after complete
 		/// </summary>
-		public bool reloading { get; internal set; } = false;
+		public bool reloading { get; internal set; } = true;
 
 		/// <summary>
 		/// makes sure most main functins don't run when creating template character
@@ -737,7 +747,11 @@ namespace Character_Morpher
 
 		}
 
+		public CharaMorpherController()
+		{
 
+			//	CharacterApi.CharacterReloaded += (s, e) => { reloading = false; if(!MakerAPI.InsideMaker) OnCharaReload(KoikatuAPI.GetCurrentGameMode()); };
+		}
 		protected override void Awake()
 		{
 			base.Awake();
@@ -751,8 +765,16 @@ namespace Character_Morpher
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
 
-			if(!MorphTarget.initalize) faceBonemodTgl = bodyBonemodTgl = true;
 
+
+			//IEnumerator tmpFunc()
+			//{
+			//	yield return null;
+			//	OnReload(KoikatuAPI.GetCurrentGameMode(), false);
+			//	yield break;
+			//}
+
+			//StartCoroutine(tmpFunc());
 		}
 
 		public void LateUpdate()
@@ -764,11 +786,10 @@ namespace Character_Morpher
 				MorphChangeUpdate();
 		}
 
-
 		bool boneSplitCheck(bool onlycheck = false)
 		{
 
-			if(!onlycheck && (!m_data1.abmx.isLoaded || !m_data2.abmx.isLoaded) && (!m_data1.abmx.isSplit || !m_data2.abmx.isSplit))
+			if(!onlycheck && (!m_data1.abmx.isSplit || !m_data2.abmx.isSplit))
 			{
 				if(!m_data1.abmx.isSplit)
 				{
@@ -787,6 +808,7 @@ namespace Character_Morpher
 			return m_data1.abmx.isSplit && m_data2.abmx.isSplit;
 		}
 
+		//Coroutine coReload = null;
 		/// <summary>
 		/// Called whenever base character data needs to be updated for calculations
 		/// </summary>
@@ -795,6 +817,8 @@ namespace Character_Morpher
 		public void OnCharaReload(GameMode currentGameMode)
 		{
 			if(reloading || dummy) return;
+			//if(coReload != null)
+			//	StopCoroutine(coReload);
 
 			reloading = true;
 
@@ -827,18 +851,24 @@ namespace Character_Morpher
 			//	if(initLoadFinished)
 #endif
 			{
-				//	if(MakerAPI.InsideMaker)
-				for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+				//if(MakerAPI.InsideMaker)
+
+				//for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 					MorphChangeUpdate(/*forceReset: !initLoadFinished, */initReset: true, updateValues: true);
+				//else
+				//
+				//	for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+				//		MorphChangeUpdate(/*forceReset: !initLoadFinished, */ updateValues: true);
+
 
 			}
 
+			int vali =22;
+			//if(MakerAPI.InsideMaker)
 			for(int a = -1; a < cfg.multiUpdateTest.Value;)
-				StartCoroutine(CoMorphAfterABMX(delay: 20 + ++a, forceChange: true));
+				StartCoroutine(CoMorphAfterABMX(delay: vali + ++a, forceChange: true));
 
-			/*I changed this for testing*/
-			if(!initLoadFinished)
-				ChaFileControl.CopyAll(m_data1.main);
+
 
 			//post update 
 			IEnumerator CoReloadComplete(int delayFrames, BoneController _boneCtrl)
@@ -847,17 +877,23 @@ namespace Character_Morpher
 				for(int a = 0; a < delayFrames; ++a)
 					yield return null;
 
+				//if(!initLoadFinished)
+				//	ChaFileControl.CopyAll(m_data1.main);
+
 				initLoadFinished = true;
 				reloading = false;
 
-				ChaControl.fileFace.headId++;
-				ChaControl.fileFace.headId--;
 
 				_boneCtrl.NeedsFullRefresh = true;
 
 				yield break;
 			}
-			StartCoroutine(CoReloadComplete(11, boneCtrl));//I just need to do this stuff later
+
+			//ResetFace();
+			//if(MakerAPI.InsideMaker)
+			//ChaFileControl.CopyAll(m_data1.main);
+
+			StartCoroutine(CoReloadComplete(vali / 2, boneCtrl));//I just need to do this stuff later
 		}
 
 		/// <summary>
@@ -906,26 +942,41 @@ namespace Character_Morpher
 
 		}
 
-
 		/// <inheritdoc/>
 		protected override void OnReload(GameMode currentGameMode, bool keepState)
 		{
-			if(keepState || reloading) return;
+			if(keepState) return;
+			if(!MakerAPI.InsideMaker)
+				StopAllCoroutines();//stops all CharaMorphController coroutines 
 
 			IEnumerator TestThis()
 			{
 
-				for(uint a = 0; a < cfg.reloadTest.Value; ++a)
-					yield return null;//wait a frame
+				//		for(uint a = 0; a < ((int)cfg.unknownTest.Value); ++a)
+				//			yield return null;//wait a frame
 
-				reloading = false;
+
 
 				CharaMorpher_Core.Logger.LogDebug("new Chara loaded");
+				reloading = false;
 				OnCharaReload(currentGameMode);
 				yield break;
 			}
-			StartCoroutine(TestThis());
+
+			if(MakerAPI.InsideMaker)
+			{
+				StartCoroutine(TestThis());
+			}
+			else
+			{
+				reloading = false;
+				OnCharaReload(currentGameMode);
+			}
+
 		}
+
+
+
 
 		/// <inheritdoc/>
 		protected override void OnCardBeingSaved(GameMode currentGameMode)
@@ -1073,7 +1124,7 @@ namespace Character_Morpher
 			var boneCtrl = charaCtrl.GetComponent<BoneController>();
 
 			float enable = (reset ? 0 : 1);
-
+			charaCtrl.LateUpdateForce();
 
 			//update obscure values//
 			{
@@ -1155,6 +1206,8 @@ namespace Character_Morpher
 
 				enable = (reset ? (initReset ? cfg.initialMorphTest.Value : 0) : 1);
 
+
+
 				//Body Shape
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"updating body Shape");
 				if(a < m_data1.main.custom.body.shapeValueBody.Length)
@@ -1208,13 +1261,15 @@ namespace Character_Morpher
 						}
 						else
 						{
-							var val = GetControlValue("body other", fullVal: initReset).Item1;
+							var val = GetControlValue("body", fullVal: initReset).Item1 * GetControlValue("body other", fullVal: initReset).Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("body", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("body other", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
 						}
 					}
 
 					//load values to character
+					charaCtrl.fileCustom.body.shapeValueBody[a] = result;
+
 					charaCtrl.SetShapeBodyValue(a, result);
 				}
 
@@ -1257,13 +1312,15 @@ namespace Character_Morpher
 						}
 						else
 						{
-							var val = GetControlValue("face other", fullVal: initReset).Item1;
+							var val = GetControlValue("face", fullVal: initReset).Item1 * GetControlValue("face other", fullVal: initReset).Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("face", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("face other", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
 						}
 					}
 
 					//load values to character
+
+					charaCtrl.fileCustom.face.shapeValueFace[a] = result;
 					charaCtrl.SetShapeFaceValue(a, result);
 				}
 			}
@@ -1311,13 +1368,13 @@ namespace Character_Morpher
 			}
 
 
-
+			charaCtrl.LateUpdateForce();
 		}
 
 		/// <summary>
 		/// Don't ask me why this works it just does
 		/// </summary>
-		public void ResetHeight()
+		private void ResetHeight()
 		{
 			//reset the height using shoes
 
@@ -1338,7 +1395,7 @@ namespace Character_Morpher
 			IEnumerator heightReset(bool shoestate)
 #endif
 			{
-				for(int a = 0; a < 5; ++a)
+				for(int a = 0; a < 1; ++a)
 					yield return null;
 
 
@@ -1357,6 +1414,36 @@ namespace Character_Morpher
 #else
 			StartCoroutine(heightReset(tmpstate));
 #endif
+
+		}
+		/// <summary>
+		/// Don't ask me why this works it just does
+		/// </summary>
+		private void ResetFace()
+		{
+			//reset the height using shoes
+
+
+			var tmp = ChaControl.fileFace.headId = ChaControl.fileFace.headId + 1;
+
+
+
+
+			IEnumerator faceReset(int orig)
+			{
+				for(int a = 0; a < 1; ++a)
+					yield return null;
+
+				ChaControl.fileFace.headId = orig;
+
+
+				yield break;
+			}
+
+
+
+			StartCoroutine(faceReset(tmp));
+
 
 		}
 
@@ -1708,7 +1795,6 @@ namespace Character_Morpher
 		{
 			if(!dummy)
 				MorphTarget.initalize = false;
-
 			base.OnDestroy();
 		}
 
@@ -2041,7 +2127,7 @@ namespace Character_Morpher
 
 	/// <summary>
 	/// Needed to copy this class from ABMX in case old card is loaded (Taken directly from source)
-	/// </summary>
+	/// </summary> 
 	internal static class ABMXOldDataConverter
 	{
 		private const string ExtDataBoneDataKey = "boneData";
