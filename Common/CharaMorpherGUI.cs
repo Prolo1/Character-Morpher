@@ -78,7 +78,6 @@ namespace Character_Morpher
 
 			cfg.sliderExtents.SettingChanged += (m, n) =>
 			{
-
 				IEnumerator CoEditExtents(uint start = 0, uint end = int.MaxValue)
 				{
 					yield return new WaitWhile(() =>
@@ -165,10 +164,10 @@ namespace Character_Morpher
 				(ctrl) => cfg.saveWithMorph.Value,
 				(ctrl, val) => { cfg.saveWithMorph.Value = val; });
 
-			var enableQuadManip = e.AddControl(new MakerToggle(category, "Enable Calculation Types", cfg.enableQuadManip.Value, CharaMorpher_Core.Instance));
+			var enableQuadManip = e.AddControl(new MakerToggle(category, "Enable Calculation Types", cfg.enableCalcTypes.Value, CharaMorpher_Core.Instance));
 			saveWithMorph.BindToFunctionController<CharaMorpherController, bool>(
-				(ctrl) => cfg.enableQuadManip.Value,
-				(ctrl, val) => { cfg.enableQuadManip.Value = val; });
+				(ctrl) => cfg.enableCalcTypes.Value,
+				(ctrl, val) => { cfg.enableCalcTypes.Value = val; });
 
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
@@ -220,7 +219,7 @@ namespace Character_Morpher
 						(ctrl, val) =>
 						{
 							if(!ctrl) return;
-							if(!ctrl.initLoadFinished) return;
+							if(!ctrl.initLoadFinished||ctrl.reloading) return;
 							if(ctrl.controls.all[settingName].Item1 == (float)Math.Round(val, 2)) return;
 
 							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {(float)Math.Round(val, 2)}");
@@ -240,7 +239,7 @@ namespace Character_Morpher
 						(ctrl, val) =>
 						{
 							if(!ctrl) return;
-							if(!ctrl.initLoadFinished) return;
+							if(!ctrl.initLoadFinished || ctrl.reloading) return;
 							if((int)ctrl.controls.all[settingName].Item2 == val) return;
 
 							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {val}");
@@ -408,7 +407,7 @@ namespace Character_Morpher
 					modes?[a]?.ControlObject?.SetActive(val);
 				}
 
-				inst.StartCoroutine(CoModeDisable(cfg.enableQuadManip.Value));
+				inst.StartCoroutine(CoModeDisable(cfg.enableCalcTypes.Value));
 			}
 
 			IEnumerator CoModeDisable(bool val, uint start = 0, uint end = int.MaxValue)
@@ -454,10 +453,10 @@ namespace Character_Morpher
 				});
 
 			enableQuadManip.BindToFunctionController<CharaMorpherController, bool>(
-				(ctrl) => cfg.enableQuadManip.Value,
+				(ctrl) => cfg.enableCalcTypes.Value,
 				(ctrl, val) =>
 				{
-					cfg.enableQuadManip.Value = val;
+					cfg.enableCalcTypes.Value = val;
 					ShowEnabledSliders();
 
 					if(!ctrl.initLoadFinished) return;

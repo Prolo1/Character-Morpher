@@ -54,16 +54,16 @@ namespace Character_Morpher
 				}
 			}
 			*/
+
 			/*
 			//static Coroutine coFaceFix=null;
 			[HarmonyPostfix]
-			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState))
-				]
+			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState))]
 			static void faceFix(ChaControl __instance)
 			{
 				var ctrl = __instance?.GetComponent<CharaMorpherController>();
 				if(MakerAPI.InsideMaker || ((!ctrl?.initLoadFinished) ?? true)) return;
-				if((ctrl?.reloading ?? true) || (__instance.updateShapeFace || __instance.updateShapeBody)) return;
+				if((ctrl?.reloading ?? true)) return;
 
 
 				//	if(coFaceFix != null) Instance.StopCoroutine(coFaceFix);

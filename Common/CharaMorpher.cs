@@ -93,7 +93,7 @@ namespace Character_Morpher
 			public ConfigEntry<bool> enableInMaleMaker { get; set; }
 			public ConfigEntry<bool> enableInGame { set; get; }
 			public ConfigEntry<bool> linkOverallABMXSliders { set; get; }
-			public ConfigEntry<bool> enableQuadManip { set; get; }
+			public ConfigEntry<bool> enableCalcTypes { set; get; }
 			public ConfigEntry<bool> saveWithMorph { set; get; }
 			public ConfigEntry<string> charDir { set; get; }
 			public ConfigEntry<string> imageName { set; get; }
@@ -154,11 +154,11 @@ namespace Character_Morpher
 			cfg = new MyConfig
 			{
 				enable = Config.Bind("_Main_", "Enable", false, new ConfigDescription("Allows the plugin to run (may need to reload character/scene if results are not changing)", null, new ConfigurationManagerAttributes { Order = --index })),
+				enableABMX = Config.Bind("_Main_", "Enable ABMX", true, new ConfigDescription("Allows ABMX to be affected", null, new ConfigurationManagerAttributes { Order = --index })),
 				enableInMaleMaker = Config.Bind("_Main_", "Enable in Male Maker", false, new ConfigDescription("Allows the plugin to run while in male maker (enable before launching maker)", null, new ConfigurationManagerAttributes { Order = --index })),
 				enableInGame = Config.Bind("_Main_", "Enable in Game", true, new ConfigDescription("Allows the plugin to run while in main game", null, new ConfigurationManagerAttributes { Order = --index })),
-				enableABMX = Config.Bind("_Main_", "Enable ABMX", true, new ConfigDescription("Allows ABMX to be affected", null, new ConfigurationManagerAttributes { Order = --index })),
 				linkOverallABMXSliders = Config.Bind("_Main_", "Link Overall ABMX Sliders", true, new ConfigDescription("Allows ABMX overall sliders to be affected by its counterpart (i.e. Body:50% * ABMXBody:100% = ABMXBody:50%)", null, new ConfigurationManagerAttributes { Order = --index })),
-				enableQuadManip = Config.Bind("_Main_", "Enable Calculation Types", false, new ConfigDescription("The value gets squared (i.e. 1.2 = 1.2^2 = 1.44)", null, new ConfigurationManagerAttributes { Order = --index })),
+				enableCalcTypes = Config.Bind("_Main_", "Enable Calculation Types", false, new ConfigDescription("The value gets squared (i.e. 1.2 = 1.2^2 = 1.44)", null, new ConfigurationManagerAttributes { Order = --index })),
 				saveWithMorph = Config.Bind("_Main_", "Save As Seen", true, new ConfigDescription("Allows the card to save as seen in maker (must be set before saving. If false card is set to default card values)", null, new ConfigurationManagerAttributes { Order = --index })),
 				charDir = Config.Bind("_Main_", "Directory Path", femalepath, new ConfigDescription("Directory where character is stored", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
 				imageName = Config.Bind("_Main_", "Card Name", "sample.png", new ConfigDescription("The character card used to morph", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
@@ -266,8 +266,8 @@ namespace Character_Morpher
 
 				cfg.debug = Config.Bind("_Testing_", "Debug Logging", false, new ConfigDescription("Allows debug logs to be written to the log file", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true })).ConfigDefaulter();
 
-				cfg.unknownTest = Config.Bind("_Testing_", "Unknown value", 22.00f, new ConfigDescription("Used for whatever the hell I WANT. RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
-				cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 1.00f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.unknownTest = Config.Bind("_Testing_", "Unknown value", 0.00f, new ConfigDescription("Used for whatever the hell I WANT. RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.65f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 #if KOI_API
 				cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				cfg.reloadTest = Config.Bind("_Testing_", "Reload delay value", 11u, new ConfigDescription("Used to change the amount of frames to delay before loading. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
