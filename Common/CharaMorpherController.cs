@@ -806,7 +806,7 @@ namespace Character_Morpher
 			return m_data1.abmx.isSplit && m_data2.abmx.isSplit;
 		}
 
-		//Coroutine coReload = null;
+
 		/// <summary>
 		/// Called whenever base character data needs to be updated for calculations
 		/// </summary>
@@ -815,9 +815,7 @@ namespace Character_Morpher
 		public void OnCharaReload(GameMode currentGameMode)
 		{
 			if(reloading || dummy) return;
-			//if(coReload != null)
-			//	StopCoroutine(coReload);
-			//clear original data
+
 			reloading = true;
 			var boneCtrl = GetComponent<BoneController>();
 			int vali = 22;
@@ -847,27 +845,10 @@ namespace Character_Morpher
 				if((MakerAPI.InsideMaker && initLoadFinished) || !MakerAPI.InsideMaker)//for the initial character in maker
 					MorphTargetUpdate();
 
-#if !HONEY_API
-				//	if(initLoadFinished)
-#endif
-				//	{
-				//		//if(MakerAPI.InsideMaker)
-				//
-				//		//for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 
 				if((MakerAPI.InsideMaker && initLoadFinished) || !MakerAPI.InsideMaker)//for the initial character in maker
-					MorphChangeUpdate(/*forceReset: !initLoadFinished,*/ initReset: true, updateValues: true);
-				//		//else
-				//		//
-				//		//	for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-				//		//		MorphChangeUpdate(/*forceReset: !initLoadFinished, */ updateValues: true);
-				//
-				//
-				//	}
-				//
-				//if(MakerAPI.InsideMaker)
-				//	for(int a = -1; a < cfg.multiUpdateTest.Value;)
-				//StartCoroutine(CoMorphAfterABMX(delay: vali/* + ++a*/, forceChange: false));
+					MorphChangeUpdate(initReset: true, updateValues: true);
+
 
 
 				if(MakerAPI.InsideMaker && !initLoadFinished)//for the initial character in maker
@@ -883,13 +864,10 @@ namespace Character_Morpher
 				for(int a = 0; a < delayFrames; ++a)
 					yield return null;
 
-				//if(MakerAPI.InsideMaker && !initLoadFinished)//for the initial character in maker
+
 				MorphTargetUpdate();
 
-				//	ResetFace();
-				//ResetHeight();
-				//if(!initLoadFinished)
-				//ChaFileControl.CopyAll(m_data1.main);
+
 				initLoadFinished = true;
 				reloading = false;
 
@@ -952,32 +930,9 @@ namespace Character_Morpher
 		protected override void OnReload(GameMode currentGameMode, bool keepState)
 		{
 			if(keepState) return;
-			//if(!MakerAPI.InsideMaker)
-			//	StopAllCoroutines();//stops all CharaMorphController coroutines 
-			/*
-						IEnumerator TestThis()
-						{
 
-							for(uint a = 0; a < ((int)cfg.unknownTest.Value); ++a)
-								yield return null;//wait a frame
-
-
-
-							CharaMorpher_Core.Logger.LogDebug("new Chara loaded");
-							reloading = false;
-							OnCharaReload(currentGameMode);
-							yield break;
-						}
-			*/
-			//if(MakerAPI.InsideMaker)
-			//{
-			//	StartCoroutine(TestThis());
-			//}
-			//else
-			//{
 			reloading = false;
 			OnCharaReload(currentGameMode);
-			//}
 
 		}
 
@@ -994,12 +949,7 @@ namespace Character_Morpher
 		}
 
 		/// <inheritdoc/> 
-		protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
-		{
-
-			//	for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-			//		StartCoroutine(CoMorphUpdate(delay: 10));
-		}
+		protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate) { }
 
 		/// <summary>
 		/// Taken from ABMX to get the data from card more easily 
@@ -1156,8 +1106,7 @@ namespace Character_Morpher
 #if KOI_API
 				charaCtrl.fileBody.skinMainColor = Color.LerpUnclamped(m_data1.main.custom.body.skinMainColor, m_data2.main.custom.body.skinMainColor,
 									enable * GetControlValue("skin").Item1 * GetControlValue("base skin").Item1);
-				//	charaCtrl.fileBody.skinSubColor = Color.LerpUnclamped(m_data1.main.custom.body.skinSubColor, m_data2.main.custom.body.skinSubColor,
-				//						enable * GetControlValue("skin") * GetControlValue("base skin"));
+
 #elif HONEY_API
 				charaCtrl.fileBody.skinColor = Color.LerpUnclamped(m_data1.main.custom.body.skinColor, m_data2.main.custom.body.skinColor,
 									enable * GetControlValue("skin").Item1 * GetControlValue("base skin").Item1);
@@ -1389,7 +1338,7 @@ namespace Character_Morpher
 		/// <summary>
 		/// Don't ask me why this works it just does
 		/// </summary>
-		private void ResetHeight()
+		internal void ResetHeight()
 		{
 			//reset the height using shoes
 
@@ -1431,36 +1380,7 @@ namespace Character_Morpher
 #endif
 
 		}
-		/// <summary>
-		/// Don't ask me why this works it just does
-		/// </summary>
-		private void ResetFace()
-		{
-			//reset the height using shoes
 
-
-			var tmp = ChaControl.fileFace.headId = ChaControl.fileFace.headId + 1;
-
-
-
-
-			IEnumerator faceReset(int orig)
-			{
-				for(int a = 0; a < 5; ++a)
-					yield return null;
-
-				ChaControl.fileFace.headId = orig;
-
-
-				yield break;
-			}
-
-
-
-			StartCoroutine(faceReset(tmp));
-
-
-		}
 
 		public void AbmxSettings(bool reset, bool initReset, BoneController boneCtrl)
 		{
@@ -1487,9 +1407,6 @@ namespace Character_Morpher
 					var bone1 = m_data1.abmx.body[a];
 					var bone2 = m_data2.abmx.body[a];
 					var current = boneCtrl.Modifiers.Find((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
-
-					//  CharaMorpher.Logger.LogDebug($"found values");
-					//    CharaMorpher_Core.Logger.LogDebug($"current = {current.BoneName}");
 
 					var modVal = Tuple.Create(0f, MorphCalcType.LINEAR);
 
@@ -1529,12 +1446,11 @@ namespace Character_Morpher
 						if(end2 >= 0)
 							ending2 = content.Substring(end - (end - (end2)));
 
-						// CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
+
 
 						if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
 							content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
 
-						// CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
 #if KOI_API
 						switch(boneDatabaseCatagories.Find((k) => k.Key.Trim().ToLower().Contains(content)).Value)
 #else
@@ -1605,12 +1521,12 @@ namespace Character_Morpher
 					if(end2 >= 0)
 						ending2 = content.Substring(end - (end - (end2)));
 
-					// CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
+
 
 					if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
 						content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
 
-					//  CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
+
 
 
 #if KOI_API
@@ -1651,7 +1567,6 @@ namespace Character_Morpher
 				}
 				#endregion
 
-				//  CharaMorpher_Core.Logger.LogDebug("");
 			}
 		}
 
@@ -1665,9 +1580,7 @@ namespace Character_Morpher
 
 			if(mkBase && !reloading)
 			{
-				//boobcustum?.sldBustWeight?.Set(ChaControl.fileBody.bustWeight);
-				//boobcustum?.sldBustSoftness?.Set(ChaControl.fileBody.bustSoftness);
-				//boobcustum?.sldAreolaSize?.Set(ChaControl.fileBody.areolaSize);
+
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Resetting CVS Sliders");
 				bodycustum?.CalculateUI();
@@ -1775,14 +1688,12 @@ namespace Character_Morpher
 						//   CharaMorpher_Core.Logger.LogDebug($"updated values");
 						if(count == 0)
 						{
-							//if(cfg.debug.Value)
-							//{
+
 							CharaMorpher_Core.Logger.LogDebug($"lerp Value {index}: {enable * modVal.Item1}");
 							CharaMorpher_Core.Logger.LogDebug($"{current.BoneName} modifiers!!");
 							CharaMorpher_Core.Logger.LogDebug($"Body Bone 1 scale {index}: {bone1.CoordinateModifiers[count].ScaleModifier}");
 							CharaMorpher_Core.Logger.LogDebug($"Body Bone 2 scale {index}: {bone2.CoordinateModifiers[count].ScaleModifier}");
 							CharaMorpher_Core.Logger.LogDebug($"Result scale {index}: {mod.ScaleModifier}");
-							//}
 						}
 					}
 
@@ -1790,7 +1701,7 @@ namespace Character_Morpher
 				}
 
 				var boneCtrl = GetComponent<BoneController>();
-				//   CharaMorpher_Core.Logger.LogDebug($"applying values");
+
 #if HS2
 				current.Apply(boneCtrl.CurrentCoordinate.Value, null, !MakerAPI.InsideMaker);
 #else
@@ -1900,10 +1811,10 @@ namespace Character_Morpher
 			public List<BoneModifier> body = new List<BoneModifier>();
 			public List<BoneModifier> face = new List<BoneModifier>();
 
-			//public List<BoneModifier> newModifiers = new List<BoneModifier>();
+
 			public bool isLoaded { get; private set; } = false;
 			public bool isSplit { get; private set; } = false;
-			//public List<BoneModifier> other = new List<BoneModifier>();
+
 
 			public void Populate(CharaMorpherController morphControl, bool morph = false)
 			{
@@ -1983,7 +1894,7 @@ namespace Character_Morpher
 					body?.Clear();
 				if(faceBonemodTgl)
 					face?.Clear();
-				//other?.Clear();
+
 
 
 				isLoaded = false;
@@ -1996,7 +1907,7 @@ namespace Character_Morpher
 				{
 					body = new List<BoneModifier>(body ?? new List<BoneModifier>()),
 					face = new List<BoneModifier>(face ?? new List<BoneModifier>()),
-					//other = new List<BoneModifier>(other ?? new List<BoneModifier>()),
+
 					isSplit = isSplit,
 					isLoaded = isLoaded,
 				};
@@ -2081,7 +1992,7 @@ namespace Character_Morpher
 				{
 					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 						yield return null;
-					// CharaMorpher_Core.Logger.LogDebug("post called in controls");
+
 
 					bool Check()
 					{
@@ -2092,7 +2003,7 @@ namespace Character_Morpher
 							if(_all[_all.Keys.ElementAt(a)].Item1 != _lastAll[_lastAll.Keys.ElementAt(a)].Item1)
 								return true;
 
-						//CharaMorpher_Core.Logger.LogDebug("All values the same ");
+
 						return false;
 					}
 

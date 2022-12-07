@@ -44,7 +44,7 @@ using AIChara;
  * Can choose to enable/disable use in male maker
 
   Planned:                                           
- * Save morph changes to card (w/o changing card perameters)
+ * Save morph changes to card (w/o changing card parameters)
 ************************************************/
 
 
@@ -505,7 +505,6 @@ namespace Character_Morpher
 					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
 
-				//	ctrl?.ResetHeight();
 
 					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
 				}
@@ -519,7 +518,6 @@ namespace Character_Morpher
 					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
 
-					//ctrl?.ResetHeight();
 
 					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
 

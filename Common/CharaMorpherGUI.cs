@@ -4,9 +4,8 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-//using System.Threading.Tasks;
+
 
 
 using KKAPI;
@@ -29,11 +28,10 @@ using ChaCustom;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
-using ADV.Commands.Base;
-using static KKAPI.Utilities.OpenFileDialog;
+
 using static Character_Morpher.CharaMorpher_Core;
 using KKABMX.Core;
-using TMPro;
+
 
 namespace Character_Morpher
 {
@@ -250,12 +248,8 @@ namespace Character_Morpher
 						});
 
 
-				////Make sure toggles stay on
-				//inst.StartCoroutine(CoOnGUIExists(currMode, () =>
-				//{
-				//	foreach(var tgl in currMode.Buttons)
-				//		tgl.OnPointerClickAsObservable().Subscribe((t) => { if(!tgl.isOn) tgl.isOn = true; });
-				//}));
+				
+
 
 				//make sure values can be changed internally
 				OnSliderValueChange.AddListener(() =>
@@ -478,6 +472,7 @@ namespace Character_Morpher
 				   int count = 0;
 				   foreach(var def in cfg.defaults)
 					   def.Value = sliders[count++].Value * 100f;
+				   
 
 				   count = 0;
 				   foreach(var def in cfg.defaultModes)
@@ -568,24 +563,6 @@ namespace Character_Morpher
 
 		private static void ButtonDefaults(RegisterCustomControlsEvent e, BepInEx.BaseUnityPlugin owner)
 		{
-
-			////Force Reset Button
-			//var button = e.AddControl(new MakerButton($"Force Character Reset (WIP)", category, owner));
-			//button.OnClick.AddListener(() =>
-			//{
-			//	foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
-			//			{
-			//				//	ctrl.StopAllCoroutines();
-			//				ctrl.ForceCardReload();
-			//				break;
-			//
-			//			}
-			//	Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
-			//});
-			//
-			//
-			//e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
-			//e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 
 
 			var tgl = e.AddControl(new MakerToggle(category, "Control overall sliders with Morph Buttons", cfg.easyMorphBtnOverallSet.Value, owner));

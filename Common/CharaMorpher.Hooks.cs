@@ -37,39 +37,8 @@ namespace Character_Morpher
 			}
 
 #if KOI_API
-			/*
-			[HarmonyPostfix]
-			[HarmonyPatch(typeof(Manager.Character), nameof(Manager.Character.CreateChara)),]
-			static void FastReload(ChaControl __instance)
-			{
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
-				{
-					if(ctrl.ChaFileControl != __instance.chaFile ||
-						CharaMorpherController.morphTarget?.extraCharacter?.chaFile == ctrl.ChaFileControl) continue;
+		
 
-					CharaMorpher_Core.Logger.LogDebug("Please load first... I kinda need this");
-					ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode());
-
-					break;
-				}
-			}
-			*/
-
-			/*
-			//static Coroutine coFaceFix=null;
-			[HarmonyPostfix]
-			[HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetClothesState))]
-			static void faceFix(ChaControl __instance)
-			{
-				var ctrl = __instance?.GetComponent<CharaMorpherController>();
-				if(MakerAPI.InsideMaker || ((!ctrl?.initLoadFinished) ?? true)) return;
-				if((ctrl?.reloading ?? true)) return;
-
-
-				//	if(coFaceFix != null) Instance.StopCoroutine(coFaceFix);
-				ctrl?.MorphChangeUpdate();
-			}
-			*/
 
 
 			[HarmonyPostfix]
@@ -99,8 +68,7 @@ namespace Character_Morpher
 
 				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-					//if(m_lastpngload != null)
-					//	Instance.StopCoroutine(m_lastpngload);
+
 #if !KK
 					if(ctrl.ChaControl.chaFile == __instance)
 #endif
@@ -155,7 +123,7 @@ namespace Character_Morpher
 			[HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
 			static void OnPreButtonClick(Button __instance)
 			{
-				//  CharaMorpher.CharaMorpher_Core.Logger.LogDebug($"Button Name: {ctrler.name.ToLower()}");
+				
 
 				if(!__instance.interactable) return;
 
@@ -163,7 +131,7 @@ namespace Character_Morpher
 
 				OnSaveLoadClick(__instance);
 				OnExitSaveClick(__instance);
-				//	OnCharaLoadClick(__instance);
+			
 				OnCoordLoadClick(__instance);
 			}
 
@@ -234,7 +202,7 @@ namespace Character_Morpher
 				if(ctrler.transform.parent?.parent?.GetComponentInParent<CharaCustom.CustomCharaWindow>())
 					if(ctrler.name.ToLower().Contains("overwrite") || ctrler.name.ToLower().Contains("save"))
 #elif KOI_API
-				//	if(ctrler.transform.parent.parent.GetComponentInParent<ChaCustom.cvs>())
+			
 				if(ctrler.name.ToLower().Contains("reload")) return;
 				if(ctrler.name.ToLower().Contains("override") || ctrler.name.ToLower().Contains("save")
 					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
