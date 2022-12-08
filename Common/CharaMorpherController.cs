@@ -7,7 +7,7 @@ using System.Linq;
 //using System.Text;
 using System.Text.RegularExpressions;
 
-using IllusionUtility.GetUtility;
+
 using KKAPI;
 using KKAPI.MainGame;
 using KKAPI.Utilities;
@@ -630,20 +630,33 @@ namespace Character_Morpher
 		#endregion
 #endif
 ;
+		Coroutine coResetHeight = null;
 		public IEnumerator CoABMXFullRefresh(int delay = 5)
 		{
+			if(coResetHeight != null) StopCoroutine(coResetHeight);
 			for(int a = 0; a < delay; ++a)
 				yield return null;
 
 			var boneCtrl = GetComponent<BoneController>();
 
-			yield return new WaitWhile(() => boneCtrl.NeedsFullRefresh || boneCtrl.NeedsBaselineUpdate);
 
 			if(reloading) yield break;
 
-			boneCtrl.NeedsFullRefresh = true;
 
-			ResetHeight();
+
+			IEnumerator CoResetHeight(int delayrs)
+			{
+				for(int a = 0; a < delayrs; ++a) yield return null;
+				ResetHeight();
+
+				//if(boneCtrl != null)
+				//{
+				//	yield return new WaitWhile(() => boneCtrl.NeedsFullRefresh || boneCtrl.NeedsBaselineUpdate);
+				//	boneCtrl.NeedsFullRefresh = true;
+				//}
+				yield break;
+			}
+			coResetHeight = StartCoroutine(CoResetHeight(12));
 		}
 
 		private IEnumerator CoReloadChara()
@@ -1085,9 +1098,9 @@ namespace Character_Morpher
 
 			float enable = (reset ? 0 : 1);
 
-#if KOI_API
+
 			charaCtrl.LateUpdateForce();
-#endif
+
 
 			//update obscure values//
 			{
@@ -1330,9 +1343,9 @@ namespace Character_Morpher
 			}
 
 
-#if KOI_API
+
 			charaCtrl.LateUpdateForce();
-#endif
+
 		}
 
 		/// <summary>
@@ -1352,7 +1365,7 @@ namespace Character_Morpher
 			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, (byte)(tmpstate ? 1 : 0));
 #endif
 
-
+			ChaControl.LateUpdateForce();
 #if KOI_API
 			IEnumerator heightReset(bool shoestate1, bool shoestate2)
 #else
@@ -1369,6 +1382,7 @@ namespace Character_Morpher
 #else
 				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, (byte)(!shoestate ? 1 : 0));
 #endif
+				ChaControl.LateUpdateForce();
 				yield break;
 			}
 
