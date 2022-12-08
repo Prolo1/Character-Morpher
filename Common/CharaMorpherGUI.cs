@@ -146,7 +146,7 @@ namespace Character_Morpher
 
 			var enableabmx = e.AddControl(new MakerToggle(category, "Enable ABMX", cfg.enableABMX.Value, CharaMorpher_Core.Instance));
 
-			var linkoverallabmxsliders = e.AddControl(new MakerToggle(category, "Link Overall ABMX Sliders (Recommended)", cfg.linkOverallABMXSliders.Value, CharaMorpher_Core.Instance));
+			var linkoverallabmxsliders = e.AddControl(new MakerToggle(category, "Link Overall Base Sliders to ABMX Sliders", cfg.linkOverallABMXSliders.Value, CharaMorpher_Core.Instance));
 			linkoverallabmxsliders.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.linkOverallABMXSliders.Value,
 				(ctrl, val) =>
