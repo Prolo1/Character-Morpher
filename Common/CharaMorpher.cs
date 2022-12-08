@@ -469,7 +469,7 @@ namespace Character_Morpher
 						if(ctrl.initLoadFinished)
 						{
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-							StartCoroutine(ctrl?.CoABMXFullRefresh(6 + (int)cfg.multiUpdateTest.Value));
+							StartCoroutine(ctrl?.CoHeightReset(6 + (int)cfg.multiUpdateTest.Value));
 						}
 				}
 
@@ -487,7 +487,7 @@ namespace Character_Morpher
 						if(ctrl.initLoadFinished)
 						{
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-							StartCoroutine(ctrl?.CoABMXFullRefresh(6 + (int)cfg.multiUpdateTest.Value));
+							StartCoroutine(ctrl?.CoHeightReset(6 + (int)cfg.multiUpdateTest.Value));
 						}
 
 				}
@@ -506,7 +506,7 @@ namespace Character_Morpher
 						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
 
 
-					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+					StartCoroutine(ctrl?.CoHeightReset((int)cfg.multiUpdateTest.Value));
 				}
 			};
 
@@ -519,7 +519,7 @@ namespace Character_Morpher
 						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
 
 
-					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+					StartCoroutine(ctrl?.CoHeightReset((int)cfg.multiUpdateTest.Value));
 
 				}
 			};
@@ -531,7 +531,7 @@ namespace Character_Morpher
 					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
 
-					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+					StartCoroutine(ctrl?.CoHeightReset((int)cfg.multiUpdateTest.Value));
 				}
 			};
 

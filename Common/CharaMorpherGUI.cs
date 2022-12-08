@@ -313,7 +313,7 @@ namespace Character_Morpher
 						{
 							if(!slid.interactable) return;
 							inst.StartCoroutine(MakerAPI.GetCharacterControl().
-								GetComponent<CharaMorpherController>().CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+								GetComponent<CharaMorpherController>().CoHeightReset((int)cfg.multiUpdateTest.Value));
 						});
 
 					OnSliderTextboxEdit(mySlider,
@@ -321,7 +321,7 @@ namespace Character_Morpher
 						{
 							if(!slid.interactable) return;
 							inst.StartCoroutine(MakerAPI.GetCharacterControl().
-								GetComponent<CharaMorpherController>().CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+								GetComponent<CharaMorpherController>().CoHeightReset((int)cfg.multiUpdateTest.Value));
 						});
 
 					OnSliderResetClicked(mySlider,
@@ -329,7 +329,7 @@ namespace Character_Morpher
 						{
 							if(!slid.interactable) return;
 							inst.StartCoroutine(MakerAPI.GetCharacterControl().
-									GetComponent<CharaMorpherController>().CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+									GetComponent<CharaMorpherController>().CoHeightReset((int)cfg.multiUpdateTest.Value));
 						});
 
 				}));
@@ -544,7 +544,7 @@ namespace Character_Morpher
 					  for(int b = -1; b < cfg.multiUpdateTest.Value;)
 						  ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: ++b));//this may be necessary 
 
-					  ctrl.StartCoroutine(ctrl.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+					  ctrl.StartCoroutine(ctrl.CoHeightReset((int)cfg.multiUpdateTest.Value));
 					  break;
 				  }
 				  int count = 0;

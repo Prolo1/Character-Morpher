@@ -631,6 +631,24 @@ namespace Character_Morpher
 #endif
 ;
 		Coroutine coResetHeight = null;
+		public IEnumerator CoHeightReset(int delay = 5)
+		{
+			if(coResetHeight != null) StopCoroutine(coResetHeight);
+
+			IEnumerator CoResetHeight(int delayrs)
+			{
+				for(int a = 0; a < delayrs; ++a) yield return null;
+
+				if(reloading) yield break;
+
+				ResetHeight();
+
+				yield break;
+			}
+			coResetHeight = StartCoroutine(CoResetHeight(delay));
+			yield break;
+		}
+
 		public IEnumerator CoABMXFullRefresh(int delay = 5)
 		{
 			if(coResetHeight != null) StopCoroutine(coResetHeight);
@@ -639,24 +657,14 @@ namespace Character_Morpher
 
 			var boneCtrl = GetComponent<BoneController>();
 
+			yield return new WaitWhile(() => (boneCtrl?.NeedsFullRefresh ?? false) || (boneCtrl?.NeedsBaselineUpdate ?? false));
 
 			if(reloading) yield break;
 
 
+			if(boneCtrl != null) boneCtrl.NeedsFullRefresh = true;
 
-			IEnumerator CoResetHeight(int delayrs)
-			{
-				for(int a = 0; a < delayrs; ++a) yield return null;
-				ResetHeight();
-
-				//if(boneCtrl != null)
-				//{
-				//	yield return new WaitWhile(() => boneCtrl.NeedsFullRefresh || boneCtrl.NeedsBaselineUpdate);
-				//	boneCtrl.NeedsFullRefresh = true;
-				//}
-				yield break;
-			}
-			coResetHeight = StartCoroutine(CoResetHeight(12));
+			yield break;
 		}
 
 		private IEnumerator CoReloadChara()
@@ -716,7 +724,7 @@ namespace Character_Morpher
 
 			yield return StartCoroutine(CoMorphUpdate(delay, forcereset, forceChange: forceChange));
 
-			yield return StartCoroutine(CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+			yield return StartCoroutine(CoHeightReset((int)cfg.multiUpdateTest.Value));
 
 			yield break;
 		}
@@ -1367,13 +1375,13 @@ namespace Character_Morpher
 
 			ChaControl.LateUpdateForce();
 #if KOI_API
-			IEnumerator heightReset(bool shoestate1, bool shoestate2)
+			void heightReset(bool shoestate1, bool shoestate2)
 #else
-			IEnumerator heightReset(bool shoestate)
+			void heightReset(bool shoestate)
 #endif
 			{
-				for(int a = 0; a < 1; ++a)
-					yield return null;
+				//for(int a = 0; a < 1; ++a)
+				//	yield return null;
 
 
 #if KOI_API
@@ -1383,14 +1391,14 @@ namespace Character_Morpher
 				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, (byte)(!shoestate ? 1 : 0));
 #endif
 				ChaControl.LateUpdateForce();
-				yield break;
+				//	yield break;
 			}
 
 
 #if KOI_API
-			StartCoroutine(heightReset(tmpstate1, tmpstate2));
+			heightReset(tmpstate1, tmpstate2);
 #else
-			StartCoroutine(heightReset(tmpstate));
+			heightReset(tmpstate);
 #endif
 
 		}
