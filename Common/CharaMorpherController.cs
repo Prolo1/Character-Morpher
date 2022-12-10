@@ -631,7 +631,7 @@ namespace Character_Morpher
 #endif
 ;
 		Coroutine coResetHeight = null;
-		public IEnumerator CoHeightReset(int delay = 5)
+		public IEnumerator CoHeightReset(int delayFrames = 5)
 		{
 			if(coResetHeight != null) StopCoroutine(coResetHeight);
 
@@ -639,20 +639,20 @@ namespace Character_Morpher
 			{
 				for(int a = 0; a < delayrs; ++a) yield return null;
 
-				if(reloading) yield break;
+				if(reloading) yield return new WaitWhile(() => reloading);
 
 				ResetHeight();
 
 				yield break;
 			}
-			coResetHeight = StartCoroutine(CoResetHeight(delay));
+			coResetHeight = StartCoroutine(CoResetHeight(delayFrames));
 			yield break;
 		}
 
-		public IEnumerator CoABMXFullRefresh(int delay = 5)
+		public IEnumerator CoABMXFullRefresh(int delayFrames = 5)
 		{
 			if(coResetHeight != null) StopCoroutine(coResetHeight);
-			for(int a = 0; a < delay; ++a)
+			for(int a = 0; a < delayFrames; ++a)
 				yield return null;
 
 			var boneCtrl = GetComponent<BoneController>();
@@ -667,7 +667,7 @@ namespace Character_Morpher
 			yield break;
 		}
 
-		private IEnumerator CoReloadChara()
+		public IEnumerator CoReloadChara()
 		{
 			for(int a = 0; a < 7; ++a)
 				yield return null;
@@ -731,7 +731,10 @@ namespace Character_Morpher
 
 		//bool forcedReload = false;
 		Coroutine coForceReload;
-		public void ForceCardReload()
+		/// <summary>
+		/// This is jank and may not work
+		/// </summary>
+		internal void ForceCardReload()
 		{
 
 			MorphChangeUpdate(forceReset: true);
@@ -763,7 +766,6 @@ namespace Character_Morpher
 			if(coForceReload != null)
 				StopCoroutine(coForceReload);
 			coForceReload = StartCoroutine(CoRestore(12));
-
 		}
 
 		public CharaMorpherController()
@@ -910,7 +912,7 @@ namespace Character_Morpher
 			if(dummy) return;
 
 			//create path to morph target
-			string path = Path.Combine(MyUtil.MakeDirPath(cfg.charDir.Value), MyUtil.MakeDirPath(cfg.imageName.Value));
+			string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
 
 
 			//Get referenced character data (only needs to be loaded once)
@@ -966,7 +968,8 @@ namespace Character_Morpher
 			//reset values to normal after saving
 			if(cfg.enable.Value && !cfg.saveWithMorph.Value)
 				for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-					StartCoroutine(CoMorphUpdate(delay: 10));//turn the card back after
+					StartCoroutine(CoMorphUpdate(delay: a + 1));//turn the card back after
+			StartCoroutine(CoHeightReset((int)cfg.multiUpdateTest.Value));
 		}
 
 		/// <inheritdoc/> 
@@ -1769,7 +1772,7 @@ namespace Character_Morpher
 					{
 
 						Transform parent = null;
-						parent = MyUtil.GetFuncCtrlOfType<CharaMorpherController>().First()?.transform.parent ?? null;
+						parent = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>().First()?.transform.parent ?? null;
 						_extraCharacter = new ChaControl();
 
 						_extraCharacter =

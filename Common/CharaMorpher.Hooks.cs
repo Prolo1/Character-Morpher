@@ -66,7 +66,7 @@ namespace Character_Morpher
 					yield break;
 				}
 
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
 
 #if !KK
@@ -152,7 +152,7 @@ namespace Character_Morpher
 				if(ctrler.GetComponentInParent<CustomCharaFile>())
 					if(ctrler.name.ToLower().Contains("load"))
 #endif
-						foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+						foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 						{
 							Logger.LogDebug("The Chara Load Button was called!!!");
 
@@ -179,7 +179,7 @@ namespace Character_Morpher
 				if(ctrler.GetComponentInParent<CustomCoordinateFile>())
 					if(ctrler.name.ToLower().Contains("load"))
 #endif
-						foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+						foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 						{
 							Logger.LogDebug("The Coord Load Button was called!!!");
 
@@ -211,7 +211,7 @@ namespace Character_Morpher
 					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
 						if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
 							if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
-								foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+								foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 								{
 									if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
 
@@ -238,7 +238,7 @@ namespace Character_Morpher
 						if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
 							if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
 
-								foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+								foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 								{
 									if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
 
