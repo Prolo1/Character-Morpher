@@ -149,8 +149,11 @@ namespace Character_Morpher
 				{
 					if(!ctrl || !ctrl.initLoadFinished) return;
 					cfg.linkOverallABMXSliders.Value = val;
-					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-						ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: a));//this may be necessary (it is)
+					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+						ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
+
+					ctrl.StartCoroutine(ctrl.CoResetFace(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
+					ctrl.StartCoroutine(ctrl.CoResetHeight(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
 				});
 
 			var saveWithMorph = e.AddControl(new MakerToggle(category, "Enable Save As Seen", cfg.saveWithMorph.Value, CharaMorpher_Core.Instance));
@@ -219,8 +222,12 @@ namespace Character_Morpher
 							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {(float)Math.Round(val, 2)}");
 							ctrl.controls.all[settingName] = Tuple.Create((float)Math.Round(val, 2), ctrl.controls.all[settingName].Item2);
 
-							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-								ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: a));//this may be necessary (it is)
+							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
+								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
+
+							////for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
+							//	ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value  + 1));//this may be necessary (it is)
+
 						});
 
 
@@ -239,8 +246,10 @@ namespace Character_Morpher
 							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {val}");
 							ctrl.controls.all[settingName] = Tuple.Create(ctrl.controls.all[settingName].Item1, (MorphCalcType)val);
 
-							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-								ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: a));//this may be necessary (it is)
+							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
+								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
+
+						//	ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
 						});
 
 
@@ -297,34 +306,49 @@ namespace Character_Morpher
 			{
 				CreatSlider(settingName, index, -cfg.sliderExtents.Value * .01f, 1 + cfg.sliderExtents.Value * .01f);
 
-				var mySlider = sliders.Last().CoOnGUIExists((gui) =>
+				var mySlider = sliders.Last().OnGUIExists((gui) =>
 				{
 					var slid = gui.ControlObject.
 						GetComponentInChildren<Slider>();
+
+					IEnumerator CoBoodyAfterRefresh()
+					{
+						if(!slid.interactable) yield break;
+						for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+							inst.StartCoroutine(MakerAPI.GetCharacterControl().
+							GetComponent<CharaMorpherController>().CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
+
+						inst.StartCoroutine(MakerAPI.GetCharacterControl().
+						GetComponent<CharaMorpherController>().CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
+
+						inst.StartCoroutine(MakerAPI.GetCharacterControl().
+							GetComponent<CharaMorpherController>().CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 1));
+
+
+						//	inst.StartCoroutine(MakerAPI.GetCharacterControl().
+						//		GetComponent<CharaMorpherController>()?.CoABMXFullRefresh(3 + (int)cfg.multiUpdateTest.Value));
+
+					}
 
 					gui.ControlObject.
 					GetComponentInChildren<Slider>().OnPointerUpAsObservable().Subscribe(
 						(p) =>
 						{
-							if(!slid.interactable) return;
-							inst.StartCoroutine(MakerAPI.GetCharacterControl().
-								GetComponent<CharaMorpherController>().CoHeightReset((int)cfg.multiUpdateTest.Value));
+							inst.StartCoroutine(CoBoodyAfterRefresh());
 						});
 
 					OnSliderTextboxEdit((MakerSlider)gui,
 						(p) =>
 						{
-							if(!slid.interactable) return;
-							inst.StartCoroutine(MakerAPI.GetCharacterControl().
-								GetComponent<CharaMorpherController>().CoHeightReset((int)cfg.multiUpdateTest.Value));
+							inst.StartCoroutine(CoBoodyAfterRefresh());
+
 						});
 
 					OnSliderResetClicked((MakerSlider)gui,
 						() =>
 						{
-							if(!slid.interactable) return;
-							inst.StartCoroutine(MakerAPI.GetCharacterControl().
-									GetComponent<CharaMorpherController>().CoHeightReset((int)cfg.multiUpdateTest.Value));
+							inst.StartCoroutine(CoBoodyAfterRefresh());
+
 						});
 
 				});
@@ -342,7 +366,7 @@ namespace Character_Morpher
 					charaCustom.PlayVoice();
 				}
 
-				mySlider.CoOnGUIExists((gui) =>
+				mySlider.OnGUIExists((gui) =>
 				{
 					gui.ControlObject.GetComponentInChildren<Slider>().
 						OnPointerUpAsObservable().Subscribe((p) =>
@@ -432,8 +456,11 @@ namespace Character_Morpher
 						cfg.enable.Value = val;
 						ShowEnabledSliders();
 					});
+
 			cfg.enable.SettingChanged +=
-				(s, o) => { if(cfg.enable.Value != enable.Value) enable.SetValue(cfg.enable.Value); };
+			(s, o) =>
+			{ enable?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enable.Value); };
+
 
 
 			enableabmx.BindToFunctionController<CharaMorpherController, bool>(
@@ -451,9 +478,9 @@ namespace Character_Morpher
 					cfg.enableCalcTypes.Value = val;
 					ShowEnabledSliders();
 
-					if(!ctrl.initLoadFinished) return;
-					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-						ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: a));//this may be necessary (it is)
+					//if(!ctrl.initLoadFinished) return;
+					//for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
+					//	ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
 
 				});
 
@@ -488,7 +515,7 @@ namespace Character_Morpher
 				//Setup LayoutElements 
 				par.GetComponent<ScrollRect>().verticalScrollbar.GetOrAddComponent<LayoutElement>().ignoreLayout = true;
 				par.GetComponent<ScrollRect>().content.GetOrAddComponent<LayoutElement>().ignoreLayout = true;
-				par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minHeight = par.GetComponent<RectTransform>().rect.height * .80f;
+				par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minHeight = par.GetComponent<RectTransform>().rect.height;
 				par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minWidth = par.GetComponent<RectTransform>().rect.width * .95f;
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("setting as last");
@@ -496,9 +523,16 @@ namespace Character_Morpher
 				gui.ControlObject.transform.SetAsLastSibling();
 				gui.ControlObject.GetOrAddComponent<LayoutElement>().minWidth =
 #if HONEY_API
-					par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minWidth * 1.05f;
+					par.GetComponent<RectTransform>().rect.width;
 #else
-					par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minWidth * .85f;
+					par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minWidth;
+#endif
+
+				par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minHeight =
+#if HONEY_API
+					par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minHeight * .80f;
+#else
+					par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minHeight * .90f;
 #endif
 				gui.ControlObject.GetOrAddComponent<LayoutElement>().flexibleWidth = 0;
 
@@ -517,11 +551,11 @@ namespace Character_Morpher
 
 
 			var sep = e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance))
-				.CoOnGUIExists((gui) => Instance.StartCoroutine(ChangeLayout(gui)));
+				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeLayout(gui)));
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Adding buttons");
 			var btn1 = (MakerButton)e.AddControl(new MakerButton("Save Default", category, CharaMorpher_Core.Instance))
-				.CoOnGUIExists((gui) => Instance.StartCoroutine(ChangeLayout(gui)));
+				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeLayout(gui)));
 
 			btn1.OnClick.AddListener(
 			  () =>
@@ -541,7 +575,7 @@ namespace Character_Morpher
 			  });
 
 			var btn2 = (MakerButton)e.AddControl(new MakerButton("Load Default", category, CharaMorpher_Core.Instance))
-				.CoOnGUIExists((gui) => Instance.StartCoroutine(ChangeLayout(gui)));
+				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeLayout(gui)));
 
 			btn2.OnClick.AddListener(
 			  () =>
@@ -554,10 +588,14 @@ namespace Character_Morpher
 						  ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create((float)cfg.defaults[a].Value * .01f, cal);
 					  }
 
-					  for(int b = -1; b < cfg.multiUpdateTest.Value;)
-						  ctrl.StartCoroutine(ctrl.CoMorphUpdate(delay: ++b));//this may be necessary 
+					  for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
+						  ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
 
-					  ctrl.StartCoroutine(ctrl.CoHeightReset((int)cfg.multiUpdateTest.Value));
+					  ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
+					  ctrl.StartCoroutine(ctrl.CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
+
+					  // ctrl.StartCoroutine(ctrl?.CoABMXFullRefresh(3 + (int)cfg.multiUpdateTest.Value));
+
 					  break;
 				  }
 				  int count = 0;
@@ -651,8 +689,11 @@ namespace Character_Morpher
 							ctrl.controls.all[tmp.ElementAt(a).Key] = Tuple.Create(percent * .01f, cal);
 						}
 
-						for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-							ctrl.StartCoroutine(ctrl.CoMorphUpdate(0));
+						for(int a = -1; a < cfg.multiUpdateEnableTest.Value;)
+							ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(++a));
+
+						ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
+						ctrl.StartCoroutine(ctrl.CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
 
 						CharaMorpher_Core.Logger.LogMessage($"Morphed to {percent}%");
 						break;

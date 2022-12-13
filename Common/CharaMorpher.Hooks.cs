@@ -156,7 +156,7 @@ namespace Character_Morpher
 						{
 							Logger.LogDebug("The Chara Load Button was called!!!");
 
-							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+							for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 								ctrl.MorphChangeUpdate(forceReset: true);
 
 						}
@@ -183,7 +183,7 @@ namespace Character_Morpher
 						{
 							Logger.LogDebug("The Coord Load Button was called!!!");
 
-							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+							for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 								ctrl.MorphChangeUpdate();
 						}
 			}
@@ -215,7 +215,7 @@ namespace Character_Morpher
 								{
 									if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
 
-									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+									for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 										ctrl.MorphChangeUpdate(forceReset: true);
 								}
 			}
@@ -242,7 +242,7 @@ namespace Character_Morpher
 								{
 									if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
 
-									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+									for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 										ctrl.MorphChangeUpdate();
 								}
 			}
