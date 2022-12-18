@@ -37,21 +37,8 @@ namespace Character_Morpher
 			}
 
 #if KOI_API
-			[HarmonyPostfix]
-			[HarmonyPatch(typeof(Manager.Character), nameof(Manager.Character.CreateChara)),]
-			static void FastReload(ChaControl __instance)
-			{
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
-				{
-					if(ctrl.ChaFileControl != __instance.chaFile ||
-						CharaMorpherController.morphTarget?.extraCharacter?.chaFile == ctrl.ChaFileControl) continue;
+		
 
-					CharaMorpher_Core.Logger.LogDebug("Please load first... I kinda need this");
-					ctrl.OnCharaReload(KoikatuAPI.GetCurrentGameMode());
-
-					break;
-				}
-			}
 
 
 			[HarmonyPostfix]
@@ -79,10 +66,9 @@ namespace Character_Morpher
 					yield break;
 				}
 
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-					//if(m_lastpngload != null)
-					//	Instance.StopCoroutine(m_lastpngload);
+
 #if !KK
 					if(ctrl.ChaControl.chaFile == __instance)
 #endif
@@ -91,6 +77,8 @@ namespace Character_Morpher
 
 			}
 #endif
+
+
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(Toggle), nameof(Toggle.OnPointerClick))]
 			static void OnPostToggleClick(Toggle __instance)
@@ -125,8 +113,8 @@ namespace Character_Morpher
 				if(txtPro ? txtPro.text.ToLower().Contains("body bonemod") : false ||
 					txt ? txt.text.ToLower().Contains("body bonemod") : false)
 				{
-					CharaMorpherController.bodyBonemodTgl = __instance.isOn;
 					if(cfg.debug.Value) Logger.LogDebug("Change to body bonemod toggle");
+					CharaMorpherController.bodyBonemodTgl = __instance.isOn;
 				}
 			}
 
@@ -135,7 +123,7 @@ namespace Character_Morpher
 			[HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
 			static void OnPreButtonClick(Button __instance)
 			{
-				//  CharaMorpher.CharaMorpher_Core.Logger.LogDebug($"Button Name: {ctrler.name.ToLower()}");
+				
 
 				if(!__instance.interactable) return;
 
@@ -143,7 +131,7 @@ namespace Character_Morpher
 
 				OnSaveLoadClick(__instance);
 				OnExitSaveClick(__instance);
-				//	OnCharaLoadClick(__instance);
+			
 				OnCoordLoadClick(__instance);
 			}
 
@@ -164,12 +152,13 @@ namespace Character_Morpher
 				if(ctrler.GetComponentInParent<CustomCharaFile>())
 					if(ctrler.name.ToLower().Contains("load"))
 #endif
-						foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+						foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 						{
 							Logger.LogDebug("The Chara Load Button was called!!!");
 
-							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+							for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 								ctrl.MorphChangeUpdate(forceReset: true);
+
 						}
 			}
 
@@ -190,11 +179,11 @@ namespace Character_Morpher
 				if(ctrler.GetComponentInParent<CustomCoordinateFile>())
 					if(ctrler.name.ToLower().Contains("load"))
 #endif
-						foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+						foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 						{
 							Logger.LogDebug("The Coord Load Button was called!!!");
 
-							for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+							for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 								ctrl.MorphChangeUpdate();
 						}
 			}
@@ -213,7 +202,7 @@ namespace Character_Morpher
 				if(ctrler.transform.parent?.parent?.GetComponentInParent<CharaCustom.CustomCharaWindow>())
 					if(ctrler.name.ToLower().Contains("overwrite") || ctrler.name.ToLower().Contains("save"))
 #elif KOI_API
-				//	if(ctrler.transform.parent.parent.GetComponentInParent<ChaCustom.cvs>())
+			
 				if(ctrler.name.ToLower().Contains("reload")) return;
 				if(ctrler.name.ToLower().Contains("override") || ctrler.name.ToLower().Contains("save")
 					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
@@ -222,11 +211,11 @@ namespace Character_Morpher
 					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
 						if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
 							if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
-								foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+								foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 								{
 									if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
 
-									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+									for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 										ctrl.MorphChangeUpdate(forceReset: true);
 								}
 			}
@@ -249,11 +238,11 @@ namespace Character_Morpher
 						if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
 							if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
 
-								foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+								foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 								{
 									if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
 
-									for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+									for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 										ctrl.MorphChangeUpdate();
 								}
 			}

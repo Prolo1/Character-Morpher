@@ -2,6 +2,17 @@
 [![Downloads](https://img.shields.io/github/downloads/Prolo1/Character-Morpher/total.svg?style=flat)](https://github.com/Prolo1/Character-Morpher/releases)
 
 # Character Morpher
+## Table Of Contents
+1. [Description](#description)
+2. [Linked Mods](#linked-mods)
+3. [Setup](#setup)
+4. [Features](#features)
+5. [Planned](#planned)
+6. [How To Use](#how-to-use)
+7. [Examples](#examples)
+8. [Known Issues](#known-issues)
+69. [Issues / Requests?](#issues)
+
 ## Description
 This mod allows for the user to set a morph target and change any character to look like the target (with a few sliders in character maker). As of now the changes in character maker are applied to every character (may change that later). It also only works on female cards, not actively planning on both genders (I might though)
 
@@ -40,7 +51,7 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 5. Use the sliders to morph different aspects of the character
 69. Enjoy!
 
-## Example
+## Examples
 ![example gif](https://github.com/Prolo1/Example-images/blob/main/example%20chara%20morph%20v2.gif?raw=true)
 ![HS2 image](https://github.com/Prolo1/Example-images/blob/main/Screenshot%202022-03-29%20191817.png?raw=true)
 
@@ -48,5 +59,5 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 * ~~changing morph values to far extremes may cause issues loading subsequent characters in maker. When this happens just close maker and open it back up (this isn't a problem in game since you cant use the sliders)~~ (Fixed this to the best of my knowlage)
 * ~~With KK[S], trying to change OG face and body sliders may change bust values to original state, that's because the original sliders don't update when values change internally so keep that in mind (using the character morpher sliders will turn it back)~~ (This should be fixed too)
 
-## Issues / Requests ?
-Want to request a new feature or report a bug you found? Add your request / issue to the [Git Issues](https://github.com/Prolo1/Character-Morpher/issues) page and I'll see what I can do  
+## Issues / Requests? <a name="issues"></a>
+Want to request a new feature or report a bug you found? If you find any mod issues, you can add it to the [Git Issues](https://github.com/Prolo1/Character-Morpher/issues) page and if you have any requests or cool ideas add it to the [Discussions](https://github.com/Prolo1/Character-Morpher/discussions) page and I'll see what I can do  
