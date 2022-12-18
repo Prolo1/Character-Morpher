@@ -115,14 +115,14 @@ namespace Character_Morpher
 			public List<ConfigEntry<int>> defaultModes { set; get; }
 
 			//Advanced (show up below main) 
-			public ConfigEntry<bool> easyMorphBtnOverallSet { internal set; get; }
-			public ConfigEntry<bool> easyMorphBtnEnableDefaulting { internal set; get; }
+			public ConfigEntry<bool> easyMorphBtnOverallSet { set; get; }
+			public ConfigEntry<bool> easyMorphBtnEnableDefaulting { set; get; }
 
 
 			//tests
 
 			public ConfigEntry<float> unknownTest { internal set; get; }
-		//	public ConfigEntry<float> initialMorphTest { internal set; get; }
+			//	public ConfigEntry<float> initialMorphTest { internal set; get; }
 			public ConfigEntry<float> initialMorphFaceTest { get; internal set; }
 			public ConfigEntry<float> initialMorphBodyTest { get; internal set; }
 			public ConfigEntry<float> initalBoobTest { internal set; get; }
@@ -131,7 +131,7 @@ namespace Character_Morpher
 			//public ConfigEntry<uint> multiUpdateTest { internal set; get; }
 			public ConfigEntry<uint> multiUpdateEnableTest { get; internal set; }
 			public ConfigEntry<uint> multiUpdateSliderTest { get; internal set; }
-			public ConfigEntry<uint> fullBoneResetTest { internal set; get; }
+			//public ConfigEntry<uint> fullBoneResetTest { internal set; get; }
 
 			//indexes 
 			public List<ConfigEntry<int>> headIndex { set; get; }
@@ -186,7 +186,7 @@ namespace Character_Morpher
 				charDir = Config.Bind("_Main_", "Directory Path", femalepath, new ConfigDescription("Directory where character is stored", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
 				imageName = Config.Bind("_Main_", "Card Name", "sample.png", new ConfigDescription("The character card used to morph", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
 				sliderExtents = Config.Bind("_Main_", "Slider Extents", 200u, new ConfigDescription("How far the slider values go above default (e.i. setting value to 10 gives values -10 -> 110)", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true })),
-				enableKey = Config.Bind("_Main_", "Toggle Enable Keybinding", new KeyboardShortcut(KeyCode.Space, KeyCode.RightControl), new ConfigDescription("Enable/Disable toggle button", null, new ConfigurationManagerAttributes { Order = --index })),
+				enableKey = Config.Bind("_Main_", "Toggle Enable Keybinding", new KeyboardShortcut(KeyCode.Return, KeyCode.RightShift), new ConfigDescription("Enable/Disable toggle button", null, new ConfigurationManagerAttributes { Order = --index })),
 				pathBtn = Config.Bind("_Main_", "Set Morph Target", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = --index, CustomDrawer = MorphUtil.MyButtonDrawer, ObjToStr = (o) => "", StrToObj = (s) => null })),
 				resetOnLaunch = Config.Bind("_Testing_", "Reset On Launch", true, new ConfigDescription("will reset advanced values to defaults after launch", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true })),
 
@@ -286,28 +286,29 @@ namespace Character_Morpher
 
 			//Advanced
 			{
-				cfg.easyMorphBtnOverallSet = Config.Bind("_Testing_", "Enable Easy Morph Button Overall Set", true, new ConfigDescription("Sets the overall sliders whenever an Easy Morph button is pressed, everything else otherwise", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true }));
-				cfg.easyMorphBtnEnableDefaulting = Config.Bind("_Testing_", "Enable Easy Morph Defaulting", true, new ConfigDescription("Defaults everything not set by Easy Morph button to 100%", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true }));
+				cfg.easyMorphBtnOverallSet = Config.Bind("_Testing_", "Enable Easy Morph Button Overall Set", true, new ConfigDescription("Sets the overall sliders whenever an Easy Morph button is pressed, everything else otherwise", null, new ConfigurationManagerAttributes { Order = --index, Browsable = false, IsAdvanced = true }));
+				cfg.easyMorphBtnEnableDefaulting = Config.Bind("_Testing_", "Enable Easy Morph Defaulting", true, new ConfigDescription("Defaults everything not set by Easy Morph button to 100%", null, new ConfigurationManagerAttributes { Order = --index, Browsable = false, IsAdvanced = true }));
 
 				cfg.debug = Config.Bind("_Testing_", "Debug Logging", false, new ConfigDescription("Allows debug logs to be written to the log file", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true })).ConfigDefaulter();
 
-				cfg.unknownTest = Config.Bind("_Testing_", "Unknown Test value", 0.00f, new ConfigDescription("Used for whatever the hell I WANT. RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
-			//	cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 1.00f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
-				cfg.initialMorphFaceTest = Config.Bind("_Testing_", "Init morph Face value", 1.00f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
-				cfg.initialMorphBodyTest = Config.Bind("_Testing_", "Init morph Body value", 0.2500f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
-				cfg.multiUpdateEnableTest = Config.Bind("_Testing_", "Multi Update Enable value", 4u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//cfg.unknownTest = Config.Bind("_Testing_", "Unknown Test value", 0.00f, new ConfigDescription("Used for whatever the hell I WANT (if you see this I forgot to take it out). RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//	cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 1.00f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.multiUpdateEnableTest = Config.Bind("_Testing_", "Multi Update Enable value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				cfg.multiUpdateSliderTest = Config.Bind("_Testing_", "Multi Update Slider value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 #if KOI_API
 				//cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.initialMorphFaceTest = Config.Bind("_Testing_", "Init morph Face value", 0.500f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.initialMorphBodyTest = Config.Bind("_Testing_", "Init morph Body value", 0.1500f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				cfg.reloadTest = Config.Bind("_Testing_", "Reload delay value", 22u, new ConfigDescription("Used to change the amount of frames to delay before loading. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 #elif HONEY_API
-				//	cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.00f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH (0.0 works best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.initialMorphFaceTest = Config.Bind("_Testing_", "Init morph Face value", 0.500f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.initialMorphBodyTest = Config.Bind("_Testing_", "Init morph Body value", 0.500f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				//cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
-				cfg.multiUpdateEnableTest = Config.Bind("_Testing_", "Multi Update Enable value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
-				cfg.multiUpdateSliderTest = Config.Bind("_Testing_", "Multi Update Slider value", 1u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//cfg.multiUpdateEnableTest = Config.Bind("_Testing_", "Multi Update Enable value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//cfg.multiUpdateSliderTest = Config.Bind("_Testing_", "Multi Update Slider value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				cfg.reloadTest = Config.Bind("_Testing_", "Reload delay value", 22u, new ConfigDescription("Used to change the amount of frames to delay before loading. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 #endif
-				cfg.fullBoneResetTest = Config.Bind("_Testing_", "Full Bone Reset Delay", 3u, new ConfigDescription("Used to determine how long to wait for full bone reset. RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//	cfg.fullBoneResetTest = Config.Bind("_Testing_", "Full Bone Reset Delay", 3u, new ConfigDescription("Used to determine how long to wait for full bone reset. RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 
 
 				cfg.headIndex = new List<ConfigEntry<int>>{
@@ -518,8 +519,8 @@ namespace Character_Morpher
 						if(ctrl.initLoadFinished)
 						{
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-							StartCoroutine(ctrl?.CoResetFace(6 + (int)cfg.multiUpdateEnableTest.Value));
-							StartCoroutine(ctrl?.CoResetHeight(6 + (int)cfg.multiUpdateEnableTest.Value));
+							//StartCoroutine(ctrl?.CoResetFace(6 + (int)cfg.multiUpdateEnableTest.Value));
+							//			StartCoroutine(ctrl?.CoResetHeight(6 + (int)cfg.multiUpdateEnableTest.Value));
 						}
 				}
 
@@ -537,8 +538,8 @@ namespace Character_Morpher
 						if(ctrl.initLoadFinished)
 						{
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-							StartCoroutine(ctrl?.CoResetFace(6 + (int)cfg.multiUpdateEnableTest.Value));
-							StartCoroutine(ctrl?.CoResetHeight(6 + (int)cfg.multiUpdateEnableTest.Value));
+							//StartCoroutine(ctrl?.CoResetFace(6 + (int)cfg.multiUpdateEnableTest.Value));
+							//		StartCoroutine(ctrl?.CoResetHeight(6 + (int)cfg.multiUpdateEnableTest.Value));
 						}
 
 				}
@@ -550,13 +551,13 @@ namespace Character_Morpher
 			{
 				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-					
-					for(int a = -1; a < cfg.multiUpdateEnableTest.Value + 3; ++a)
+
+					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
 
 
-					StartCoroutine(ctrl?.CoResetFace((int)cfg.multiUpdateEnableTest.Value + 1 + 3));
-					StartCoroutine(ctrl?.CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 1 + 3));
+					//StartCoroutine(ctrl?.CoResetFace((int)cfg.multiUpdateEnableTest.Value + 1));
+					//	StartCoroutine(ctrl?.CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 2 ));
 
 				}
 			};
@@ -566,12 +567,12 @@ namespace Character_Morpher
 
 				foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-					for(int a = -1; a < cfg.multiUpdateEnableTest.Value + 3; ++a)
+					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
 
 
-					StartCoroutine(ctrl?.CoResetFace((int)cfg.multiUpdateEnableTest.Value + 1 + 3));
-					StartCoroutine(ctrl?.CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 1 + 3));
+					//StartCoroutine(ctrl?.CoResetFace((int)cfg.multiUpdateEnableTest.Value + 1));
+					//		StartCoroutine(ctrl?.CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 2));
 				}
 			};
 
@@ -579,11 +580,11 @@ namespace Character_Morpher
 			{
 				foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-					for(int a = -1; a < cfg.multiUpdateEnableTest.Value + 3; ++a)
+					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
 
-					StartCoroutine(ctrl?.CoResetFace((int)cfg.multiUpdateEnableTest.Value + 1 + 3));
-					StartCoroutine(ctrl?.CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 1 + 3));
+					//StartCoroutine(ctrl?.CoResetFace((int)cfg.multiUpdateEnableTest.Value + 1));
+					//	StartCoroutine(ctrl?.CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 2));
 				}
 			};
 

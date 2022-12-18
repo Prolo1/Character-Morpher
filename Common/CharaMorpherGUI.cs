@@ -31,6 +31,7 @@ using UnityEngine.Events;
 
 using UnityEngine.UI;
 
+
 using static Character_Morpher.CharaMorpher_Core;
 using KKABMX.Core;
 using Illusion.Extensions;
@@ -75,7 +76,7 @@ namespace Character_Morpher
 #endif
 
 			};
-
+			MakerAPI.MakerExiting += (s, e) => { Cleanup(); };
 			cfg.sliderExtents.SettingChanged += (m, n) =>
 			{
 				IEnumerator CoEditExtents(uint start = 0, uint end = int.MaxValue)
@@ -125,11 +126,16 @@ namespace Character_Morpher
 		private readonly static List<MakerSlider> sliders = new List<MakerSlider>();
 		private readonly static List<MakerDropdown> modes = new List<MakerDropdown>();
 
-
-		private static void AddCharaMorpherMenu(RegisterCustomControlsEvent e)
+		private static void Cleanup()
 		{
 			sliders.Clear();
 			modes.Clear();
+		}
+
+		private static void AddCharaMorpherMenu(RegisterCustomControlsEvent e)
+		{
+			Cleanup();
+
 
 			var inst = Instance;
 
@@ -152,8 +158,8 @@ namespace Character_Morpher
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
 
-					ctrl.StartCoroutine(ctrl.CoResetFace(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
-					ctrl.StartCoroutine(ctrl.CoResetHeight(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
+					//	ctrl.StartCoroutine(ctrl.CoResetFace(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
+					//	ctrl.StartCoroutine(ctrl.CoResetHeight(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
 				});
 
 			var saveWithMorph = e.AddControl(new MakerToggle(category, "Enable Save As Seen", cfg.saveWithMorph.Value, CharaMorpher_Core.Instance));
@@ -167,9 +173,9 @@ namespace Character_Morpher
 				(ctrl, val) => { cfg.enableCalcTypes.Value = val; });
 
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
-			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 			#endregion
 
+			//e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 			ImageControls(e, inst);
 
 			ButtonDefaults(e, inst);
@@ -187,7 +193,9 @@ namespace Character_Morpher
 				{
 					e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 
-					string part = Regex.Replace(visualName, searchHits[0], "Base", RegexOptions.IgnoreCase);
+					string part = Regex.Replace(visualName, searchHits[0],
+						Regex.IsMatch(visualName, searchHits[1], RegexOptions.IgnoreCase) ? "" : "Base", RegexOptions.IgnoreCase);
+
 					part = Regex.Replace(part, "  ", " ", RegexOptions.IgnoreCase);
 					e.AddControl(new MakerText($"{part} Controls".Trim(), category, CharaMorpher_Core.Instance));
 				}
@@ -249,7 +257,7 @@ namespace Character_Morpher
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
 
-						//	ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
+							//	ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
 						});
 
 
@@ -318,11 +326,11 @@ namespace Character_Morpher
 							inst.StartCoroutine(MakerAPI.GetCharacterControl().
 							GetComponent<CharaMorpherController>().CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
 
-						inst.StartCoroutine(MakerAPI.GetCharacterControl().
-						GetComponent<CharaMorpherController>().CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
+						//inst.StartCoroutine(MakerAPI.GetCharacterControl().
+						//GetComponent<CharaMorpherController>().CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
 
-						inst.StartCoroutine(MakerAPI.GetCharacterControl().
-							GetComponent<CharaMorpherController>().CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 1));
+						//inst.StartCoroutine(MakerAPI.GetCharacterControl().
+						//	GetComponent<CharaMorpherController>().CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 1));
 
 
 						//	inst.StartCoroutine(MakerAPI.GetCharacterControl().
@@ -591,8 +599,8 @@ namespace Character_Morpher
 					  for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
 						  ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
 
-					  ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
-					  ctrl.StartCoroutine(ctrl.CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
+					  //	  ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
+					  //  ctrl.StartCoroutine(ctrl.CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
 
 					  // ctrl.StartCoroutine(ctrl?.CoABMXFullRefresh(3 + (int)cfg.multiUpdateTest.Value));
 
@@ -617,6 +625,7 @@ namespace Character_Morpher
 
 		private static void ImageControls(RegisterCustomControlsEvent e, BepInEx.BaseUnityPlugin owner)
 		{
+			e.AddControl(new MakerText("Morph Target", category, CharaMorpher_Core.Instance));
 
 
 			var img = e.AddControl(new MakerImage(null, category, owner)
@@ -646,12 +655,13 @@ namespace Character_Morpher
 			});
 
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
-			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 		}
 
 		private static void ButtonDefaults(RegisterCustomControlsEvent e, BepInEx.BaseUnityPlugin owner)
 		{
 
+			//e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
+			e.AddControl(new MakerText("Easy Morph Buttons", category, CharaMorpher_Core.Instance));
 
 			var tgl = e.AddControl(new MakerToggle(category, "Control overall sliders with Morph Buttons", cfg.easyMorphBtnOverallSet.Value, owner));
 			tgl.BindToFunctionController<CharaMorpherController, bool>(
@@ -692,8 +702,8 @@ namespace Character_Morpher
 						for(int a = -1; a < cfg.multiUpdateEnableTest.Value;)
 							ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(++a));
 
-						ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
-						ctrl.StartCoroutine(ctrl.CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
+						//	ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
+						//	ctrl.StartCoroutine(ctrl.CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
 
 						CharaMorpher_Core.Logger.LogMessage($"Morphed to {percent}%");
 						break;

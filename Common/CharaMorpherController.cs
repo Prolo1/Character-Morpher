@@ -629,8 +629,9 @@ namespace Character_Morpher
 		#endregion
 #endif
 ;
+		/*
 		Coroutine coResetHeight = null;
-		public IEnumerator CoResetHeight(int delayFrames = 5)
+		private IEnumerator CoResetHeight(int delayFrames = 5)
 		{
 
 			if(coResetHeight != null) StopCoroutine(coResetHeight);
@@ -648,6 +649,7 @@ namespace Character_Morpher
 			coResetHeight = StartCoroutine(CoResetHeight(delayFrames));
 			yield break;
 		}
+		*/
 
 		public IEnumerator CoABMXFullRefresh(int delayFrames = 5)
 		{
@@ -722,7 +724,7 @@ namespace Character_Morpher
 
 			yield return StartCoroutine(CoMorphChangeUpdate(delay, forcereset, forceChange: forceChange));
 
-			yield return StartCoroutine(CoResetHeight((int)cfg.multiUpdateSliderTest.Value));
+			//	yield return StartCoroutine(CoResetHeight((int)cfg.multiUpdateSliderTest.Value));
 
 			yield break;
 		}
@@ -866,9 +868,10 @@ namespace Character_Morpher
 					MorphTargetUpdate();
 
 					//for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-					MorphChangeUpdate(initReset: true, updateValues: true, abmx: true);
+					MorphChangeUpdate(initReset: true, updateValues: true, abmx: false);
 					//	MorphChangeUpdate(initReset: false, updateValues: true, abmx: false);
 				}
+
 
 
 
@@ -877,6 +880,11 @@ namespace Character_Morpher
 
 				//	ChaControl.LateUpdateForce();
 			}
+
+
+			ResetHeight();
+
+
 
 			//post update 
 			IEnumerator CoReloadComplete(int delayFrames, BoneController _boneCtrl)
@@ -894,9 +902,13 @@ namespace Character_Morpher
 				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					StartCoroutine(CoMorphChangeUpdate(a + 1));
 
+
+
+
+
 				//MorphChangeUpdate();
 				//StartCoroutine(CoResetFace((int)cfg.multiUpdateEnableTest.Value + 1));
-				StartCoroutine(CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 1));
+				//StartCoroutine(CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 1));
 				//StartCoroutine(CoABMXFullRefresh((int)cfg.multiUpdateEnableTest.Value + 2));
 
 
@@ -977,8 +989,8 @@ namespace Character_Morpher
 			if(cfg.enable.Value && !cfg.saveWithMorph.Value)
 				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					StartCoroutine(CoMorphChangeUpdate(delay: a + 1));//turn the card back after
-			StartCoroutine(CoResetFace((int)cfg.multiUpdateEnableTest.Value));
-			StartCoroutine(CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
+																	  //StartCoroutine(CoResetFace((int)cfg.multiUpdateEnableTest.Value));
+																	  //	StartCoroutine(CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
 		}
 
 		/// <inheritdoc/> 
@@ -1079,7 +1091,7 @@ namespace Character_Morpher
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("update values check?");
 			if(!updateValues) return;
 
-			
+
 			MorphValuesUpdate(forceReset || ResetCheck(), initReset: initReset, abmx: abmx);
 			//if(!reloading)
 			//	ResetFace();//may work ¯\_(ツ)_/¯
@@ -1097,23 +1109,6 @@ namespace Character_Morpher
 			if(fullVal)
 				tmp = controls.fullVal.ToList();
 
-			tmp.Sort((a, b) =>
-			{
-				//put anything with overall at the top
-				int val = 0;
-				if(Regex.IsMatch(a.Key, "Overall", RegexOptions.IgnoreCase))
-					val = -1;
-				if(Regex.IsMatch(b.Key, "Overall", RegexOptions.IgnoreCase))
-					val = 1;
-				return (val == 0 ? a.Key.CompareTo(b.Key) : (overall ? val : -val));
-			});
-
-			//if(overall)
-			//	CharaMorpher_Core.Logger.LogDebug("Overall sliiders:");
-			//else
-			//	CharaMorpher_Core.Logger.LogDebug("Normal sliiders:");
-			//foreach(var val in tmp)
-			//	CharaMorpher_Core.Logger.LogDebug($"[{val.Key}]");
 
 
 			return (abmx ?
@@ -1139,6 +1134,7 @@ namespace Character_Morpher
 				&& !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("All Checks passed?");
+
 
 
 			reset = initReset || reset;
@@ -1174,17 +1170,62 @@ namespace Character_Morpher
 				//ChaControl.reSetupDynamicBoneBust = true;
 
 				//Skin Colour
+				bool newcol = false;
+				var col1 = Color.LerpUnclamped(
 #if KOI_API
-				charaCtrl.fileBody.skinMainColor = Color.LerpUnclamped(m_data1.main.custom.body.skinMainColor, m_data2.main.custom.body.skinMainColor,
-									enable * GetControlValue("skin").Value.Item1 * GetControlValue("base skin").Value.Item1);
-
+					m_data1.main.custom.body.skinMainColor, m_data2.main.custom.body.skinMainColor,
 #elif HONEY_API
-				charaCtrl.fileBody.skinColor = Color.LerpUnclamped(m_data1.main.custom.body.skinColor, m_data2.main.custom.body.skinColor,
+					m_data1.main.custom.body.skinColor, m_data2.main.custom.body.skinColor,
+#endif
 									enable * GetControlValue("skin").Value.Item1 * GetControlValue("base skin").Value.Item1);
 
+
+#if KOI_API
+				newcol |= charaCtrl.fileBody.skinMainColor != col1;
+				charaCtrl.fileBody.skinMainColor = col1;
+#elif HONEY_API
+				newcol |= charaCtrl.fileBody.skinColor != col1;
+				charaCtrl.fileBody.skinColor = col1;
 #endif
-				charaCtrl.fileBody.sunburnColor = Color.LerpUnclamped(m_data1.main.custom.body.sunburnColor, m_data2.main.custom.body.sunburnColor,
+
+				var col2 = Color.LerpUnclamped(m_data1.main.custom.body.sunburnColor, m_data2.main.custom.body.sunburnColor,
 									enable * GetControlValue("skin").Value.Item1 * GetControlValue("sunburn").Value.Item1);
+
+				newcol |= charaCtrl.fileBody.sunburnColor != col2;
+				charaCtrl.fileBody.sunburnColor = col2;
+
+				//colour update
+				if(initLoadFinished && newcol)
+				{
+					charaCtrl.AddUpdateCMBodyColorFlags
+#if HONEY_API
+						(true, true, true, true);
+#elif KOI_API
+					(true, true, true, true, true, true);
+#endif
+
+					charaCtrl.AddUpdateCMFaceColorFlags
+						(true, true, true, true, true, true, true);
+
+					if(!MakerAPI.InsideMaker)
+					{
+
+						charaCtrl.AddUpdateCMBodyTexFlags
+#if HONEY_API
+							(true, true, true, true);
+#elif KOI_API
+						(true, true, true, true, true);
+#endif
+						charaCtrl.AddUpdateCMFaceTexFlags
+							(true, true, true, true, true, true, true);
+					}
+
+
+					//reset the textures in game
+					charaCtrl.CreateBodyTexture();
+					charaCtrl.CreateFaceTexture();
+				}
+
 
 				//Voice
 #if HS2
@@ -1370,41 +1411,12 @@ namespace Character_Morpher
 			if(MakerAPI.InsideMaker)
 				SetDefaultSliders();
 
-			//colour update
-			if(initLoadFinished)
-			{
-				charaCtrl.AddUpdateCMBodyColorFlags
-#if HONEY_API
-					(true, true, true, true);
-#elif KOI_API
-					(true, true, true, true, true, true);
-#endif
 
-				charaCtrl.AddUpdateCMFaceColorFlags
-					(true, true, true, true, true, true, true);
-
-				if(!MakerAPI.InsideMaker)
-				{
-
-					charaCtrl.AddUpdateCMBodyTexFlags
-#if HONEY_API
-						(true, true, true, true);
-#elif KOI_API
-						(true, true, true, true, true);
-#endif
-					charaCtrl.AddUpdateCMFaceTexFlags
-						(true, true, true, true, true, true, true);
-				}
+			//charaCtrl.LateUpdateForce();
 
 
-				//reset the textures in game
-				charaCtrl.CreateBodyTexture();
-				charaCtrl.CreateFaceTexture();
-			}
+			//ResetHeight();
 
-
-
-			//	charaCtrl.LateUpdateForce();
 
 		}
 
@@ -1416,20 +1428,20 @@ namespace Character_Morpher
 			//reset the height using shoes
 
 #if KOI_API
-			bool tmpstate1 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_inner] == 0;
-			bool tmpstate2 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_outer] == 0;
-			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, (byte)(tmpstate1 ? 1 : 0));
-			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, (byte)(tmpstate2 ? 1 : 0));
+			var tmpstate1 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_inner];
+			var tmpstate2 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_outer];
+			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, tmpstate1);
+			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, tmpstate2);
 #else
-			bool tmpstate = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes] == 0;
-			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, (byte)(tmpstate ? 1 : 0));
+			var tmpstate = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes];
+			//	ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, (byte)(tmpstate ? 1 : 0));
 #endif
 
-			ChaControl.LateUpdateForce();
+			//	ChaControl.LateUpdateForce();
 #if KOI_API
-			void heightReset(bool shoestate1, bool shoestate2)
+			void heightReset(byte shoestate1, byte shoestate2)
 #else
-			void heightReset(bool shoestate)
+			void heightReset(byte shoestate)
 #endif
 			{
 				//for(int a = 0; a < 1; ++a)
@@ -1437,22 +1449,43 @@ namespace Character_Morpher
 
 
 #if KOI_API
-				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, (byte)(!shoestate1 ? 1 : 0));
-				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, (byte)(!shoestate2 ? 1 : 0));
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, shoestate1);
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, shoestate2);
 #else
-				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, (byte)(!shoestate ? 1 : 0));
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, shoestate);
 #endif
-				ChaControl.LateUpdateForce();
+
+				//ChaControl.LateUpdateForce();
 				//	yield break;
 			}
 
 
 #if KOI_API
-			heightReset(tmpstate1, tmpstate2);
+			heightReset(1, 1);
 #else
-			heightReset(tmpstate);
+			heightReset(1);
 #endif
 
+#if KOI_API
+			IEnumerator CoAfterReset(byte state1, byte state2)
+#else
+			IEnumerator CoAfterReset(byte state)
+#endif
+			{
+				for(int a = -1; a < (int)cfg.reloadTest.Value; ++a)
+					yield return null;
+#if KOI_API
+				heightReset(state1, state2);
+#else
+				heightReset(state);
+#endif
+				yield break;
+			}
+#if KOI_API
+			StartCoroutine(CoAfterReset(tmpstate1, tmpstate2));
+#else
+			StartCoroutine(CoAfterReset(tmpstate));
+#endif
 		}
 
 		/// <summary>
@@ -1700,6 +1733,7 @@ namespace Character_Morpher
 
 			}
 			//	boneCtrl.NeedsFullRefresh = true;
+
 		}
 
 
@@ -1790,31 +1824,43 @@ namespace Character_Morpher
 					(modVal.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(modVal.Item1) : 1f);
 
 				int count = 0;//may use this in other mods
+				bool check = false;
 				foreach(var mod in current?.CoordinateModifiers)
 				{
 
 					var inRange1 = count < bone1.CoordinateModifiers.Length;
 					var inRange2 = count < bone2.CoordinateModifiers.Length;
 
-					mod.PositionModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].PositionModifier,
+
+					var pos = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].PositionModifier,
 																bone2.CoordinateModifiers[inRange2 ? count : 0].PositionModifier,
 																lerpVal);
 
+					check |= pos != mod.PositionModifier;
 
-					mod.RotationModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].RotationModifier,
+					var rot = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].RotationModifier,
 																bone2.CoordinateModifiers[inRange2 ? count : 0].RotationModifier,
 																lerpVal);
 
+					check |= rot != mod.RotationModifier;
 
-					mod.ScaleModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].ScaleModifier,
+					var scale = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].ScaleModifier,
 															bone2.CoordinateModifiers[inRange2 ? count : 0].ScaleModifier,
 															lerpVal);
 
+					check |= scale != mod.ScaleModifier;
 
-					mod.LengthModifier = Mathf.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].LengthModifier,
+					var len = Mathf.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].LengthModifier,
 															bone2.CoordinateModifiers[inRange2 ? count : 0].LengthModifier,
 															lerpVal);
 
+					check |= len != mod.LengthModifier;
+
+
+					mod.PositionModifier = pos;
+					mod.RotationModifier = rot;
+					mod.ScaleModifier = scale;
+					mod.LengthModifier = len;
 					if(cfg.debug.Value)
 					{
 						//   CharaMorpher_Core.Logger.LogDebug($"updated values");
@@ -1832,19 +1878,22 @@ namespace Character_Morpher
 					++count;
 				}
 
+
 				var boneCtrl = GetComponent<BoneController>();
-
+				if(check)
+				{
 #if HS2
-				current.Apply(boneCtrl.CurrentCoordinate.Value, null, !MakerAPI.InsideMaker);
+					current.Apply(boneCtrl.CurrentCoordinate.Value, null, !MakerAPI.InsideMaker);
 #else
-				current.Apply(boneCtrl.CurrentCoordinate.Value, null, false);
+					current.Apply(boneCtrl.CurrentCoordinate.Value, null, !MakerAPI.InsideMaker);
 #endif
-
+					//boneCtrl.NeedsBaselineUpdate = true;
+				}
 
 			}
 			catch(Exception e)
 			{
-				CharaMorpher_Core.Logger.LogDebug($"Error: {e.TargetSite} went boom... {e.Message}");
+				CharaMorpher_Core.Logger.LogError($"Error: {e.TargetSite} went boom... {e.Message}");
 			}
 
 		}
