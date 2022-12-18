@@ -499,7 +499,7 @@ namespace Character_Morpher
 
 			IEnumerator ChangeLayout(BaseGuiEntry gui)
 			{
-
+#if !KK
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("moving object");
 
 				yield return new WaitWhile(() => gui?.ControlObject?.GetComponentInParent<ScrollRect>()?.transform == null);
@@ -554,6 +554,7 @@ namespace Character_Morpher
 
 				//Reorder scrollbar
 				par.GetComponent<ScrollRect>().verticalScrollbar.transform.SetAsLastSibling();
+#endif
 				yield break;
 			}
 
