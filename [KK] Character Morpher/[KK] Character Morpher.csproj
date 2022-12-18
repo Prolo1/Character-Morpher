@@ -105,6 +105,10 @@
       <HintPath>..\packages\IllusionLibs.Koikatu.UnityEngine.UI.5.6.2.4\lib\net35\UnityEngine.UI.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Vectrosity, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionLibs.Koikatu.Vectrosity.2019.4.27.4\lib\net35\Vectrosity.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
@@ -142,6 +146,7 @@
     <Error Condition="!Exists('..\packages\IllusionLibs.Koikatu.UnityEngine.UI.5.6.2.4\build\IllusionLibs.Koikatu.UnityEngine.UI.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.Koikatu.UnityEngine.UI.5.6.2.4\build\IllusionLibs.Koikatu.UnityEngine.UI.targets'))" />
     <Error Condition="!Exists('..\packages\IllusionLibs.Koikatu.TextMeshPro.2019.4.27.4\build\IllusionLibs.Koikatu.TextMeshPro.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.Koikatu.TextMeshPro.2019.4.27.4\build\IllusionLibs.Koikatu.TextMeshPro.targets'))" />
     <Error Condition="!Exists('..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.Koikatu.Vectrosity.2019.4.27.4\build\IllusionLibs.Koikatu.Vectrosity.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.Koikatu.Vectrosity.2019.4.27.4\build\IllusionLibs.Koikatu.Vectrosity.targets'))" />
     <Error Condition="!Exists('..\packages\IllusionLibs.KoikatsuParty.Assembly-CSharp.2021.3.25\build\IllusionLibs.KoikatsuParty.Assembly-CSharp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.KoikatsuParty.Assembly-CSharp.2021.3.25\build\IllusionLibs.KoikatsuParty.Assembly-CSharp.targets'))" />
   </Target>
   <Import Project="..\packages\IllusionLibs.Koikatu.Assembly-CSharp.2019.4.27.4\build\IllusionLibs.Koikatu.Assembly-CSharp.targets" Condition="Exists('..\packages\IllusionLibs.Koikatu.Assembly-CSharp.2019.4.27.4\build\IllusionLibs.Koikatu.Assembly-CSharp.targets')" />
@@ -150,8 +155,9 @@
   <Import Project="..\packages\IllusionLibs.Koikatu.UnityEngine.UI.5.6.2.4\build\IllusionLibs.Koikatu.UnityEngine.UI.targets" Condition="Exists('..\packages\IllusionLibs.Koikatu.UnityEngine.UI.5.6.2.4\build\IllusionLibs.Koikatu.UnityEngine.UI.targets')" />
   <Import Project="..\packages\IllusionLibs.Koikatu.TextMeshPro.2019.4.27.4\build\IllusionLibs.Koikatu.TextMeshPro.targets" Condition="Exists('..\packages\IllusionLibs.Koikatu.TextMeshPro.2019.4.27.4\build\IllusionLibs.Koikatu.TextMeshPro.targets')" />
   <Import Project="..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets" Condition="Exists('..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets')" />
-  <Import Project="..\packages\IllusionLibs.KoikatsuParty.Assembly-CSharp.2021.3.25\build\IllusionLibs.KoikatsuParty.Assembly-CSharp.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuParty.Assembly-CSharp.2021.3.25\build\IllusionLibs.KoikatsuParty.Assembly-CSharp.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\" "$(TargetDir)..\..\..\..\[KK]_Character_Morpher.zip"</PostBuildEvent>
+    <PostBuildEvent>call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\..\[KK]_Character_Morpher.zip" "$(TargetDir)..\..\..\" "$(SolutionDir)Readme.md"</PostBuildEvent>
   </PropertyGroup>
+  <Import Project="..\packages\IllusionLibs.Koikatu.Vectrosity.2019.4.27.4\build\IllusionLibs.Koikatu.Vectrosity.targets" Condition="Exists('..\packages\IllusionLibs.Koikatu.Vectrosity.2019.4.27.4\build\IllusionLibs.Koikatu.Vectrosity.targets')" />
+  <Import Project="..\packages\IllusionLibs.KoikatsuParty.Assembly-CSharp.2021.3.25\build\IllusionLibs.KoikatsuParty.Assembly-CSharp.targets" Condition="Exists('..\packages\IllusionLibs.KoikatsuParty.Assembly-CSharp.2021.3.25\build\IllusionLibs.KoikatsuParty.Assembly-CSharp.targets')" />
 </Project>

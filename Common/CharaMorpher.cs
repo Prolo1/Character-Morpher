@@ -2,6 +2,8 @@
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 //using System.Threading.Tasks;
@@ -16,6 +18,7 @@ using KKAPI.Chara;
 using KKAPI.Maker;
 using KKAPI.Studio;
 
+
 using KKAPI;
 using UnityEngine.Events;
 using UniRx;
@@ -23,7 +26,11 @@ using UnityEngine;
 using System.Runtime.InteropServices;
 using KKABMX.Core;
 using Manager;
-using System.Diagnostics;
+
+
+using KKAPI.Utilities;
+using KKAPI.Maker.UI;
+
 
 #if HONEY_API
 
@@ -44,7 +51,7 @@ using AIChara;
  * Can choose to enable/disable use in male maker
 
   Planned:                                           
- * Save morph changes to card (w/o changing card perameters)
+ * Save morph changes to card (w/o changing card parameters)
 ************************************************/
 
 
@@ -72,8 +79,8 @@ namespace Character_Morpher
 		// Be careful with public const fields! Read more: https://stackoverflow.com/questions/55984
 		// Avoid changing GUID unless absolutely necessary. Plugins that rely on your plugin will no longer recognize it, and if you use it in function controllers you will lose all data saved to cards before the change!
 		public const string ModName = "Character Morpher";
-		public const string GUID = "prolo.chararmorpher";
-		public const string Version = "0.2.2";
+		public const string GUID = "prolo.chararmorpher";//never change this
+		public const string Version = "0.2.3";
 
 		internal static CharaMorpher_Core Instance;
 		internal static new ManualLogSource Logger;
@@ -90,11 +97,14 @@ namespace Character_Morpher
 
 			//Main
 			public ConfigEntry<bool> enable { set; get; }
+			public ConfigEntry<KeyboardShortcut> enableKey { set; get; }
 			public ConfigEntry<bool> enableInMaleMaker { get; set; }
 			public ConfigEntry<bool> enableInGame { set; get; }
 			public ConfigEntry<bool> linkOverallABMXSliders { set; get; }
-			public ConfigEntry<bool> enableQuadManip { set; get; }
+			public ConfigEntry<bool> enableCalcTypes { set; get; }
 			public ConfigEntry<bool> saveWithMorph { set; get; }
+
+			public ConfigEntry<string> pathBtn { set; get; }
 			public ConfigEntry<string> charDir { set; get; }
 			public ConfigEntry<string> imageName { set; get; }
 			public ConfigEntry<uint> sliderExtents { set; get; }
@@ -105,13 +115,23 @@ namespace Character_Morpher
 			public List<ConfigEntry<int>> defaultModes { set; get; }
 
 			//Advanced (show up below main) 
+			public ConfigEntry<bool> easyMorphBtnOverallSet { set; get; }
+			public ConfigEntry<bool> easyMorphBtnEnableDefaulting { set; get; }
+
 
 			//tests
-			public ConfigEntry<float> initialMorphTest { internal set; get; }
+
+			public ConfigEntry<float> unknownTest { internal set; get; }
+			//	public ConfigEntry<float> initialMorphTest { internal set; get; }
+			public ConfigEntry<float> initialMorphFaceTest { get; internal set; }
+			public ConfigEntry<float> initialMorphBodyTest { get; internal set; }
 			public ConfigEntry<float> initalBoobTest { internal set; get; }
 			public ConfigEntry<float> initalFaceTest { internal set; get; }
-			public ConfigEntry<uint> multiUpdateTest { internal set; get; }
-			public ConfigEntry<uint> fullBoneResetTest { internal set; get; }
+			public ConfigEntry<uint> reloadTest { internal set; get; }
+			//public ConfigEntry<uint> multiUpdateTest { internal set; get; }
+			public ConfigEntry<uint> multiUpdateEnableTest { get; internal set; }
+			public ConfigEntry<uint> multiUpdateSliderTest { get; internal set; }
+			//public ConfigEntry<uint> fullBoneResetTest { internal set; get; }
 
 			//indexes 
 			public List<ConfigEntry<int>> headIndex { set; get; }
@@ -126,7 +146,14 @@ namespace Character_Morpher
 			public List<ConfigEntry<int>> noseIndex { set; get; }
 		}
 
+		public class MyButton
+		{
+			public MyButton() { }
+			public readonly UnityEvent onPressed = new UnityEvent();
 
+
+
+		}
 		void Awake()
 		{
 			Instance = this;
@@ -148,15 +175,19 @@ namespace Character_Morpher
 			cfg = new MyConfig
 			{
 				enable = Config.Bind("_Main_", "Enable", false, new ConfigDescription("Allows the plugin to run (may need to reload character/scene if results are not changing)", null, new ConfigurationManagerAttributes { Order = --index })),
+
+				enableABMX = Config.Bind("_Main_", "Enable ABMX", true, new ConfigDescription("Allows ABMX to be affected", null, new ConfigurationManagerAttributes { Order = --index })),
 				enableInMaleMaker = Config.Bind("_Main_", "Enable in Male Maker", false, new ConfigDescription("Allows the plugin to run while in male maker (enable before launching maker)", null, new ConfigurationManagerAttributes { Order = --index })),
 				enableInGame = Config.Bind("_Main_", "Enable in Game", true, new ConfigDescription("Allows the plugin to run while in main game", null, new ConfigurationManagerAttributes { Order = --index })),
-				enableABMX = Config.Bind("_Main_", "Enable ABMX", true, new ConfigDescription("Allows ABMX to be affected", null, new ConfigurationManagerAttributes { Order = --index })),
-				linkOverallABMXSliders = Config.Bind("_Main_", "Link Overall ABMX Sliders", true, new ConfigDescription("Allows ABMX overall sliders to be affected by its counterpart (i.e. Body:50% * ABMXBody:100% = ABMXBody:50%)", null, new ConfigurationManagerAttributes { Order = --index })),
-				enableQuadManip = Config.Bind("_Main_", "Enable Quadratic Manip.", false, new ConfigDescription("The original value gets squared (i.e. 1.2 = 1.2^2 = 1.44)", null, new ConfigurationManagerAttributes { Order = --index })),
-				saveWithMorph = Config.Bind("_Main_", "Save With Morph", true, new ConfigDescription("Allows the card to save as seen in maker (must be set before saving. If false card is set to default card values)", null, new ConfigurationManagerAttributes { Order = --index })),
+				linkOverallABMXSliders = Config.Bind("_Main_", "Link Overall Base Sliders to ABMX Sliders", true, new ConfigDescription("Allows ABMX overall sliders to be affected by its counterpart (i.e. Body:50% * ABMXBody:100% = ABMXBody:50%)", null, new ConfigurationManagerAttributes { Order = --index })),
+				enableCalcTypes = Config.Bind("_Main_", "Enable Calculation Types", false, new ConfigDescription("Enables quadratic mode where value gets squared (i.e. 1.2 = 1.2^2 = 1.44)", null, new ConfigurationManagerAttributes { Order = --index })),
+				saveWithMorph = Config.Bind("_Main_", "Save As Seen", true, new ConfigDescription("Allows the card to save as seen in maker (must be set before saving. If false card is set to default card values but keeps accessory changes)", null, new ConfigurationManagerAttributes { Order = --index })),
+
 				charDir = Config.Bind("_Main_", "Directory Path", femalepath, new ConfigDescription("Directory where character is stored", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
 				imageName = Config.Bind("_Main_", "Card Name", "sample.png", new ConfigDescription("The character card used to morph", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
 				sliderExtents = Config.Bind("_Main_", "Slider Extents", 200u, new ConfigDescription("How far the slider values go above default (e.i. setting value to 10 gives values -10 -> 110)", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true })),
+				enableKey = Config.Bind("_Main_", "Toggle Enable Keybinding", new KeyboardShortcut(KeyCode.Return, KeyCode.RightShift), new ConfigDescription("Enable/Disable toggle button", null, new ConfigurationManagerAttributes { Order = --index })),
+				pathBtn = Config.Bind("_Main_", "Set Morph Target", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = --index, CustomDrawer = MorphUtil.MyButtonDrawer, ObjToStr = (o) => "", StrToObj = (s) => null })),
 				resetOnLaunch = Config.Bind("_Testing_", "Reset On Launch", true, new ConfigDescription("will reset advanced values to defaults after launch", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true })),
 
 				//you don't need to see this in game
@@ -187,6 +218,8 @@ namespace Character_Morpher
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Butt")).Key, Browsable = false })),
 					Config.Bind("Defaults", "Legs  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Legs")).Key, Browsable = false })),
+					Config.Bind("Defaults", "Body Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Body Other")).Key, Browsable = false })),
 
 					Config.Bind("Defaults", "Face  Default", (100f), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Face")).Key, Browsable = false })),
@@ -198,6 +231,8 @@ namespace Character_Morpher
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Nose")).Key, Browsable = false })),
 					Config.Bind("Defaults", "Mouth Default", (50f), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Mouth")).Key, Browsable = false })),
+					Config.Bind("Defaults", "Face Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Face Other")).Key, Browsable = false })),
 
 
 					Config.Bind("Defaults", "ABMX  Body Default", (100f), new ConfigDescription("Set default value on maker startup", null,
@@ -218,6 +253,8 @@ namespace Character_Morpher
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Feet")).Key, Browsable = false })),
 					Config.Bind("Defaults", "ABMX  Genitals Default", (50f), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Genitals")).Key, Browsable = false })),
+					Config.Bind("Defaults", "ABMX  Body Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Body Other")).Key, Browsable = false })),
 
 
 					Config.Bind("Defaults", "ABMX  Head Default", (100f), new ConfigDescription("Set default value on maker startup", null,
@@ -232,6 +269,8 @@ namespace Character_Morpher
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Mouth")).Key, Browsable = false })),
 					Config.Bind("Defaults", "ABMX  Hair Default", (50f), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Hair")).Key, Browsable = false })),
+					Config.Bind("Defaults", "ABMX  Head Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories.AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Head Other")).Key, Browsable = false })),
 
 				},
 				defaultModes = new List<ConfigEntry<int>>(),//will link up with the defaults
@@ -247,16 +286,29 @@ namespace Character_Morpher
 
 			//Advanced
 			{
+				cfg.easyMorphBtnOverallSet = Config.Bind("_Testing_", "Enable Easy Morph Button Overall Set", true, new ConfigDescription("Sets the overall sliders whenever an Easy Morph button is pressed, everything else otherwise", null, new ConfigurationManagerAttributes { Order = --index, Browsable = false, IsAdvanced = true }));
+				cfg.easyMorphBtnEnableDefaulting = Config.Bind("_Testing_", "Enable Easy Morph Defaulting", true, new ConfigDescription("Defaults everything not set by Easy Morph button to 100%", null, new ConfigurationManagerAttributes { Order = --index, Browsable = false, IsAdvanced = true }));
+
 				cfg.debug = Config.Bind("_Testing_", "Debug Logging", false, new ConfigDescription("Allows debug logs to be written to the log file", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true })).ConfigDefaulter();
 
-				cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 1.00f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH (0.47 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//cfg.unknownTest = Config.Bind("_Testing_", "Unknown Test value", 0.00f, new ConfigDescription("Used for whatever the hell I WANT (if you see this I forgot to take it out). RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//	cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 1.00f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.multiUpdateEnableTest = Config.Bind("_Testing_", "Multi Update Enable value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.multiUpdateSliderTest = Config.Bind("_Testing_", "Multi Update Slider value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 #if KOI_API
-				cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.initialMorphFaceTest = Config.Bind("_Testing_", "Init morph Face value", 0.500f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.initialMorphBodyTest = Config.Bind("_Testing_", "Init morph Body value", 0.1500f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.reloadTest = Config.Bind("_Testing_", "Reload delay value", 22u, new ConfigDescription("Used to change the amount of frames to delay before loading. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 #elif HONEY_API
-				//	cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 0.00f, new ConfigDescription("Used for calculations on reload. RESETS ON GAME LAUNCH (0.0 workes best)", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
-				cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.initialMorphFaceTest = Config.Bind("_Testing_", "Init morph Face value", 0.500f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.initialMorphBodyTest = Config.Bind("_Testing_", "Init morph Body value", 0.500f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//cfg.multiUpdateEnableTest = Config.Bind("_Testing_", "Multi Update Enable value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//cfg.multiUpdateSliderTest = Config.Bind("_Testing_", "Multi Update Slider value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.reloadTest = Config.Bind("_Testing_", "Reload delay value", 22u, new ConfigDescription("Used to change the amount of frames to delay before loading. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 #endif
-				cfg.fullBoneResetTest = Config.Bind("_Testing_", "Full Bone Reset Delay", 3u, new ConfigDescription("Used to determine how long to wait for full bone reset. RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//	cfg.fullBoneResetTest = Config.Bind("_Testing_", "Full Bone Reset Delay", 3u, new ConfigDescription("Used to determine how long to wait for full bone reset. RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 
 
 				cfg.headIndex = new List<ConfigEntry<int>>{
@@ -264,8 +316,8 @@ namespace Character_Morpher
 					Config.Bind("Adv1 Head", $"Head Index {++index}", (int)ChaFileDefine.BodyShapeIdx.NeckW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })).ConfigDefaulter(),
 					Config.Bind("Adv1 Head", $"Head Index {++index}", (int)ChaFileDefine.BodyShapeIdx.NeckZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })).ConfigDefaulter(),
 				};
-				cfg.brestIndex = new List<ConfigEntry<int>>
 
+				cfg.brestIndex = new List<ConfigEntry<int>>
 				{
 					Config.Bind("Adv2 Brest", $"Brest Index {index=1}", (int)ChaFileDefine.BodyShapeIdx.AreolaBulge, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
 					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)ChaFileDefine.BodyShapeIdx.BustRotX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
@@ -280,8 +332,8 @@ namespace Character_Morpher
 					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)ChaFileDefine.BodyShapeIdx.BustForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
 				#endif
 				};
-				cfg.torsoIndex = new List<ConfigEntry<int>>
 
+				cfg.torsoIndex = new List<ConfigEntry<int>>
 				{
 					Config.Bind("Adv3 Torso", $"Torso Index {index=1}",  (int)ChaFileDefine.BodyShapeIdx.BodyLowW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)ChaFileDefine.BodyShapeIdx.BodyLowZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
@@ -297,6 +349,7 @@ namespace Character_Morpher
 					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)ChaFileDefine.BodyShapeIdx.Belly, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 				#endif
 				  };
+
 				cfg.armIndex = new List<ConfigEntry<int>>
 				{
 
@@ -315,6 +368,7 @@ namespace Character_Morpher
 			
 				#endif
 				 };
+
 				cfg.buttIndex = new List<ConfigEntry<int>>
 				{
 						Config.Bind("Adv5 Butt", $"Butt Index {index=1}", (int)ChaFileDefine.BodyShapeIdx.Hip, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
@@ -323,6 +377,7 @@ namespace Character_Morpher
 						Config.Bind("Adv5 Butt", $"Butt Index {++index}", (int)ChaFileDefine.BodyShapeIdx.WaistLowZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 
 				 };
+
 				cfg.legIndex = new List<ConfigEntry<int>>
 				{
 						Config.Bind("Adv6 Leg", $"Leg Index {index=1}", (int)ChaFileDefine.BodyShapeIdx.Calf, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(),
@@ -344,6 +399,7 @@ namespace Character_Morpher
 						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)ChaFileDefine.BodyShapeIdx.ThighUpZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 				#endif
 				  };
+
 				cfg.earIndex = new List<ConfigEntry<int>>
 				{
 
@@ -355,6 +411,7 @@ namespace Character_Morpher
 
 
 				};
+
 				cfg.eyeIndex = new List<ConfigEntry<int>>
 				{
 
@@ -417,6 +474,7 @@ namespace Character_Morpher
 					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)ChaFileDefine.FaceShapeIdx.NoseY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
 				#endif
 				};
+
 				cfg.mouthIndex = new List<ConfigEntry<int>>
 				{
 					Config.Bind("Adv10 Mouth", $"Mouth Index {index=1}", (int)ChaFileDefine.FaceShapeIdx.MouthCornerForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
@@ -432,18 +490,37 @@ namespace Character_Morpher
 
 			};
 
+			Coroutine tmpTest = null;
+			void KeyUpdates()
+			{
+				if(tmpTest != null) StopCoroutine(tmpTest);
+				IEnumerator CoKeyUpdates()
+				{
+
+					yield return new WaitWhile(() =>
+					{
+						if(cfg.enableKey.Value.IsDown())
+							cfg.enable.Value = !cfg.enable.Value;
+						return true;
+					});
+				}
+
+				tmpTest = StartCoroutine(CoKeyUpdates());
+			}
+			KeyUpdates();
 
 			cfg.charDir.SettingChanged += (m, n) =>
 			{
 
-				string path = Path.Combine(MyUtil.MakeDirPath(cfg.charDir.Value), MyUtil.MakeDirPath(cfg.imageName.Value));
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
+				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
 					if(File.Exists(path))
 						if(ctrl.initLoadFinished)
 						{
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-							StartCoroutine(ctrl?.CoABMXFullRefresh(6 + (int)cfg.multiUpdateTest.Value));
+							//StartCoroutine(ctrl?.CoResetFace(6 + (int)cfg.multiUpdateEnableTest.Value));
+							//			StartCoroutine(ctrl?.CoResetHeight(6 + (int)cfg.multiUpdateEnableTest.Value));
 						}
 				}
 
@@ -453,15 +530,16 @@ namespace Character_Morpher
 
 			cfg.imageName.SettingChanged += (m, n) =>
 			{
-				string path = Path.Combine(MyUtil.MakeDirPath(cfg.charDir.Value), MyUtil.MakeDirPath(cfg.imageName.Value));
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
+				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
 
 					if(File.Exists(path))
 						if(ctrl.initLoadFinished)
 						{
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-							StartCoroutine(ctrl?.CoABMXFullRefresh(6 + (int)cfg.multiUpdateTest.Value));
+							//StartCoroutine(ctrl?.CoResetFace(6 + (int)cfg.multiUpdateEnableTest.Value));
+							//		StartCoroutine(ctrl?.CoResetHeight(6 + (int)cfg.multiUpdateEnableTest.Value));
 						}
 
 				}
@@ -471,36 +549,42 @@ namespace Character_Morpher
 
 			cfg.enable.SettingChanged += (m, n) =>
 			{
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
 
-					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
+
+
+					//StartCoroutine(ctrl?.CoResetFace((int)cfg.multiUpdateEnableTest.Value + 1));
+					//	StartCoroutine(ctrl?.CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 2 ));
+
 				}
 			};
 
 			cfg.enableInGame.SettingChanged += (m, n) =>
 			{
 
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
+					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
 
-					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
 
+					//StartCoroutine(ctrl?.CoResetFace((int)cfg.multiUpdateEnableTest.Value + 1));
+					//		StartCoroutine(ctrl?.CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 2));
 				}
 			};
 
 			cfg.enableABMX.SettingChanged += (m, n) =>
 			{
-				foreach(CharaMorpherController ctrl in MyUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-						StartCoroutine(ctrl?.CoMorphUpdate(a + 1));
+					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
 
-					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+					//StartCoroutine(ctrl?.CoResetFace((int)cfg.multiUpdateEnableTest.Value + 1));
+					//	StartCoroutine(ctrl?.CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 2));
 				}
 			};
 
@@ -522,11 +606,7 @@ namespace Character_Morpher
 		}
 
 
-		/// <summary>
-		/// makes sure a path fallows the format "this/is/a/path" and not "this//is\\a/path" or similar
-		/// </summary>
-		/// <param name="dir"></param>
-		/// <returns></returns>
+
 	}
 
 	public class OnValueChange : UnityEvent { }
@@ -568,7 +648,7 @@ namespace Character_Morpher
 		static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
 	}
 
-	internal static class MyUtil
+	internal static class MorphUtil
 	{
 		/// <summary>
 		/// Adds a value to the end of a list and returns it
@@ -583,9 +663,15 @@ namespace Character_Morpher
 			return list.Last();
 		}
 
+		/// <summary>
+		/// makes sure a path fallows the format "this/is/a/path" and not "this//is\\a/path" or similar
+		/// </summary>
+		/// <param name="dir"></param>
+		/// <returns></returns>
 		public static string MakeDirPath(string dir)
 		{
-			dir = dir.Trim().Replace('\\', '/').Replace("//", "/");
+
+			dir = (dir ?? "").Trim().Replace('\\', '/').Replace("//", "/");
 
 			if((dir.LastIndexOf('.') < dir.LastIndexOf('/'))
 				&& dir.Last() != '/')
@@ -633,6 +719,46 @@ namespace Character_Morpher
 		public static ConfigEntry<T> ConfigDefaulter<T>(this ConfigEntry<T> v1) =>
 			v1.ConfigDefaulter((T)v1.DefaultValue);
 
+
+		static Texture2D tmpTex = null;
+		static string lastPath = null;
+		internal static void MyButtonDrawer(ConfigEntryBase entry)
+		{
+			// Make sure to use GUILayout.ExpandWidth(true) to use all available space
+
+			GUILayout.BeginVertical();
+
+			if(GUILayout.Button(new GUIContent(entry.Definition.Key, entry.Description.Description), GUILayout.ExpandWidth(true)))
+				CharaMorpherGUI.GetNewImageTarget();
+
+			GUILayout.Box(tmpTex = (lastPath != CharaMorpherGUI.TargetPath ? CharaMorpherGUI.TargetPath.CreateTexture() : tmpTex), GUILayout.Width(150), GUILayout.Height(200));
+			if(lastPath != CharaMorpherGUI.TargetPath) lastPath = CharaMorpherGUI.TargetPath;
+			GUILayout.EndVertical();
+
+		}
+
+		/// <summary>
+		/// Crates Image Texture based on path
+		/// </summary>
+		/// <param name="path">directory path to image (i.e. C:/path/to/image.png)</param>
+		/// <returns>An Texture2D created from path if passed, else a black texture</returns>
+		public static Texture2D CreateTexture(this string path) =>
+			File.Exists(path) ?
+			File.ReadAllBytes(path)?
+			.LoadTexture(TextureFormat.RGBA32) ??
+			Texture2D.blackTexture : Texture2D.blackTexture;
+
+		public static BaseGuiEntry OnGUIExists(this BaseGuiEntry gui, UnityAction<BaseGuiEntry> act)
+		{
+			IEnumerator func(BaseGuiEntry gui1, UnityAction<BaseGuiEntry> act1)
+			{
+				yield return new WaitUntil(() => gui1.Exists);//the thing neeeds to exist first
+				act1(gui);
+			}
+			CharaMorpher_Core.Instance.StartCoroutine(func(gui, act));
+
+			return gui;
+		}
 
 	}
 

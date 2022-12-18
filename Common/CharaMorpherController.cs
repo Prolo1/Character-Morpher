@@ -7,7 +7,7 @@ using System.Linq;
 //using System.Text;
 using System.Text.RegularExpressions;
 
-using IllusionUtility.GetUtility;
+
 using KKAPI;
 using KKAPI.MainGame;
 using KKAPI.Utilities;
@@ -33,9 +33,6 @@ using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpherController;
 
 
-using MessagePack;
-using ADV.Commands.Base;
-using RootMotion.FinalIK;
 
 namespace Character_Morpher
 {
@@ -49,8 +46,18 @@ namespace Character_Morpher
 		private static DateTime lastDT = new DateTime();
 
 		internal MorphControls controls = new MorphControls();
-		internal static readonly MorphTarget morphTarget = new MorphTarget();
-		internal static bool faceBonemodTgl = true, bodyBonemodTgl = true;
+		//internal static readonly MorphTarget morphTarget = new MorphTarget();
+		private static bool m_faceBonemodTgl = true, m_bodyBonemodTgl = true;
+		internal static bool faceBonemodTgl
+		{
+			get { if(MakerAPI.InsideMaker) return m_faceBonemodTgl; else return true; }
+			set { m_faceBonemodTgl = value; }
+		}
+		internal static bool bodyBonemodTgl
+		{
+			get { if(MakerAPI.InsideMaker) return m_bodyBonemodTgl; else return true; }
+			set { m_bodyBonemodTgl = value; }
+		}
 
 		public readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
 
@@ -63,7 +70,7 @@ namespace Character_Morpher
 		/// <summary>
 		/// In the process of reloading. set to false after complete
 		/// </summary>
-		public bool reloading { get; internal set; } = false;
+		public bool reloading { get; internal set; } = true;
 
 		/// <summary>
 		/// makes sure most main functins don't run when creating template character
@@ -74,10 +81,10 @@ namespace Character_Morpher
 #if KOI_API
 		public static readonly List<KeyValuePair<string, string>> boneDatabaseCatagories = new List<KeyValuePair<string, string>>()
 #else
+
 		//this is a tuple list btw (of bones found in abmx mod and online... somewhere)
 		public static readonly List<(string, string)> boneDatabaseCatagories = new List<(string, string)>()
 #endif
-
 #if KOI_API		
 		#region KKBones
 		{
@@ -382,88 +389,88 @@ namespace Character_Morpher
 
 
 				//legs
-                ("cf_hit_LegUp01_s_L,False,1,1,1,1 Hitbox - Thigh (Left)                     ", "legs"),
-				("cf_hit_LegUp01_s_R,False,1,1,1,1 Hitbox - Thigh (Right)                    ", "legs"),
-				("cf_hit_Kosi02_s,False,1,1,1,1 Hitbox - Hips                                ", "legs"),
-				("cf_J_Hips,False,1,1,1,1 Scale                                              ", "legs"),
-				("cf_J_Kosi01,False,1,1,1,1 Waist & Below                                    ", "legs"),
-				("cf_J_Kosi01_s,False,1,1,1,1 Pelvis [Ignores Skirt]                         ", "legs"),
-				("cf_J_Kosi02,False,1,1,1,1 Hips & Below                                     ", "legs"),
-				("cf_J_Kosi02_s,False,1,1,1,1 Hips [Ignores Skirt]                           ", "legs"),
-				("cf_J_Kosi03,False,1,1,1,1                                                  ", "legs"),
-				("cf_J_Kosi03_s,False,1,1,1,1                                                ", "legs"),
-				("cf_J_Kosi04_s,False,1,1,1,1                                                ", "legs"),
-				("cf_J_LegDam_L,False,1,1,1,1                                                ", "legs"),
-				( "cf_J_LegKnee_back_s_L,False,1,1,1,1 Back of Knee (Left)                    ","legs"),
-				("cf_J_LegKnee_back_s_R,False,1,1,1,1 Back of Knee (Right)                   ", "legs"),
-				("cf_J_LegKnee_dam_L,False,1,1,1,1 Front of Knee (Left)                      ", "legs"),
-				("cf_J_LegKnee_dam_R,False,1,1,1,1 Front of Knee (Right)                     ", "legs"),
-				("cf_J_LegKnee_low_s_L,False,1,1,1,1 Knee Tone (Left)                        ", "legs"),
-				("cf_J_LegKnee_low_s_R,False,1,1,1,1 Knee Tone (Right)                       ", "legs"),
-				("cf_J_LegLow01_L,False,1,1,1,1 Knees & Below                                ", "legs"),
-				("cf_J_LegLow01_R,False,1,1,1,1 Knees & Below                                ", "legs"),
-				("cf_J_LegLow01_s_L,False,1,1,1,1 Calf (Left)                                ", "legs"),
-				("cf_J_LegLow01_s_R,False,1,1,1,1 Calf (Right)                               ", "legs"),
-				("cf_J_LegLow02_s_L,False,1,1,1,1 Lower Calf (Left)                          ", "legs"),
-				("cf_J_LegLow02_s_R,False,1,1,1,1 Lower Calf (Right)                         ", "legs"),
-				("cf_J_LegLow03_s_L,False,1,1,1,1 Ankle (Left)                               ", "legs"),
-				("cf_J_LegLow03_s_R,False,1,1,1,1 Ankle (Right)                              ", "legs"),
-				("cf_J_LegLowDam_L,False,1,1,1,1                                             ", "legs"),
-				("cf_J_LegLowRoll_L,False,1,1,1,1 Lower Leg Length (Left)                    ", "legs"),
-				("cf_J_LegLowRoll_R,False,1,1,1,1 Lower Leg Length (Right)                   ", "legs"),
-				("cf_J_LegUp_L,False,1,1,1,1                                                 ", "legs"),
-				("cf_J_LegUp00_L,False,1,1,1,1 Overall Leg (Left)                            ", "legs"),
-				("cf_J_LegUp00_R,False,1,1,1,1 Overall Leg (Right)                           ", "legs"),
-				("cf_J_LegUp01_s_L,False,1,1,1,1 Upper Thigh (Left)                          ", "legs"),
-				("cf_J_LegUp01_s_R,False,1,1,1,1 Upper Thigh (Right)                         ", "legs"),
-				("cf_J_LegUp02_s_L,False,1,1,1,1 Lower Thigh (Left)                          ", "legs"),
-				("cf_J_LegUp02_s_R,False,1,1,1,1 Lower Thigh (Right)                         ", "legs"),
-				("cf_J_LegUp03_L,False,1,1,1,1 Knee (Left)                                   ", "legs"),
-				("cf_J_LegUp03_R,False,1,1,1,1 Knee (Right)                                  ", "legs"),
-				("cf_J_LegUp03_s_L,False,1,1,1,1 Above the Knee (Left)                       ", "legs"),
-				("cf_J_LegUp03_s_R,False,1,1,1,1 Above the Knee (Right)                      ", "legs"),
-				("cf_J_LegUpDam_L,False,1,1,1,1 Upper Hip (Left)                             ", "legs"),
-				("cf_J_LegUpDam_R,False,1,1,1,1 Upper Hip (Right)                            ", "legs"),
-				("cf_J_LegUpDam_s_L,False,1,1,1,1 Upper Hip (Left) [Not as good]             ", "legs"),
-				("cf_J_LegUpDam_s_R,False,1,1,1,1 Upper Hip (Right) [Not as good]            ", "legs"),
-				("cf_J_LegUpLow_R,False,1,1,1,1                                              ", "legs"),
-				("cf_J_LegUpLow_s_L,False,1,1,1,1                                            ", "legs"),
-				("cf_J_Legsk_01_00",            "legs"),
-				("cf_J_Legsk_01_01",            "legs"),
-				("cf_J_Legsk_01_02",            "legs"),
-				("cf_J_Legsk_01_03",            "legs"),
-				("cf_J_Legsk_01_04",            "legs"),
-				("cf_J_Legsk_01_05",            "legs"),
-				("cf_J_Legsk_02_00",            "legs"),
-				("cf_J_Legsk_02_01",            "legs"),
-				("cf_J_Legsk_02_02",            "legs"),
-				("cf_J_Legsk_02_03",            "legs"),
-				("cf_J_Legsk_02_04",            "legs"),
-				("cf_J_Legsk_02_05",            "legs"),
-				("cf_J_Legsk_03_00",            "legs"),
-				("cf_J_Legsk_03_01",            "legs"),
-				("cf_J_Legsk_03_02",            "legs"),
-				("cf_J_Legsk_03_03",            "legs"),
-				("cf_J_Legsk_03_04",            "legs"),
-				("cf_J_Legsk_03_05",            "legs"),
-				("cf_J_Legsk_05_00",            "legs"),
-				("cf_J_Legsk_05_01",            "legs"),
-				("cf_J_Legsk_05_02",            "legs"),
-				("cf_J_Legsk_05_03",            "legs"),
-				("cf_J_Legsk_05_04",            "legs"),
-				("cf_J_Legsk_05_05",            "legs"),
-				("cf_J_Legsk_06_00",            "legs"),
-				("cf_J_Legsk_06_01",            "legs"),
-				("cf_J_Legsk_06_02",            "legs"),
-				("cf_J_Legsk_06_03",            "legs"),
-				("cf_J_Legsk_06_04",            "legs"),
-				("cf_J_Legsk_06_05",            "legs"),
-				("cf_J_Legsk_07_00",            "legs"),
-				("cf_J_Legsk_07_01",            "legs"),
-				("cf_J_Legsk_07_02",            "legs"),
-				("cf_J_Legsk_07_03",            "legs"),
-				("cf_J_Legsk_07_04",            "legs"),
-				("cf_J_Legsk_07_05",            "legs"),
+                ("cf_hit_LegUp01_s_L,False,1,1,1,1 Hitbox - Thigh (Left)                     "  , "legs"),
+				("cf_hit_LegUp01_s_R,False,1,1,1,1 Hitbox - Thigh (Right)                    "  , "legs"),
+				("cf_hit_Kosi02_s,False,1,1,1,1 Hitbox - Hips                                "  , "legs"),
+				("cf_J_Hips,False,1,1,1,1 Scale                                              "  , "legs"),
+				("cf_J_Kosi01,False,1,1,1,1 Waist & Below                                    "  , "legs"),
+				("cf_J_Kosi01_s,False,1,1,1,1 Pelvis [Ignores Skirt]                         "  , "legs"),
+				("cf_J_Kosi02,False,1,1,1,1 Hips & Below                                     "  , "legs"),
+				("cf_J_Kosi02_s,False,1,1,1,1 Hips [Ignores Skirt]                           "  , "legs"),
+				("cf_J_Kosi03,False,1,1,1,1                                                  "  , "legs"),
+				("cf_J_Kosi03_s,False,1,1,1,1                                                "  , "legs"),
+				("cf_J_Kosi04_s,False,1,1,1,1                                                "  , "legs"),
+				("cf_J_LegDam_L,False,1,1,1,1                                                "  , "legs"),
+				( "cf_J_LegKnee_back_s_L,False,1,1,1,1 Back of Knee (Left)                   "  ,"legs"),
+				("cf_J_LegKnee_back_s_R,False,1,1,1,1 Back of Knee (Right)                   "  , "legs"),
+				("cf_J_LegKnee_dam_L,False,1,1,1,1 Front of Knee (Left)                      "  , "legs"),
+				("cf_J_LegKnee_dam_R,False,1,1,1,1 Front of Knee (Right)                     "  , "legs"),
+				("cf_J_LegKnee_low_s_L,False,1,1,1,1 Knee Tone (Left)                        "  , "legs"),
+				("cf_J_LegKnee_low_s_R,False,1,1,1,1 Knee Tone (Right)                       "  , "legs"),
+				("cf_J_LegLow01_L,False,1,1,1,1 Knees & Below                                "  , "legs"),
+				("cf_J_LegLow01_R,False,1,1,1,1 Knees & Below                                "  , "legs"),
+				("cf_J_LegLow01_s_L,False,1,1,1,1 Calf (Left)                                "  , "legs"),
+				("cf_J_LegLow01_s_R,False,1,1,1,1 Calf (Right)                               "  , "legs"),
+				("cf_J_LegLow02_s_L,False,1,1,1,1 Lower Calf (Left)                          "  , "legs"),
+				("cf_J_LegLow02_s_R,False,1,1,1,1 Lower Calf (Right)                         "  , "legs"),
+				("cf_J_LegLow03_s_L,False,1,1,1,1 Ankle (Left)                               "  , "legs"),
+				("cf_J_LegLow03_s_R,False,1,1,1,1 Ankle (Right)                              "  , "legs"),
+				("cf_J_LegLowDam_L,False,1,1,1,1                                             "  , "legs"),
+				("cf_J_LegLowRoll_L,False,1,1,1,1 Lower Leg Length (Left)                    "  , "legs"),
+				("cf_J_LegLowRoll_R,False,1,1,1,1 Lower Leg Length (Right)                   "  , "legs"),
+				("cf_J_LegUp_L,False,1,1,1,1                                                 "  , "legs"),
+				("cf_J_LegUp00_L,False,1,1,1,1 Overall Leg (Left)                            "  , "legs"),
+				("cf_J_LegUp00_R,False,1,1,1,1 Overall Leg (Right)                           "  , "legs"),
+				("cf_J_LegUp01_s_L,False,1,1,1,1 Upper Thigh (Left)                          "  , "legs"),
+				("cf_J_LegUp01_s_R,False,1,1,1,1 Upper Thigh (Right)                         "  , "legs"),
+				("cf_J_LegUp02_s_L,False,1,1,1,1 Lower Thigh (Left)                          "  , "legs"),
+				("cf_J_LegUp02_s_R,False,1,1,1,1 Lower Thigh (Right)                         "  , "legs"),
+				("cf_J_LegUp03_L,False,1,1,1,1 Knee (Left)                                   "  , "legs"),
+				("cf_J_LegUp03_R,False,1,1,1,1 Knee (Right)                                  "  , "legs"),
+				("cf_J_LegUp03_s_L,False,1,1,1,1 Above the Knee (Left)                       "  , "legs"),
+				("cf_J_LegUp03_s_R,False,1,1,1,1 Above the Knee (Right)                      "  , "legs"),
+				("cf_J_LegUpDam_L,False,1,1,1,1 Upper Hip (Left)                             "  , "legs"),
+				("cf_J_LegUpDam_R,False,1,1,1,1 Upper Hip (Right)                            "  , "legs"),
+				("cf_J_LegUpDam_s_L,False,1,1,1,1 Upper Hip (Left) [Not as good]             "  , "legs"),
+				("cf_J_LegUpDam_s_R,False,1,1,1,1 Upper Hip (Right) [Not as good]            "  , "legs"),
+				("cf_J_LegUpLow_R,False,1,1,1,1                                              "  , "legs"),
+				("cf_J_LegUpLow_s_L,False,1,1,1,1                                            "  , "legs"),
+				("cf_J_Legsk_01_00"                                                             , "legs"),
+				("cf_J_Legsk_01_01"                                                             , "legs"),
+				("cf_J_Legsk_01_02"                                                             , "legs"),
+				("cf_J_Legsk_01_03"                                                             , "legs"),
+				("cf_J_Legsk_01_04"                                                             , "legs"),
+				("cf_J_Legsk_01_05"                                                             , "legs"),
+				("cf_J_Legsk_02_00"                                                             , "legs"),
+				("cf_J_Legsk_02_01"                                                             , "legs"),
+				("cf_J_Legsk_02_02"                                                             , "legs"),
+				("cf_J_Legsk_02_03"                                                             , "legs"),
+				("cf_J_Legsk_02_04"                                                             , "legs"),
+				("cf_J_Legsk_02_05"                                                             , "legs"),
+				("cf_J_Legsk_03_00"                                                             , "legs"),
+				("cf_J_Legsk_03_01"                                                             , "legs"),
+				("cf_J_Legsk_03_02"                                                             , "legs"),
+				("cf_J_Legsk_03_03"                                                             , "legs"),
+				("cf_J_Legsk_03_04"                                                             , "legs"),
+				("cf_J_Legsk_03_05"                                                             , "legs"),
+				("cf_J_Legsk_05_00"                                                             , "legs"),
+				("cf_J_Legsk_05_01"                                                             , "legs"),
+				("cf_J_Legsk_05_02"                                                             , "legs"),
+				("cf_J_Legsk_05_03"                                                             , "legs"),
+				("cf_J_Legsk_05_04"                                                             , "legs"),
+				("cf_J_Legsk_05_05"                                                             , "legs"),
+				("cf_J_Legsk_06_00"                                                             , "legs"),
+				("cf_J_Legsk_06_01"                                                             , "legs"),
+				("cf_J_Legsk_06_02"                                                             , "legs"),
+				("cf_J_Legsk_06_03"                                                             , "legs"),
+				("cf_J_Legsk_06_04"                                                             , "legs"),
+				("cf_J_Legsk_06_05"                                                             , "legs"),
+				("cf_J_Legsk_07_00"                                                             , "legs"),
+				("cf_J_Legsk_07_01"                                                             , "legs"),
+				("cf_J_Legsk_07_02"                                                             , "legs"),
+				("cf_J_Legsk_07_03"                                                             , "legs"),
+				("cf_J_Legsk_07_04"                                                             , "legs"),
+				("cf_J_Legsk_07_05"                                                             , "legs"),
 
 
                 //feet              
@@ -622,21 +629,45 @@ namespace Character_Morpher
 		#endregion
 #endif
 ;
-		public IEnumerator CoABMXFullRefresh(int delay = 5)
+		/*
+		Coroutine coResetHeight = null;
+		private IEnumerator CoResetHeight(int delayFrames = 5)
 		{
-			for(int a = 0; a < delay; ++a)
+
+			if(coResetHeight != null) StopCoroutine(coResetHeight);
+
+			IEnumerator CoResetHeight(int delayrs)
+			{
+				for(int a = 0; a < delayrs; ++a) yield return null;
+
+				if(reloading) yield return new WaitWhile(() => reloading);
+
+				ResetHeight();
+
+				yield break;
+			}
+			coResetHeight = StartCoroutine(CoResetHeight(delayFrames));
+			yield break;
+		}
+		*/
+
+		public IEnumerator CoABMXFullRefresh(int delayFrames = 5)
+		{
+			for(int a = 0; a < delayFrames; ++a)
 				yield return null;
 
 			var boneCtrl = GetComponent<BoneController>();
 
-			yield return new WaitWhile(() => boneCtrl.NeedsFullRefresh || boneCtrl.NeedsBaselineUpdate);
+			yield return new WaitWhile(() => (boneCtrl?.NeedsFullRefresh ?? false) || (boneCtrl?.NeedsBaselineUpdate ?? false));
 
 			if(reloading) yield break;
 
-			boneCtrl.NeedsFullRefresh = true;
+			if(boneCtrl != null) boneCtrl.NeedsFullRefresh = true;
+
+			yield break;
 		}
 
-		private IEnumerator CoReloadChara()
+		public IEnumerator CoReloadChara()
 		{
 			for(int a = 0; a < 7; ++a)
 				yield return null;
@@ -651,11 +682,11 @@ namespace Character_Morpher
 			for(int a = 0; a < delay; ++a)
 				yield return null;
 
-			MorphTargetUpdate(this);
+			MorphTargetUpdate();
 
 			yield return null;
 
-			for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+			for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 				MorphChangeUpdate(updateValues: updateValues, initReset: initReset);
 
 
@@ -663,7 +694,7 @@ namespace Character_Morpher
 		}
 
 		//Coroutine coFullRefresh;
-		public IEnumerator CoMorphUpdate(int delay = 6, bool forceReset = false, bool initReset = false, bool forceChange = false)
+		public IEnumerator CoMorphChangeUpdate(int delay = 6, bool forceReset = false, bool initReset = false, bool forceChange = false)
 		{
 			for(int a = 0; a < delay; ++a)
 				yield return null;
@@ -691,16 +722,19 @@ namespace Character_Morpher
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Updating morph values after ABMX");
 
-			yield return StartCoroutine(CoMorphUpdate(delay, forcereset, forceChange: forceChange));
+			yield return StartCoroutine(CoMorphChangeUpdate(delay, forcereset, forceChange: forceChange));
 
-			yield return StartCoroutine(CoABMXFullRefresh((int)cfg.multiUpdateTest.Value));
+			//	yield return StartCoroutine(CoResetHeight((int)cfg.multiUpdateSliderTest.Value));
 
 			yield break;
 		}
 
 		//bool forcedReload = false;
 		Coroutine coForceReload;
-		public void ForceCardReload()
+		/// <summary>
+		/// This is jank and may not work
+		/// </summary>
+		internal void ForceCardReload()
 		{
 
 			MorphChangeUpdate(forceReset: true);
@@ -732,10 +766,13 @@ namespace Character_Morpher
 			if(coForceReload != null)
 				StopCoroutine(coForceReload);
 			coForceReload = StartCoroutine(CoRestore(12));
-
 		}
 
+		public CharaMorpherController()
+		{
 
+			//	CharacterApi.CharacterReloaded += (s, e) => { reloading = false; if(!MakerAPI.InsideMaker) OnCharaReload(KoikatuAPI.GetCurrentGameMode()); };
+		}
 		protected override void Awake()
 		{
 			base.Awake();
@@ -749,8 +786,16 @@ namespace Character_Morpher
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
 
-			if(!MorphTarget.initalize) faceBonemodTgl = bodyBonemodTgl = true;
 
+
+			//IEnumerator tmpFunc()
+			//{
+			//	yield return null;
+			//	OnReload(KoikatuAPI.GetCurrentGameMode(), false);
+			//	yield break;
+			//}
+
+			//StartCoroutine(tmpFunc());
 		}
 
 		public void LateUpdate()
@@ -762,11 +807,10 @@ namespace Character_Morpher
 				MorphChangeUpdate();
 		}
 
-
 		bool boneSplitCheck(bool onlycheck = false)
 		{
 
-			if(!onlycheck && (!m_data1.abmx.isLoaded || !m_data2.abmx.isLoaded) && (!m_data1.abmx.isSplit || !m_data2.abmx.isSplit))
+			if(!onlycheck && (!m_data1.abmx.isSplit || !m_data2.abmx.isSplit))
 			{
 				if(!m_data1.abmx.isSplit)
 				{
@@ -785,6 +829,7 @@ namespace Character_Morpher
 			return m_data1.abmx.isSplit && m_data2.abmx.isSplit;
 		}
 
+
 		/// <summary>
 		/// Called whenever base character data needs to be updated for calculations
 		/// </summary>
@@ -795,48 +840,51 @@ namespace Character_Morpher
 			if(reloading || dummy) return;
 
 			reloading = true;
-
 			var boneCtrl = GetComponent<BoneController>();
+			int val = (int)cfg.reloadTest.Value;
 
-
-			//clear original data
 			{
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("clear data");
 				m_data1.Clear();
 				m_data2.Clear();
 			}
 
-			//store picked character data
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("replace data 1");
-
-
-			m_data1.Copy(this); //get all character data!!!
-
-			//store png data
-			m_data1.main.pngData = ChaFileControl.pngData;
-#if KOI_API
-			m_data1.main.facePngData = ChaFileControl.facePngData;
-#endif
-
-			MorphTargetUpdate(this);
-
-
-#if !HONEY_API
-		//	if(initLoadFinished)
-#endif
 			{
-				//	if(MakerAPI.InsideMaker)
-				for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-					MorphChangeUpdate(/*forceReset: !initLoadFinished, */initReset: true, updateValues: true);
 
+				//store picked character data
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("replace data 1");
+
+
+				m_data1.Copy(this); //get all character data!!!
+
+				//store png data
+				m_data1.main.pngData = ChaFileControl.pngData;
+#if KOI_API
+				m_data1.main.facePngData = ChaFileControl.facePngData;
+#endif
+
+				if((MakerAPI.InsideMaker && initLoadFinished) || !MakerAPI.InsideMaker)//for the initial character in maker
+				{
+					MorphTargetUpdate();
+
+					//for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+					MorphChangeUpdate(initReset: true, updateValues: true, abmx: false);
+					//	MorphChangeUpdate(initReset: false, updateValues: true, abmx: false);
+				}
+
+
+
+
+				//if(MakerAPI.InsideMaker && !initLoadFinished)//for the initial character in maker
+				//	ChaFileControl.CopyAll(m_data1.main);
+
+				//	ChaControl.LateUpdateForce();
 			}
 
-			for(int a = -1; a < cfg.multiUpdateTest.Value;)
-				StartCoroutine(CoMorphAfterABMX(delay: 20 + ++a, forceChange: true));
 
-			/*I changed this for testing*/
-			if(!initLoadFinished)
-				ChaFileControl.CopyAll(m_data1.main);
+			ResetHeight();
+
+
 
 			//post update 
 			IEnumerator CoReloadComplete(int delayFrames, BoneController _boneCtrl)
@@ -844,27 +892,60 @@ namespace Character_Morpher
 				reloading = true;
 				for(int a = 0; a < delayFrames; ++a)
 					yield return null;
-			
+
+
+				MorphTargetUpdate();
+
+
 				initLoadFinished = true;
 				reloading = false;
+				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+					StartCoroutine(CoMorphChangeUpdate(a + 1));
 
-				_boneCtrl.NeedsFullRefresh = true;
+
+
+
+
+				//MorphChangeUpdate();
+				//StartCoroutine(CoResetFace((int)cfg.multiUpdateEnableTest.Value + 1));
+				//StartCoroutine(CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 1));
+				//StartCoroutine(CoABMXFullRefresh((int)cfg.multiUpdateEnableTest.Value + 2));
+
+
+
+				//	ChaControl.LateUpdateForce();
+				//	boneCtrl.NeedsFullRefresh = true;
 
 				yield break;
 			}
-			StartCoroutine(CoReloadComplete(11, boneCtrl));//I just need to do this stuff later
+			StartCoroutine(CoReloadComplete(val, boneCtrl));//I just need to do this stuff later
+		}
+
+
+		bool singleReset = true;
+		/// <inheritdoc/>
+		protected override void OnReload(GameMode currentGameMode, bool keepState)
+		{
+			if(keepState) return;
+
+
+			if(singleReset && !initLoadFinished)
+				singleReset = reloading = false;
+
+			OnCharaReload(currentGameMode);
+
 		}
 
 		/// <summary>
 		/// updates the morphtarget to a specified target if path has changed or card has been updated
 		/// </summary>
 		/// <param name="ctrl"></param>
-		public void MorphTargetUpdate(CharaMorpherController ctrl = null)
+		public void MorphTargetUpdate()
 		{
-			if(ctrl?.dummy ?? dummy) return;
+			if(dummy) return;
 
 			//create path to morph target
-			string path = Path.Combine(MyUtil.MakeDirPath(cfg.charDir.Value), MyUtil.MakeDirPath(cfg.imageName.Value));
+			string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
 
 
 			//Get referenced character data (only needs to be loaded once)
@@ -878,7 +959,7 @@ namespace Character_Morpher
 
 
 					CharaMorpher_Core.Logger.LogDebug("Initializing secondary character");
-					(ctrl ?? this).MorphTargetLoc = path;//TODO: get this in working order 
+					(this).MorphTargetLoc = path;//TODO: get this in working order 
 
 					lastDT = File.GetLastWriteTime(path);
 					lastCharDir = path;
@@ -887,29 +968,18 @@ namespace Character_Morpher
 					//initialize secondary model
 					MorphTarget.initalize = true;
 
-					morphTarget.extraCharacter?.gameObject?.SetActive(false);
+					MorphTarget.extraCharacter?.gameObject?.SetActive(false);
 
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("load morph target");
-					morphTarget.chaFile.LoadCharaFile(path, noLoadPng: true);
+					MorphTarget.chaFile.LoadCharaFile(path, noLoadPng: true);
 
-					charData.Copy(ctrl ?? this, true);
+					charData.Copy(this, true);
 				}
 
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("replace data 2");
-			(ctrl ?? this).m_data2.Copy(charData);
+			(this).m_data2.Copy(charData);
 
-		}
-
-
-		/// <inheritdoc/>
-		protected override void OnReload(GameMode currentGameMode, bool keepState)
-		{
-			if(keepState || reloading) return;
-
-			reloading = false;
-			CharaMorpher_Core.Logger.LogDebug("new Chara loaded");
-			OnCharaReload(currentGameMode);
 		}
 
 		/// <inheritdoc/>
@@ -917,17 +987,14 @@ namespace Character_Morpher
 		{
 			//reset values to normal after saving
 			if(cfg.enable.Value && !cfg.saveWithMorph.Value)
-				for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-					StartCoroutine(CoMorphUpdate(delay: 10));//turn the card back after
+				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+					StartCoroutine(CoMorphChangeUpdate(delay: a + 1));//turn the card back after
+																	  //StartCoroutine(CoResetFace((int)cfg.multiUpdateEnableTest.Value));
+																	  //	StartCoroutine(CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
 		}
 
 		/// <inheritdoc/> 
-		protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
-		{
-
-			//	for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
-			//		StartCoroutine(CoMorphUpdate(delay: 10));
-		}
+		protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate) { }
 
 		/// <summary>
 		/// Taken from ABMX to get the data from card more easily 
@@ -964,12 +1031,19 @@ namespace Character_Morpher
 			return new List<BoneModifier>();
 		}
 
+		internal bool ResetCheck()
+		{
+			bool reset = !cfg.enable.Value && !reloading;
+			return KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame ?
+					(reset || !cfg.enableInGame.Value) : reset;
+
+		}
 
 		/// <summary>
 		/// Update bones/shapes whenever a change is made to the sliders
 		/// </summary>
 		/// <param name="forceReset: ">reset regardless of other perimeters</param>
-		public void MorphChangeUpdate(bool forceReset = false, bool initReset = false, bool updateValues = true)
+		public void MorphChangeUpdate(bool forceReset = false, bool initReset = false, bool updateValues = true, bool abmx = true)
 		{
 			if(dummy) return;
 
@@ -1006,6 +1080,10 @@ namespace Character_Morpher
 				m_data2.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
 				m_data1.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
 				m_data2.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+
+#if KOI_API
+				charaCtrl.LateUpdateForce();
+#endif
 			}
 
 			#endregion
@@ -1013,21 +1091,10 @@ namespace Character_Morpher
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("update values check?");
 			if(!updateValues) return;
 
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("not male in main game check?");
-			if(currGameMode == GameMode.MainGame && ChaControl.sex != 1/*(allowed in maker as of now)*/)
-				return;
 
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("not male in maker check?");
-			if(currGameMode == GameMode.Maker && ChaControl.sex == 0
-				&& !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
-
-
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("All Checks passed?");
-
-			bool reset = !cfg.enable.Value;
-			reset = currGameMode == GameMode.MainGame ? (reset || !cfg.enableInGame.Value) : reset;
-
-			MorphValuesUpdate(forceReset || reset, initReset: initReset);
+			MorphValuesUpdate(forceReset || ResetCheck(), initReset: initReset, abmx: abmx);
+			//if(!reloading)
+			//	ResetFace();//may work ¯\_(ツ)_/¯
 		}
 
 		/// <summary>
@@ -1036,28 +1103,53 @@ namespace Character_Morpher
 		/// <param name="contain"></param>
 		/// <param name="abmx"></param>
 		/// <returns></returns>
-		private Tuple<float, MorphCalcType> GetControlValue(string contain, bool abmx = false, bool fullVal = false)
+		private KeyValuePair<string, Tuple<float, MorphCalcType>> GetControlValue(string contain, bool abmx = false, bool overall = false, bool fullVal = false)
 		{
 			var tmp = controls.all.ToList();
 			if(fullVal)
-				tmp = controls.full.ToList();
+				tmp = controls.fullVal.ToList();
 
-			return abmx ?
-				tmp.Find(m => m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)).Value :
-				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)).Value;
+
+
+			return (abmx ?
+				tmp.Find(m => m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)) :
+				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)))
+				;
+
 		}
 
-		MotionIK motion = null;
+		//MotionIK motion = null;
 		private void MorphValuesUpdate(bool reset, bool initReset = false, bool abmx = true)
 		{
+			var currGameMode = KoikatuAPI.GetCurrentGameMode();
+
+
+
+			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("not male in main game check?");
+			if(currGameMode == GameMode.MainGame && ChaControl.sex != 1/*(allowed in maker as of now)*/)
+				return;
+
+			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("not male in maker check?");
+			if(currGameMode == GameMode.Maker && ChaControl.sex != 1
+				&& !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
+
+			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("All Checks passed?");
+
+
 
 			reset = initReset || reset;
 
-			var cfg = CharaMorpher_Core.cfg;
+			//var cfg = CharaMorpher_Core.cfg;
 			var charaCtrl = ChaControl;
 			var boneCtrl = charaCtrl.GetComponent<BoneController>();
-
 			float enable = (reset ? 0 : 1);
+
+
+
+
+
+
+			//charaCtrl.LateUpdateForce();
 
 
 			//update obscure values//
@@ -1065,36 +1157,84 @@ namespace Character_Morpher
 
 				//not sure how to update this :\ (well it works so don't question it)
 				charaCtrl.fileBody.areolaSize = Mathf.LerpUnclamped(m_data1.main.custom.body.areolaSize, m_data2.main.custom.body.areolaSize,
-					enable * GetControlValue("body").Item1 * GetControlValue("Boobs").Item1);
+					enable * GetControlValue("body").Value.Item1 * GetControlValue("Boobs").Value.Item1);
 
 				charaCtrl.fileBody.bustSoftness = Mathf.LerpUnclamped(m_data1.main.custom.body.bustSoftness, m_data2.main.custom.body.bustSoftness,
-					enable * GetControlValue("body").Item1 * GetControlValue("Boob Phys.").Item1);
+					enable * GetControlValue("body").Value.Item1 * GetControlValue("Boob Phys.").Value.Item1);
 
 				charaCtrl.fileBody.bustWeight = Mathf.LerpUnclamped(m_data1.main.custom.body.bustWeight, m_data2.main.custom.body.bustWeight,
-					enable * GetControlValue("body").Item1 * GetControlValue("Boob Phys.").Item1);
+					enable * GetControlValue("body").Value.Item1 * GetControlValue("Boob Phys.").Value.Item1);
+
+				//ChaControl.updateBustSize =
+				//ChaControl.resetDynamicBoneAll =
+				//ChaControl.reSetupDynamicBoneBust = true;
 
 				//Skin Colour
+				bool newcol = false;
+				var col1 = Color.LerpUnclamped(
 #if KOI_API
-				charaCtrl.fileBody.skinMainColor = Color.LerpUnclamped(m_data1.main.custom.body.skinMainColor, m_data2.main.custom.body.skinMainColor,
-									enable * GetControlValue("skin").Item1 * GetControlValue("base skin").Item1);
-				//	charaCtrl.fileBody.skinSubColor = Color.LerpUnclamped(m_data1.main.custom.body.skinSubColor, m_data2.main.custom.body.skinSubColor,
-				//						enable * GetControlValue("skin") * GetControlValue("base skin"));
+					m_data1.main.custom.body.skinMainColor, m_data2.main.custom.body.skinMainColor,
 #elif HONEY_API
-				charaCtrl.fileBody.skinColor = Color.LerpUnclamped(m_data1.main.custom.body.skinColor, m_data2.main.custom.body.skinColor,
-									enable * GetControlValue("skin").Item1 * GetControlValue("base skin").Item1);
-
+					m_data1.main.custom.body.skinColor, m_data2.main.custom.body.skinColor,
 #endif
-				charaCtrl.fileBody.sunburnColor = Color.LerpUnclamped(m_data1.main.custom.body.sunburnColor, m_data2.main.custom.body.sunburnColor,
-									enable * GetControlValue("skin").Item1 * GetControlValue("sunburn").Item1);
+									enable * GetControlValue("skin").Value.Item1 * GetControlValue("base skin").Value.Item1);
+
+
+#if KOI_API
+				newcol |= charaCtrl.fileBody.skinMainColor != col1;
+				charaCtrl.fileBody.skinMainColor = col1;
+#elif HONEY_API
+				newcol |= charaCtrl.fileBody.skinColor != col1;
+				charaCtrl.fileBody.skinColor = col1;
+#endif
+
+				var col2 = Color.LerpUnclamped(m_data1.main.custom.body.sunburnColor, m_data2.main.custom.body.sunburnColor,
+									enable * GetControlValue("skin").Value.Item1 * GetControlValue("sunburn").Value.Item1);
+
+				newcol |= charaCtrl.fileBody.sunburnColor != col2;
+				charaCtrl.fileBody.sunburnColor = col2;
+
+				//colour update
+				if(initLoadFinished && newcol)
+				{
+					charaCtrl.AddUpdateCMBodyColorFlags
+#if HONEY_API
+						(true, true, true, true);
+#elif KOI_API
+					(true, true, true, true, true, true);
+#endif
+
+					charaCtrl.AddUpdateCMFaceColorFlags
+						(true, true, true, true, true, true, true);
+
+					if(!MakerAPI.InsideMaker)
+					{
+
+						charaCtrl.AddUpdateCMBodyTexFlags
+#if HONEY_API
+							(true, true, true, true);
+#elif KOI_API
+						(true, true, true, true, true);
+#endif
+						charaCtrl.AddUpdateCMFaceTexFlags
+							(true, true, true, true, true, true, true);
+					}
+
+
+					//reset the textures in game
+					charaCtrl.CreateBodyTexture();
+					charaCtrl.CreateFaceTexture();
+				}
+
 
 				//Voice
 #if HS2
 				charaCtrl.fileParam2.voiceRate = Mathf.Lerp(m_data1.main.parameter2.voiceRate, m_data2.main.parameter2.voiceRate,
-					enable * GetControlValue("voice").Item1);
+					enable * GetControlValue("voice").Value.Item1);
 #endif
 
 				charaCtrl.fileParam.voiceRate = Mathf.Lerp(m_data1.main.parameter.voiceRate, m_data2.main.parameter.voiceRate,
-					enable * GetControlValue("voice").Item1);
+					enable * GetControlValue("voice").Value.Item1);
 
 				if(cfg.debug.Value)
 				{
@@ -1138,8 +1278,10 @@ namespace Character_Morpher
 			{
 				float result = 0;
 
-				enable = (reset ? (initReset ? cfg.initialMorphTest.Value : 0) : 1);
 
+
+
+				enable = (reset ? (initReset ? cfg.initialMorphBodyTest.Value : 0) : 1);
 				//Body Shape
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"updating body Shape");
 				if(a < m_data1.main.custom.body.shapeValueBody.Length)
@@ -1152,57 +1294,60 @@ namespace Character_Morpher
 
 						if(cfg.headIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("body", fullVal: initReset).Item1 * GetControlValue("head", fullVal: initReset).Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("head", fullVal: initReset).Value.Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("head", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("head", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1));
 						}
 						else
 						if(cfg.torsoIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("body", fullVal: initReset).Item1 * GetControlValue("torso", fullVal: initReset).Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("torso", fullVal: initReset).Value.Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("torso", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("torso", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1));
 						}
 						else
 						if(cfg.buttIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("body", fullVal: initReset).Item1 * GetControlValue("butt", fullVal: initReset).Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("butt", fullVal: initReset).Value.Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("butt", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("butt", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1));
 						}
 						else
 						if(cfg.legIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("body", fullVal: initReset).Item1 * GetControlValue("legs", fullVal: initReset).Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("legs", fullVal: initReset).Value.Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("legs", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("legs", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1));
 						}
 						else
 						if(cfg.armIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("body", fullVal: initReset).Item1 * GetControlValue("arms", fullVal: initReset).Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("arms", fullVal: initReset).Value.Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("arms", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("arms", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1));
 						}
 						else
 						if(cfg.brestIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("body", fullVal: initReset).Item1 * GetControlValue("boobs", fullVal: initReset).Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("boobs", fullVal: initReset).Value.Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("boobs", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("boobs", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1));
 						}
 						else
 						{
-							var val = GetControlValue("body", fullVal: initReset).Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("body other", fullVal: initReset).Value.Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("body", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("body other", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1));
 						}
 					}
 
 					//load values to character
-					charaCtrl.SetShapeBodyValue(a, result);
+					//	charaCtrl.fileCustom.body.shapeValueBody[a] = result;
+					if(result != charaCtrl.GetShapeBodyValue(a))
+						charaCtrl.SetShapeBodyValue(a, result);
 				}
 
+				enable = (reset ? (initReset ? cfg.initialMorphFaceTest.Value : 0) : 1);
 				//Face Shape
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"updating face Shape");
 				if(a < m_data1.main.custom.face.shapeValueFace.Length)
@@ -1215,41 +1360,44 @@ namespace Character_Morpher
 
 						if(cfg.eyeIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("face", fullVal: initReset).Item1 * GetControlValue("eyes", fullVal: initReset).Item1;
+							var val = GetControlValue("face", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("eyes", fullVal: initReset).Value.Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("eyes", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("eyes", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1));
 						}
 						else
 						 if(cfg.mouthIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("face", fullVal: initReset).Item1 * GetControlValue("mouth", fullVal: initReset).Item1;
+							var val = GetControlValue("face", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("mouth", fullVal: initReset).Value.Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("mouth", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("mouth", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1));
 						}
 						else
 						  if(cfg.earIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("face", fullVal: initReset).Item1 * GetControlValue("ears", fullVal: initReset).Item1;
+							var val = GetControlValue("face", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("ears", fullVal: initReset).Value.Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("ears", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("ears", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1));
 						}
 						else
 						 if(cfg.noseIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("face", fullVal: initReset).Item1 * GetControlValue("nose", fullVal: initReset).Item1;
+							var val = GetControlValue("face", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("nose", fullVal: initReset).Value.Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("nose", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("nose", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1));
 						}
 						else
 						{
-							var val = GetControlValue("face", fullVal: initReset).Item1;
+							var val = GetControlValue("face", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("face other", fullVal: initReset).Value.Item1;
 							result = Mathf.LerpUnclamped(d1, d2,
-								enable * val * (GetControlValue("face", fullVal: initReset).Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(val) : 1));
+								enable * val * (GetControlValue("face other", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1));
 						}
 					}
 
 					//load values to character
-					charaCtrl.SetShapeFaceValue(a, result);
+
+					//charaCtrl.fileCustom.face.shapeValueFace[a] = result;
+					if(result != charaCtrl.GetShapeBodyValue(a))
+						charaCtrl.SetShapeFaceValue(a, result);
 				}
 			}
 
@@ -1263,38 +1411,138 @@ namespace Character_Morpher
 			if(MakerAPI.InsideMaker)
 				SetDefaultSliders();
 
-			//colour update
-			if(initLoadFinished)
+
+			//charaCtrl.LateUpdateForce();
+
+
+			//ResetHeight();
+
+
+		}
+
+		/// <summary>
+		/// Don't ask me why this works it just does
+		/// </summary>
+		internal void ResetHeight()
+		{
+			//reset the height using shoes
+
+#if KOI_API
+			var tmpstate1 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_inner];
+			var tmpstate2 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_outer];
+			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, tmpstate1);
+			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, tmpstate2);
+#else
+			var tmpstate = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes];
+			//	ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, (byte)(tmpstate ? 1 : 0));
+#endif
+
+			//	ChaControl.LateUpdateForce();
+#if KOI_API
+			void heightReset(byte shoestate1, byte shoestate2)
+#else
+			void heightReset(byte shoestate)
+#endif
 			{
-				charaCtrl.AddUpdateCMBodyColorFlags
-#if HONEY_API
-					(true, true, true, true);
-#elif KOI_API
-					(true, true, true, true, true, true);
+				//for(int a = 0; a < 1; ++a)
+				//	yield return null;
+
+
+#if KOI_API
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, shoestate1);
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, shoestate2);
+#else
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, shoestate);
 #endif
 
-				charaCtrl.AddUpdateCMFaceColorFlags
-					(true, true, true, true, true, true, true);
-
-				if(!MakerAPI.InsideMaker)
-				{
-
-					charaCtrl.AddUpdateCMBodyTexFlags
-#if HONEY_API
-						(true, true, true, true);
-#elif KOI_API
-						(true, true, true, true, true);
-#endif
-					charaCtrl.AddUpdateCMFaceTexFlags
-						(true, true, true, true, true, true, true);
-				}
-
-
-				//reset the textures in game
-				charaCtrl.CreateBodyTexture();
-				charaCtrl.CreateFaceTexture();
+				//ChaControl.LateUpdateForce();
+				//	yield break;
 			}
 
+
+#if KOI_API
+			heightReset(1, 1);
+#else
+			heightReset(1);
+#endif
+
+#if KOI_API
+			IEnumerator CoAfterReset(byte state1, byte state2)
+#else
+			IEnumerator CoAfterReset(byte state)
+#endif
+			{
+				for(int a = -1; a < (int)cfg.reloadTest.Value; ++a)
+					yield return null;
+#if KOI_API
+				heightReset(state1, state2);
+#else
+				heightReset(state);
+#endif
+				yield break;
+			}
+#if KOI_API
+			StartCoroutine(CoAfterReset(tmpstate1, tmpstate2));
+#else
+			StartCoroutine(CoAfterReset(tmpstate));
+#endif
+		}
+
+		/// <summary>
+		/// dumb fix for a dumb issue. seems legit.
+		/// </summary>
+		internal void ResetFace(bool forceReset = false)
+		{
+
+			//	if(ResetCheck() || forceReset) return;
+
+			int val = 500;
+
+			void Reset(int valu)
+			{
+
+				//for(int a = 0; a < m_data1.main.custom.face.shapeValueFace.Length; ++a)
+				//	ChaControl.SetShapeBodyValue(a, ChaControl.GetShapeBodyValue(a) + valu);
+				//ChaControl.LateUpdateForce();
+
+
+
+
+				//Use if prior don't work
+				var
+				tmp = GetControlValue("eyes");
+				controls.all[tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				tmp = GetControlValue("mouth");
+				controls.all[tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				tmp = GetControlValue("ears");
+				controls.all[tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				tmp = GetControlValue("nose");
+				controls.all[tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				tmp = GetControlValue("face other");
+				controls.all[tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+
+
+
+				MorphValuesUpdate(false, abmx: false);
+				ChaControl.LateUpdateForce();
+			}
+
+			Reset(-val);
+			Reset(val * 2);
+			Reset(-val);
+			if(ResetCheck() || forceReset)
+				MorphValuesUpdate(true, abmx: false);
+
+		}
+
+		public IEnumerator CoResetFace(int delayFrames, bool forceReset = false)
+		{
+			for(int a = 0; a < delayFrames; ++a)
+				yield return null;
+
+			ResetFace(forceReset);
+
+			yield break;
 		}
 
 		public void AbmxSettings(bool reset, bool initReset, BoneController boneCtrl)
@@ -1310,10 +1558,10 @@ namespace Character_Morpher
 			{
 				//float result = 0;
 
-				enable = ((reset || !cfg.enableABMX.Value) ? (initReset ? cfg.initialMorphTest.Value : 0) : 1);
 
 				#region ABMX
 
+				enable = ((reset || !cfg.enableABMX.Value) ? (initReset ? cfg.initialMorphBodyTest.Value : 0) : 1);
 				//Body
 				if(a < m_data1.abmx.body.Count)
 				{
@@ -1322,9 +1570,6 @@ namespace Character_Morpher
 					var bone1 = m_data1.abmx.body[a];
 					var bone2 = m_data2.abmx.body[a];
 					var current = boneCtrl.Modifiers.Find((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
-
-					//  CharaMorpher.Logger.LogDebug($"found values");
-					//    CharaMorpher_Core.Logger.LogDebug($"current = {current.BoneName}");
 
 					var modVal = Tuple.Create(0f, MorphCalcType.LINEAR);
 
@@ -1348,7 +1593,7 @@ namespace Character_Morpher
 						};
 
 					if(Array.FindIndex(fingerNames, (k) => content.Contains(k.Trim().ToLower())) >= 0)
-						modVal = GetControlValue("hands", true, fullVal: initReset);
+						modVal = GetControlValue("hands", true, fullVal: initReset).Value;
 					else
 					{
 
@@ -1364,12 +1609,11 @@ namespace Character_Morpher
 						if(end2 >= 0)
 							ending2 = content.Substring(end - (end - (end2)));
 
-						// CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
+
 
 						if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
 							content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
 
-						// CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
 #if KOI_API
 						switch(boneDatabaseCatagories.Find((k) => k.Key.Trim().ToLower().Contains(content)).Value)
 #else
@@ -1377,32 +1621,32 @@ namespace Character_Morpher
 #endif
 						{
 						case "torso":
-							modVal = GetControlValue("Torso", true, fullVal: initReset);
+							modVal = GetControlValue("Torso", true, fullVal: initReset).Value;
 							break;
 						case "boobs":
-							modVal = GetControlValue("Boobs", true, fullVal: initReset);
+							modVal = GetControlValue("Boobs", true, fullVal: initReset).Value;
 							break;
 						case "butt":
-							modVal = GetControlValue("Butt", true, fullVal: initReset);
+							modVal = GetControlValue("Butt", true, fullVal: initReset).Value;
 							break;
 						case "arms":
-							modVal = GetControlValue("Arms", true, fullVal: initReset);
+							modVal = GetControlValue("Arms", true, fullVal: initReset).Value;
 							break;
 						case "hands":
-							modVal = GetControlValue("Hands", true, fullVal: initReset);
+							modVal = GetControlValue("Hands", true, fullVal: initReset).Value;
 							break;
 						case "genitals":
-							modVal = GetControlValue("Genitals", true, fullVal: initReset);
+							modVal = GetControlValue("Genitals", true, fullVal: initReset).Value;
 							break;
 						case "legs":
-							modVal = GetControlValue("Legs", true, fullVal: initReset);
+							modVal = GetControlValue("Legs", true, fullVal: initReset).Value;
 							break;
 						case "feet":
-							modVal = GetControlValue("Feet", true, fullVal: initReset);
+							modVal = GetControlValue("Feet", true, fullVal: initReset).Value;
 							break;
 
 						default:
-							modVal = Tuple.Create(1f, MorphCalcType.LINEAR);
+							modVal = GetControlValue("body other", true, fullVal: initReset).Value;
 							break;
 						}
 					}
@@ -1410,11 +1654,12 @@ namespace Character_Morpher
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
 					UpdateBoneModifier(ref current, bone1, bone2, modVal, index: a,
 						sectVal: (cfg.linkOverallABMXSliders.Value ?
-						GetControlValue("body", fullVal: initReset).Item1 : 1) *
-						GetControlValue("Body", true, fullVal: initReset).Item1,
+						GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 : 1) *
+						GetControlValue("Body", abmx: true, fullVal: initReset).Value.Item1,
 						enable: enable);
 				}
 
+				enable = ((reset || !cfg.enableABMX.Value) ? (initReset ? cfg.initialMorphFaceTest.Value : 0) : 1);
 				//face
 				if(a < m_data1.abmx.face.Count)
 				{
@@ -1440,12 +1685,12 @@ namespace Character_Morpher
 					if(end2 >= 0)
 						ending2 = content.Substring(end - (end - (end2)));
 
-					// CharaMorpher_Core.Logger.LogDebug($"the result of ending 2 = {ending2}");
+
 
 					if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
 						content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
 
-					//  CharaMorpher_Core.Logger.LogDebug($"content of bone = {content ?? "... this is null"}");
+
 
 
 #if KOI_API
@@ -1456,38 +1701,39 @@ namespace Character_Morpher
 					{
 
 					case "eyes":
-						modVal = GetControlValue("Eyes", true, fullVal: initReset);
+						modVal = GetControlValue("Eyes", true, fullVal: initReset).Value;
 						break;
 					case "nose":
-						modVal = GetControlValue("Nose", true, fullVal: initReset);
+						modVal = GetControlValue("Nose", true, fullVal: initReset).Value;
 						break;
 					case "mouth":
-						modVal = GetControlValue("Mouth", true, fullVal: initReset);
+						modVal = GetControlValue("Mouth", true, fullVal: initReset).Value;
 						break;
 					case "ears":
-						modVal = GetControlValue("Ears", true, fullVal: initReset);
+						modVal = GetControlValue("Ears", true, fullVal: initReset).Value;
 						break;
 					case "hair":
-						modVal = GetControlValue("Hair", true, fullVal: initReset);
+						modVal = GetControlValue("Hair", true, fullVal: initReset).Value;
 						break;
 
 
 					default:
-						modVal = Tuple.Create(1f, MorphCalcType.LINEAR);
+						modVal = GetControlValue("head other", true, fullVal: initReset).Value;
 						break;
 					}
 
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
 					UpdateBoneModifier(ref current, bone1, bone2, modVal, index: a,
 						sectVal: (cfg.linkOverallABMXSliders.Value ?
-						GetControlValue("face", fullVal: initReset).Item1 : 1) *
-						GetControlValue("head", true, fullVal: initReset).Item1,
+						GetControlValue("face", fullVal: initReset).Value.Item1 : 1) *
+						GetControlValue("head", true, fullVal: initReset).Value.Item1,
 						enable: enable);
 				}
 				#endregion
 
-				//  CharaMorpher_Core.Logger.LogDebug("");
 			}
+			//	boneCtrl.NeedsFullRefresh = true;
+
 		}
 
 
@@ -1500,9 +1746,7 @@ namespace Character_Morpher
 
 			if(mkBase && !reloading)
 			{
-				//boobcustum?.sldBustWeight?.Set(ChaControl.fileBody.bustWeight);
-				//boobcustum?.sldBustSoftness?.Set(ChaControl.fileBody.bustSoftness);
-				//boobcustum?.sldAreolaSize?.Set(ChaControl.fileBody.areolaSize);
+
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Resetting CVS Sliders");
 				bodycustum?.CalculateUI();
@@ -1575,7 +1819,12 @@ namespace Character_Morpher
 		{
 			try
 			{
+				var lerpVal = Mathf.Clamp(enable, 0, 1) *
+					sectVal * modVal.Item1 *
+					(modVal.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(modVal.Item1) : 1f);
+
 				int count = 0;//may use this in other mods
+				bool check = false;
 				foreach(var mod in current?.CoordinateModifiers)
 				{
 
@@ -1583,53 +1832,68 @@ namespace Character_Morpher
 					var inRange2 = count < bone2.CoordinateModifiers.Length;
 
 
-					mod.PositionModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].PositionModifier, bone2.CoordinateModifiers[inRange2 ? count : 0].PositionModifier,
-						Mathf.Clamp(enable, 0, 1) * sectVal * modVal.Item1 * (modVal.Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(modVal.Item1) : 1f));
+					var pos = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].PositionModifier,
+																bone2.CoordinateModifiers[inRange2 ? count : 0].PositionModifier,
+																lerpVal);
+
+					check |= pos != mod.PositionModifier;
+
+					var rot = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].RotationModifier,
+																bone2.CoordinateModifiers[inRange2 ? count : 0].RotationModifier,
+																lerpVal);
+
+					check |= rot != mod.RotationModifier;
+
+					var scale = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].ScaleModifier,
+															bone2.CoordinateModifiers[inRange2 ? count : 0].ScaleModifier,
+															lerpVal);
+
+					check |= scale != mod.ScaleModifier;
+
+					var len = Mathf.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].LengthModifier,
+															bone2.CoordinateModifiers[inRange2 ? count : 0].LengthModifier,
+															lerpVal);
+
+					check |= len != mod.LengthModifier;
 
 
-					mod.RotationModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].RotationModifier, bone2.CoordinateModifiers[inRange2 ? count : 0].RotationModifier,
-						Mathf.Clamp(enable, 0, 1) * sectVal * modVal.Item1 * (modVal.Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(modVal.Item1) : 1f));
-
-
-					mod.ScaleModifier = Vector3.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].ScaleModifier, bone2.CoordinateModifiers[inRange2 ? count : 0].ScaleModifier,
-						Mathf.Clamp(enable, 0, 1) * sectVal * modVal.Item1 * (modVal.Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(modVal.Item1) : 1f));
-
-
-					mod.LengthModifier = Mathf.LerpUnclamped(bone1.CoordinateModifiers[inRange1 ? count : 0].LengthModifier, bone2.CoordinateModifiers[inRange2 ? count : 0].LengthModifier,
-						Mathf.Clamp(enable, 0, 1) * sectVal * modVal.Item1 * (modVal.Item2 == MorphCalcType.QUADRATIC && cfg.enableQuadManip.Value ? Mathf.Abs(modVal.Item1) : 1f));
-
+					mod.PositionModifier = pos;
+					mod.RotationModifier = rot;
+					mod.ScaleModifier = scale;
+					mod.LengthModifier = len;
 					if(cfg.debug.Value)
 					{
 						//   CharaMorpher_Core.Logger.LogDebug($"updated values");
 						if(count == 0)
 						{
-							//if(cfg.debug.Value)
-							//{
+
 							CharaMorpher_Core.Logger.LogDebug($"lerp Value {index}: {enable * modVal.Item1}");
 							CharaMorpher_Core.Logger.LogDebug($"{current.BoneName} modifiers!!");
 							CharaMorpher_Core.Logger.LogDebug($"Body Bone 1 scale {index}: {bone1.CoordinateModifiers[count].ScaleModifier}");
 							CharaMorpher_Core.Logger.LogDebug($"Body Bone 2 scale {index}: {bone2.CoordinateModifiers[count].ScaleModifier}");
 							CharaMorpher_Core.Logger.LogDebug($"Result scale {index}: {mod.ScaleModifier}");
-							//}
 						}
 					}
 
 					++count;
 				}
 
-				var boneCtrl = GetComponent<BoneController>();
-				//   CharaMorpher_Core.Logger.LogDebug($"applying values");
-#if HS2
-				current.Apply(boneCtrl.CurrentCoordinate.Value, null, !MakerAPI.InsideMaker);
-#else
-				current.Apply(boneCtrl.CurrentCoordinate.Value, null, true);
-#endif
 
-				boneCtrl.NeedsBaselineUpdate = true;
+				var boneCtrl = GetComponent<BoneController>();
+				if(check)
+				{
+#if HS2
+					current.Apply(boneCtrl.CurrentCoordinate.Value, null, !MakerAPI.InsideMaker);
+#else
+					current.Apply(boneCtrl.CurrentCoordinate.Value, null, !MakerAPI.InsideMaker);
+#endif
+					//boneCtrl.NeedsBaselineUpdate = true;
+				}
+
 			}
 			catch(Exception e)
 			{
-				CharaMorpher_Core.Logger.LogDebug($"Error: {e.TargetSite} went boom... {e.Message}");
+				CharaMorpher_Core.Logger.LogError($"Error: {e.TargetSite} went boom... {e.Message}");
 			}
 
 		}
@@ -1638,7 +1902,6 @@ namespace Character_Morpher
 		{
 			if(!dummy)
 				MorphTarget.initalize = false;
-
 			base.OnDestroy();
 		}
 
@@ -1665,8 +1928,8 @@ namespace Character_Morpher
 					{
 
 						Transform parent = null;
-						parent = MyUtil.GetFuncCtrlOfType<CharaMorpherController>().First()?.transform.parent ?? null;
-
+						parent = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>().First()?.transform.parent ?? null;
+						_extraCharacter = new ChaControl();
 
 						_extraCharacter =
 
@@ -1678,9 +1941,11 @@ namespace Character_Morpher
 							Character.CreateFemale(parent?.gameObject, -10, hiPoly: false);
 #endif
 
+						if(!_extraCharacter.gameObject) { _extraCharacter = null; return; }
+
 						//remove character from internal list
 #if KKS
-						Character.DeleteChara(_extraCharacter, entryOnly:true);		
+						Character.DeleteChara(_extraCharacter, entryOnly: true);
 #else
 						Character.Instance?.DeleteChara(_extraCharacter, entryOnly: true);
 #endif
@@ -1691,12 +1956,15 @@ namespace Character_Morpher
 						var ctrler = _extraCharacter?.GetComponent<CharaMorpherController>();
 						if(ctrler)
 						{
+
+							CharaMorpher_Core.Logger.LogDebug("Destroying dummy chara controller");
 							ctrler.dummy = true;
-							GameObject.Destroy(ctrler);
+							ctrler.enabled = false;
+							GameObject.DestroyImmediate(ctrler);//change back to destroy if issues arise
 						}
 
 						_extraCharacter.gameObject.SetActive(false);
-						CharaMorpher_Core.Logger.LogDebug("created new character instance");
+						CharaMorpher_Core.Logger.LogDebug("created new Morph character instance");
 					}
 
 					if(_bonectrl) _bonectrl.hideFlags = HideFlags.HideAndDontSave;
@@ -1712,9 +1980,9 @@ namespace Character_Morpher
 			}
 			get { return _extraCharacter != null; }
 		}
-		public ChaControl extraCharacter { get => _extraCharacter; }
+		public static ChaControl extraCharacter { get => _extraCharacter; }
 
-		public ChaFileControl chaFile { get { return extraCharacter?.chaFile; } }
+		public static ChaFileControl chaFile { get { return extraCharacter?.chaFile; } }
 	}
 
 	public class MorphData
@@ -1724,15 +1992,15 @@ namespace Character_Morpher
 			public List<BoneModifier> body = new List<BoneModifier>();
 			public List<BoneModifier> face = new List<BoneModifier>();
 
-			//public List<BoneModifier> newModifiers = new List<BoneModifier>();
+
 			public bool isLoaded { get; private set; } = false;
 			public bool isSplit { get; private set; } = false;
-			//public List<BoneModifier> other = new List<BoneModifier>();
+
 
 			public void Populate(CharaMorpherController morphControl, bool morph = false)
 			{
 
-				var boneCtrl = morph ? morphTarget.extraCharacter.GetComponent<BoneController>() : morphControl.GetComponent<BoneController>();
+				var boneCtrl = morph ? MorphTarget.extraCharacter.GetComponent<BoneController>() : morphControl.GetComponent<BoneController>();
 				var charaCtrl = morphControl.ChaControl;
 
 				if(isLoaded) return;
@@ -1807,7 +2075,7 @@ namespace Character_Morpher
 					body?.Clear();
 				if(faceBonemodTgl)
 					face?.Clear();
-				//other?.Clear();
+
 
 
 				isLoaded = false;
@@ -1820,7 +2088,7 @@ namespace Character_Morpher
 				{
 					body = new List<BoneModifier>(body ?? new List<BoneModifier>()),
 					face = new List<BoneModifier>(face ?? new List<BoneModifier>()),
-					//other = new List<BoneModifier>(other ?? new List<BoneModifier>()),
+
 					isSplit = isSplit,
 					isLoaded = isLoaded,
 				};
@@ -1872,14 +2140,14 @@ namespace Character_Morpher
 
 #if HONEY_API
 			//CopyAll will not copy this data in hs2
-			main.dataID = morph ? morphTarget.chaFile.dataID : data.ChaControl.chaFile.dataID;
+			main.dataID = morph ? MorphTarget.chaFile.dataID : data.ChaControl.chaFile.dataID;
 #endif
 
 			try
 			{
-				main.CopyAll(morph ? morphTarget.chaFile : data.ChaFileControl);
+				main.CopyAll(morph ? MorphTarget.chaFile : data.ChaFileControl);
 			}
-			catch { }
+			catch { CharaMorpher_Core.Logger.LogDebug("Could not copy character data"); }
 
 			abmx.Populate(data, morph);
 		}
@@ -1903,9 +2171,9 @@ namespace Character_Morpher
 				//var ctrl = this;
 				IEnumerator CoPost()
 				{
-					for(int a = -1; a < cfg.multiUpdateTest.Value; ++a)
+					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						yield return null;
-					// CharaMorpher_Core.Logger.LogDebug("post called in controls");
+
 
 					bool Check()
 					{
@@ -1916,7 +2184,7 @@ namespace Character_Morpher
 							if(_all[_all.Keys.ElementAt(a)].Item1 != _lastAll[_lastAll.Keys.ElementAt(a)].Item1)
 								return true;
 
-						//CharaMorpher_Core.Logger.LogDebug("All values the same ");
+
 						return false;
 					}
 
@@ -1938,7 +2206,7 @@ namespace Character_Morpher
 		/// <summary>
 		/// each value is set to one
 		/// </summary>
-		public Dictionary<string, Tuple<float, MorphCalcType>> full
+		public Dictionary<string, Tuple<float, MorphCalcType>> fullVal
 		{
 			get
 			{
@@ -1948,6 +2216,7 @@ namespace Character_Morpher
 				return tmp;
 			}
 		}
+
 		/// <summary>
 		/// list of every control with an "overall" name
 		/// </summary>
@@ -1957,11 +2226,20 @@ namespace Character_Morpher
 			=> all.Where((p) => Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
 		}
 
+		/// <summary>
+		/// list of every control w/o an "overall" name
+		/// </summary>
+		public IEnumerable<KeyValuePair<string, Tuple<float, MorphCalcType>>> notOverall
+		{
+			get
+			=> all.Where((p) => !Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
+		}
+
 	}
 
 	/// <summary>
 	/// Needed to copy this class from ABMX in case old card is loaded (Taken directly from source)
-	/// </summary>
+	/// </summary> 
 	internal static class ABMXOldDataConverter
 	{
 		private const string ExtDataBoneDataKey = "boneData";
