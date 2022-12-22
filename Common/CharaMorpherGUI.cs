@@ -162,12 +162,23 @@ namespace Character_Morpher
 					//	ctrl.StartCoroutine(ctrl.CoResetHeight(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
 				});
 
-			var saveWithMorph = e.AddControl(new MakerToggle(category, "Enable Save As Seen", cfg.saveWithMorph.Value, CharaMorpher_Core.Instance));
+			var saveWithMorph = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable Save As Seen", cfg.saveWithMorph.Value, CharaMorpher_Core.Instance))
+				.OnGUIExists((gui) =>				
+					cfg.saveWithMorph.SettingChanged += (s, o) =>  
+					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.saveWithMorph.Value)
+				);
+
 			saveWithMorph.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.saveWithMorph.Value,
 				(ctrl, val) => { cfg.saveWithMorph.Value = val; });
 
-			var enableQuadManip = e.AddControl(new MakerToggle(category, "Enable Calculation Types", cfg.enableCalcTypes.Value, CharaMorpher_Core.Instance));
+
+
+			var enableQuadManip = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable Calculation Types", cfg.enableCalcTypes.Value, CharaMorpher_Core.Instance))
+				.OnGUIExists((gui) =>				
+					cfg.enableCalcTypes.SettingChanged += (s, o) => 
+					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableCalcTypes.Value)
+				); 
 			saveWithMorph.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.enableCalcTypes.Value,
 				(ctrl, val) => { cfg.enableCalcTypes.Value = val; });
@@ -314,7 +325,7 @@ namespace Character_Morpher
 			{
 				CreatSlider(settingName, index, -cfg.sliderExtents.Value * .01f, 1 + cfg.sliderExtents.Value * .01f);
 
-				var mySlider = sliders.Last().OnGUIExists((gui) =>
+				sliders.Last().OnGUIExists((gui) =>
 				{
 					var slid = gui.ControlObject.
 						GetComponentInChildren<Slider>();
@@ -326,6 +337,7 @@ namespace Character_Morpher
 							inst.StartCoroutine(MakerAPI.GetCharacterControl().
 							GetComponent<CharaMorpherController>().CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
 
+
 						//inst.StartCoroutine(MakerAPI.GetCharacterControl().
 						//GetComponent<CharaMorpherController>().CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
 
@@ -333,8 +345,8 @@ namespace Character_Morpher
 						//	GetComponent<CharaMorpherController>().CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 1));
 
 
-						//	inst.StartCoroutine(MakerAPI.GetCharacterControl().
-						//		GetComponent<CharaMorpherController>()?.CoABMXFullRefresh(3 + (int)cfg.multiUpdateTest.Value));
+						inst.StartCoroutine(MakerAPI.GetCharacterControl().
+							GetComponent<CharaMorpherController>()?.CoABMXFullRefresh(3 + (int)cfg.multiUpdateEnableTest.Value));
 
 					}
 
@@ -499,7 +511,7 @@ namespace Character_Morpher
 
 			IEnumerator ChangeLayout(BaseGuiEntry gui)
 			{
-#if !KK
+				//#if !KK
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("moving object");
 
 				yield return new WaitWhile(() => gui?.ControlObject?.GetComponentInParent<ScrollRect>()?.transform == null);
@@ -509,9 +521,13 @@ namespace Character_Morpher
 
 				//This fixes the KOI_API rendering issue & enables scrolling over viewport
 #if KOI_API
+				//#if KKS
 				par.GetComponent<ScrollRect>().GetComponent<Image>().sprite = par.GetComponent<ScrollRect>().content.GetComponent<Image>()?.sprite;
-				if(!par.GetComponent<ScrollRect>().GetComponent<Image>().sprite)
-					par.GetComponent<ScrollRect>().GetComponent<Image>().sprite = par.GetComponent<ScrollRect>().viewport.GetComponent<Image>()?.sprite;
+				//				if(!par.GetComponent<ScrollRect>().GetComponent<Image>().sprite)
+				//					par.GetComponent<ScrollRect>().GetComponent<Image>().sprite = par.GetComponent<ScrollRect>().viewport.GetComponent<Image>()?.sprite;
+				//#else
+				par.GetComponent<ScrollRect>().GetComponent<Image>().color = (Color)par.GetComponent<ScrollRect>().content.GetComponent<Image>()?.color;
+				//#endif
 				par.GetComponent<ScrollRect>().GetComponent<Image>().enabled = true;
 				par.GetComponent<ScrollRect>().GetComponent<Image>().raycastTarget = true;
 				var img = par.GetComponent<ScrollRect>().content.GetComponent<Image>();
@@ -554,7 +570,7 @@ namespace Character_Morpher
 
 				//Reorder scrollbar
 				par.GetComponent<ScrollRect>().verticalScrollbar.transform.SetAsLastSibling();
-#endif
+				//#endif
 				yield break;
 			}
 
@@ -759,7 +775,7 @@ namespace Character_Morpher
 		public const string FileExt = ".png";
 		public const string FileFilter = "Character Images (*.png)|*.png|All files|*.*";
 
-		private static readonly string _defaultOverlayDirectory = Path.Combine(BepInEx.Paths.GameRootPath, "/UserData/chara/");
+		private static readonly string _defaultOverlayDirectory = Path.Combine(BepInEx.Paths.GameRootPath, "UserData/chara/");
 		public static string TargetDirectory { get => MakeDirPath(Path.GetDirectoryName(TargetPath)); }
 
 		public static string TargetPath

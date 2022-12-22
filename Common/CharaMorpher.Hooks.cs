@@ -37,7 +37,7 @@ namespace Character_Morpher
 			}
 
 #if KOI_API
-		
+
 
 
 
@@ -72,7 +72,7 @@ namespace Character_Morpher
 #if !KK
 					if(ctrl.ChaControl.chaFile == __instance)
 #endif
-						Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
+					Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
 				}
 
 			}
@@ -123,7 +123,7 @@ namespace Character_Morpher
 			[HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
 			static void OnPreButtonClick(Button __instance)
 			{
-				
+
 
 				if(!__instance.interactable) return;
 
@@ -131,7 +131,7 @@ namespace Character_Morpher
 
 				OnSaveLoadClick(__instance);
 				OnExitSaveClick(__instance);
-			
+
 				OnCoordLoadClick(__instance);
 			}
 
@@ -154,6 +154,7 @@ namespace Character_Morpher
 #endif
 						foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 						{
+							if(!ctrl) continue;
 							Logger.LogDebug("The Chara Load Button was called!!!");
 
 							for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
@@ -179,8 +180,9 @@ namespace Character_Morpher
 				if(ctrler.GetComponentInParent<CustomCoordinateFile>())
 					if(ctrler.name.ToLower().Contains("load"))
 #endif
-						foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+						foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 						{
+							if(!ctrl) continue;
 							Logger.LogDebug("The Coord Load Button was called!!!");
 
 							for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
@@ -202,21 +204,27 @@ namespace Character_Morpher
 				if(ctrler.transform.parent?.parent?.GetComponentInParent<CharaCustom.CustomCharaWindow>())
 					if(ctrler.name.ToLower().Contains("overwrite") || ctrler.name.ToLower().Contains("save"))
 #elif KOI_API
-			
+
 				if(ctrler.name.ToLower().Contains("reload")) return;
 				if(ctrler.name.ToLower().Contains("override") || ctrler.name.ToLower().Contains("save")
 					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
 #endif
 
 					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
-						if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
-							if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
-								foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+						if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
+							
+							foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 								{
+									if(!ctrl) continue;
 									if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
 
 									for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 										ctrl.MorphChangeUpdate(forceReset: true);
+
+									//ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
+									
+									//ctrl.ChaControl.LateUpdateForce();
+									//	ctrl.StartCoroutine(ctrl?.CoABMXFullRefresh(0));
 								}
 			}
 
@@ -235,11 +243,11 @@ namespace Character_Morpher
 				if(ctrler.name.ToLower().Contains("exit") || ctrler.name.Contains("No")/*fixes issue with finding false results*/)
 #endif
 					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
-						if(KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame || cfg.enableInGame.Value)
-							if(!MakerAPI.InsideMaker || MakerAPI.GetMakerSex() != 0 || cfg.enableInMaleMaker.Value)
-
+						if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
+						
 								foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 								{
+									if(!ctrl) continue;
 									if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
 
 									for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
