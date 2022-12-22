@@ -33,7 +33,6 @@ using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpherController;
 
 
-
 namespace Character_Morpher
 {
 
@@ -656,13 +655,14 @@ namespace Character_Morpher
 			for(int a = 0; a < delayFrames; ++a)
 				yield return null;
 
-			var boneCtrl = GetComponent<BoneController>();
 
-			yield return new WaitWhile(() => (boneCtrl?.NeedsFullRefresh ?? false) || (boneCtrl?.NeedsBaselineUpdate ?? false));
+			var boneCtrl = GetComponent<BoneController>();
+			if((boneCtrl?.NeedsFullRefresh ?? false) || (boneCtrl?.NeedsBaselineUpdate ?? false))
+				yield return new WaitWhile(() => (boneCtrl?.NeedsFullRefresh ?? false) || (boneCtrl?.NeedsBaselineUpdate ?? false));
 
 			if(reloading) yield break;
-
-			if(boneCtrl != null) boneCtrl.NeedsFullRefresh = true;
+			//	boneCtrl = GetComponent<BoneController>();
+			//	if(boneCtrl != null) boneCtrl.NeedsFullRefresh = true;
 
 			yield break;
 		}
@@ -988,9 +988,9 @@ namespace Character_Morpher
 			//reset values to normal after saving
 			if(cfg.enable.Value && !cfg.saveWithMorph.Value)
 				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-					StartCoroutine(CoMorphChangeUpdate(delay: a + 1));//turn the card back after
-																	  //StartCoroutine(CoResetFace((int)cfg.multiUpdateEnableTest.Value));
-																	  //	StartCoroutine(CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
+					StartCoroutine(CoMorphChangeUpdate(delay: (int)cfg.multiUpdateEnableTest.Value + a + 1));//turn the card back after(do not change)
+																											 //StartCoroutine(CoResetFace((int)cfg.multiUpdateEnableTest.Value));
+																											 //	StartCoroutine(CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
 		}
 
 		/// <inheritdoc/> 
@@ -1126,12 +1126,13 @@ namespace Character_Morpher
 
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("not male in main game check?");
-			if(currGameMode == GameMode.MainGame && ChaControl.sex != 1/*(allowed in maker as of now)*/)
+			if(!MakerAPI.InsideMaker && ChaControl.sex != 1/*(allowed in maker as of now)*/)
 				return;
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("not male in maker check?");
-			if(currGameMode == GameMode.Maker && ChaControl.sex != 1
+			if(MakerAPI.InsideMaker && ChaControl.sex != 1
 				&& !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
+
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("All Checks passed?");
 
@@ -1260,7 +1261,7 @@ namespace Character_Morpher
 				CharaMorpher_Core.Logger.LogDebug($"data 2 body bones: {m_data2.abmx.body.Count}");
 				CharaMorpher_Core.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
 				CharaMorpher_Core.Logger.LogDebug($"data 2 face bones: {m_data2.abmx.face.Count}");
-				CharaMorpher_Core.Logger.LogDebug($"chara bones: {boneCtrl.Modifiers.Count}");
+				CharaMorpher_Core.Logger.LogDebug($"chara bones: {boneCtrl.GetAllModifiers().ToList().Count}");
 				CharaMorpher_Core.Logger.LogDebug($"body parts: {m_data1.main.custom.body.shapeValueBody.Length}");
 				CharaMorpher_Core.Logger.LogDebug($"face parts: {m_data1.main.custom.face.shapeValueFace.Length}");
 			}
@@ -1548,6 +1549,8 @@ namespace Character_Morpher
 		public void AbmxSettings(bool reset, bool initReset, BoneController boneCtrl)
 		{
 			if(!m_data1.abmx.isSplit || !m_data2.abmx.isSplit) return;
+			if(m_data1.abmx.body.Count != m_data2.abmx.body.Count ||
+				m_data1.abmx.face.Count != m_data2.abmx.face.Count) return;
 
 			float enable;
 			for(int a = 0; a < Mathf.Max(new float[]
@@ -1569,7 +1572,7 @@ namespace Character_Morpher
 
 					var bone1 = m_data1.abmx.body[a];
 					var bone2 = m_data2.abmx.body[a];
-					var current = boneCtrl.Modifiers.Find((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
+					var current = boneCtrl.GetAllModifiers().First((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
 
 					var modVal = Tuple.Create(0f, MorphCalcType.LINEAR);
 
@@ -1667,7 +1670,7 @@ namespace Character_Morpher
 
 					var bone1 = m_data1.abmx.face[a];
 					var bone2 = m_data2.abmx.face[a];
-					var current = boneCtrl.Modifiers.Find((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
+					var current = boneCtrl.GetAllModifiers().First((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
 
 					var modVal = Tuple.Create(0f, MorphCalcType.LINEAR);
 
@@ -1758,6 +1761,8 @@ namespace Character_Morpher
 				mkBase.updateCvsBodyShapeBreast = true;
 #endif
 
+
+				KKABMX.GUI.KKABMX_GUI.SpawnedSliders.Last().Sliders.Last().Value = KKABMX.GUI.KKABMX_GUI.SpawnedSliders.Last().Sliders.Last().DefaultValue;
 			}
 		}
 
@@ -1775,10 +1780,11 @@ namespace Character_Morpher
 				if(bone1.FindIndex((k) => k.BoneName.Trim().ToLower() == content) < 0)
 				{
 					string name = bone.BoneName;
+					BoneModifier nBone;
 
-					bone1.Add(new BoneModifier(name));
+					bone1.Add(nBone = new BoneModifier(name, bone.BoneLocation));
 					if(bone.IsCoordinateSpecific())
-						bone1.Last().MakeCoordinateSpecific(bone.CoordinateModifiers.Length);
+						nBone.MakeCoordinateSpecific(bone.CoordinateModifiers.Length);
 				}
 			}
 		}
@@ -1795,13 +1801,17 @@ namespace Character_Morpher
 			{
 				string content = bone.BoneName.Trim().ToLower();
 
-				if(bone1.Modifiers.FindIndex((k) => k.BoneName.Trim().ToLower() == content) < 0)
+				if((bone1.GetAllModifiers().Count((k) => k.BoneName.Trim().ToLower() == content) - 1) < 0)
 				{
 					string name = bone.BoneName;
-
-					bone1.AddModifier(new BoneModifier(name));
+					BoneModifier nBone = null;
+					try
+					{
+						bone1.AddModifier(nBone = new BoneModifier(name, bone.BoneLocation));
+					}
+					catch { }
 					if(bone.IsCoordinateSpecific())
-						bone1.Modifiers.Last().MakeCoordinateSpecific(bone.CoordinateModifiers.Length);
+						nBone?.MakeCoordinateSpecific(bone.CoordinateModifiers.Length);
 				}
 			}
 		}
@@ -1883,11 +1893,11 @@ namespace Character_Morpher
 				if(check)
 				{
 #if HS2
-					current.Apply(boneCtrl.CurrentCoordinate.Value, null, !MakerAPI.InsideMaker);
+					current.Apply(boneCtrl.CurrentCoordinate.Value, null);
 #else
-					current.Apply(boneCtrl.CurrentCoordinate.Value, null, !MakerAPI.InsideMaker);
+					current.Apply(boneCtrl.CurrentCoordinate.Value, null);
 #endif
-					//boneCtrl.NeedsBaselineUpdate = true;
+					boneCtrl.NeedsBaselineUpdate = true;//may be needed to update abmx sliders
 				}
 
 			}
@@ -2156,8 +2166,8 @@ namespace Character_Morpher
 	internal class MorphControls
 	{
 		Dictionary<string, Tuple<float, MorphCalcType>> _all, _lastAll;
-		Coroutine post;
 
+		Coroutine post;
 		public Dictionary<string, Tuple<float, MorphCalcType>> all
 		{
 			get
@@ -2301,7 +2311,7 @@ namespace Character_Morpher
 					}
 					catch(Exception ex)
 					{
-						CharaMorpher_Core.Logger.LogError($"Failed to load legacy line \"{string.Join(",", singleEntry)}\" - {ex.Message}");
+						CharaMorpher_Core.Logger.LogError($"ABMX: Failed to load legacy line \"{string.Join(",", singleEntry)}\" - {ex.Message}");
 					}
 				}
 
@@ -2314,7 +2324,7 @@ namespace Character_Morpher
 				if(coordinateModifiers.Count > 1 && coordinateModifiers.Count < kkCoordinateCount)
 					coordinateModifiers.RemoveRange(0, coordinateModifiers.Count - 1);
 
-				results.Add(new BoneModifier(groupedBoneDataEntries.Key, coordinateModifiers.ToArray()));
+				results.Add(new BoneModifier(groupedBoneDataEntries.Key, BoneLocation.Unknown, coordinateModifiers.ToArray()));
 			}
 
 			return results;
