@@ -80,7 +80,7 @@ namespace Character_Morpher
 		// Avoid changing GUID unless absolutely necessary. Plugins that rely on your plugin will no longer recognize it, and if you use it in function controllers you will lose all data saved to cards before the change!
 		public const string ModName = "Character Morpher";
 		public const string GUID = "prolo.chararmorpher";//never change this
-		public const string Version = "0.2.3";
+		public const string Version = "0.2.4";
 
 		internal static CharaMorpher_Core Instance;
 		internal static new ManualLogSource Logger;
@@ -88,8 +88,8 @@ namespace Character_Morpher
 		internal static OnValueChange OnSliderValueChange = new OnValueChange();
 
 		public List<KeyValuePair<int, string>> controlCategories = new List<KeyValuePair<int, string>>();
-		public static MyConfig cfg;
-		public struct MyConfig
+		public static MorphConfig cfg;
+		public struct MorphConfig
 		{
 			//ABMX
 			public ConfigEntry<bool> enableABMX { set; get; }
@@ -172,7 +172,7 @@ namespace Character_Morpher
 			Logger.LogDebug($"Face bones amount: {faceBoneAmount}");
 
 			int index = 0, defaultIndex = -1;//easier to input index order values
-			cfg = new MyConfig
+			cfg = new MorphConfig
 			{
 				enable = Config.Bind("_Main_", "Enable", false, new ConfigDescription("Allows the plugin to run (may need to reload character/scene if results are not changing)", null, new ConfigurationManagerAttributes { Order = --index })),
 
