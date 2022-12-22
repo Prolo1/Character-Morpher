@@ -1549,6 +1549,8 @@ namespace Character_Morpher
 		public void AbmxSettings(bool reset, bool initReset, BoneController boneCtrl)
 		{
 			if(!m_data1.abmx.isSplit || !m_data2.abmx.isSplit) return;
+			if(m_data1.abmx.body.Count != m_data2.abmx.body.Count ||
+				m_data1.abmx.face.Count != m_data2.abmx.face.Count) return;
 
 			float enable;
 			for(int a = 0; a < Mathf.Max(new float[]
@@ -1780,7 +1782,7 @@ namespace Character_Morpher
 					string name = bone.BoneName;
 					BoneModifier nBone;
 
-					bone1.Add(nBone = new BoneModifier(name, BoneLocation.Unknown));
+					bone1.Add(nBone = new BoneModifier(name, bone.BoneLocation));
 					if(bone.IsCoordinateSpecific())
 						nBone.MakeCoordinateSpecific(bone.CoordinateModifiers.Length);
 				}
@@ -1802,10 +1804,14 @@ namespace Character_Morpher
 				if((bone1.GetAllModifiers().Count((k) => k.BoneName.Trim().ToLower() == content) - 1) < 0)
 				{
 					string name = bone.BoneName;
-					BoneModifier nBone;
-					bone1.AddModifier(nBone = new BoneModifier(name, BoneLocation.Unknown));
+					BoneModifier nBone = null;
+					try
+					{
+						bone1.AddModifier(nBone = new BoneModifier(name, bone.BoneLocation));
+					}
+					catch { }
 					if(bone.IsCoordinateSpecific())
-						nBone.MakeCoordinateSpecific(bone.CoordinateModifiers.Length);
+						nBone?.MakeCoordinateSpecific(bone.CoordinateModifiers.Length);
 				}
 			}
 		}

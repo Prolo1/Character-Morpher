@@ -178,8 +178,8 @@ namespace Character_Morpher
 				.OnGUIExists((gui) =>				
 					cfg.enableCalcTypes.SettingChanged += (s, o) => 
 					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableCalcTypes.Value)
-				); 
-			saveWithMorph.BindToFunctionController<CharaMorpherController, bool>(
+				);
+			enableQuadManip.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.enableCalcTypes.Value,
 				(ctrl, val) => { cfg.enableCalcTypes.Value = val; });
 
