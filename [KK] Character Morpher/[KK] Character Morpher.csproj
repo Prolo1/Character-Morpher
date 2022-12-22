@@ -79,12 +79,12 @@
       <HintPath>..\packages\ExtensibleSaveFormat.Koikatu.18.2.0\lib\net35\ExtensibleSaveFormat.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="KKABMX, Version=4.4.6.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\ABMX.KKABMX.4.4.6\lib\net35\KKABMX.dll</HintPath>
+    <Reference Include="KKABMX, Version=5.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ABMX.KKABMX.5.0.2\lib\net35\KKABMX.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="KKAPI, Version=1.32.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionModdingAPI.KKAPI.1.32.0\lib\net35\KKAPI.dll</HintPath>
+    <Reference Include="KKAPI, Version=1.34.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionModdingAPI.KKAPI.1.34.0\lib\net35\KKAPI.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
