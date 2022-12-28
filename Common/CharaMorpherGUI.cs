@@ -35,6 +35,7 @@ using UnityEngine.UI;
 using static Character_Morpher.CharaMorpher_Core;
 using KKABMX.Core;
 using Illusion.Extensions;
+using BepInEx;
 
 namespace Character_Morpher
 {
@@ -123,7 +124,7 @@ namespace Character_Morpher
 		static public CvsFaceShapeAll faceCustom = null;
 #endif
 		private static int abmxIndex = -1;
-		private readonly static List<MakerSlider> sliders = new List<MakerSlider>();
+		private readonly static List<MorphMakerSlider> sliders = new List<MorphMakerSlider>();
 		private readonly static List<MakerDropdown> modes = new List<MakerDropdown>();
 
 		private static void Cleanup()
@@ -163,8 +164,8 @@ namespace Character_Morpher
 				});
 
 			var saveWithMorph = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable Save As Seen", cfg.saveWithMorph.Value, CharaMorpher_Core.Instance))
-				.OnGUIExists((gui) =>				
-					cfg.saveWithMorph.SettingChanged += (s, o) =>  
+				.OnGUIExists((gui) =>
+					cfg.saveWithMorph.SettingChanged += (s, o) =>
 					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.saveWithMorph.Value)
 				);
 
@@ -175,8 +176,8 @@ namespace Character_Morpher
 
 
 			var enableQuadManip = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable Calculation Types", cfg.enableCalcTypes.Value, CharaMorpher_Core.Instance))
-				.OnGUIExists((gui) =>				
-					cfg.enableCalcTypes.SettingChanged += (s, o) => 
+				.OnGUIExists((gui) =>
+					cfg.enableCalcTypes.SettingChanged += (s, o) =>
 					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableCalcTypes.Value)
 				);
 			enableQuadManip.BindToFunctionController<CharaMorpherController, bool>(
@@ -229,7 +230,7 @@ namespace Character_Morpher
 
 
 				//setup slider
-				var currSlider = sliders.AddNReturn(e.AddControl(new MakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[index].Value * .01f, CharaMorpher_Core.Instance)));
+				var currSlider = sliders.AddNReturn(e.AddControl(new MorphMakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[index].Value * .01f, CharaMorpher_Core.Instance)));
 				currSlider.BindToFunctionController<CharaMorpherController, float>(
 						(ctrl) => ctrl.controls.all[settingName].Item1,
 						(ctrl, val) =>
@@ -239,7 +240,7 @@ namespace Character_Morpher
 							if(ctrl.controls.all[settingName].Item1 == (float)Math.Round(val, 2)) return;
 
 							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {(float)Math.Round(val, 2)}");
-							ctrl.controls.all[settingName] = Tuple.Create((float)Math.Round(val, 2), ctrl.controls.all[settingName].Item2);
+							ctrl.controls.all[settingName] = Tuple.Create(currSlider.StoreDefault = (float)Math.Round(val, 2), ctrl.controls.all[settingName].Item2);
 
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
@@ -345,8 +346,8 @@ namespace Character_Morpher
 						//	GetComponent<CharaMorpherController>().CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 1));
 
 
-						inst.StartCoroutine(MakerAPI.GetCharacterControl().
-							GetComponent<CharaMorpherController>()?.CoABMXFullRefresh(3 + (int)cfg.multiUpdateEnableTest.Value));
+						//inst.StartCoroutine(MakerAPI.GetCharacterControl().
+						//	GetComponent<CharaMorpherController>()?.CoABMXFullRefresh(3 + (int)cfg.multiUpdateEnableTest.Value));
 
 					}
 
@@ -585,10 +586,13 @@ namespace Character_Morpher
 			btn1.OnClick.AddListener(
 			  () =>
 			  {
+
+				  foreach(var slider in sliders)
+					  slider.ApplyDefault();
+
 				  int count = 0;
 				  foreach(var def in cfg.defaults)
 					  def.Value = sliders[count++].Value * 100f;
-
 
 				  count = 0;
 				  foreach(var def in cfg.defaultModes)
@@ -625,7 +629,7 @@ namespace Character_Morpher
 				  }
 				  int count = 0;
 				  foreach(var slider in sliders)
-					  slider.Value = (float)cfg.defaults[count++].Value * .01f;
+					 slider.Value = (float)cfg.defaults[count++].Value * .01f;
 
 
 				  CharaMorpher_Core.Logger.LogMessage("Loaded CharaMorpher default");
@@ -800,6 +804,21 @@ namespace Character_Morpher
 
 			OnFileObtained(paths);
 			Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
+		}
+
+
+		public class MorphMakerSlider : MakerSlider
+		{
+
+			//public MorphMakerSlider(MakerSlider slider) :base(slider.Category,"",0f,0f,slider.DefaultValue,slider.Owner){ }
+			public MorphMakerSlider(MakerCategory category, string settingName, float minValue, float maxValue, float defaultValue, BaseUnityPlugin owner)
+				: base(category, settingName, minValue, maxValue, defaultValue, owner)
+			{
+			}
+
+			public float StoreDefault { get; set; } = 0;
+
+			public void ApplyDefault() => DefaultValue = StoreDefault;
 		}
 
 	}

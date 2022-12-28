@@ -519,8 +519,7 @@ namespace Character_Morpher
 						if(ctrl.initLoadFinished)
 						{
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-							StartCoroutine(ctrl?.CoABMXFullRefresh(5+1));
-
+						
 						}
 				}
 
@@ -538,7 +537,6 @@ namespace Character_Morpher
 						if(ctrl.initLoadFinished)
 						{
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-							StartCoroutine(ctrl?.CoABMXFullRefresh(5 + 1));
 						}
 
 				}
@@ -553,9 +551,7 @@ namespace Character_Morpher
 
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
-
-					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateEnableTest.Value + 1));
-				}
+	}
 			};
 
 			cfg.enableInGame.SettingChanged += (m, n) =>
@@ -565,8 +561,6 @@ namespace Character_Morpher
 				{
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
-
-					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateEnableTest.Value + 1));
 				}
 			};
 
@@ -576,8 +570,6 @@ namespace Character_Morpher
 				{
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
-
-					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateEnableTest.Value + 1));
 				}
 			};
 
@@ -674,7 +666,7 @@ namespace Character_Morpher
 		}
 
 		/// <summary>
-		/// Returns a list of the regestered handeler specified. returns default list otherwise 
+		/// Returns a list of the regestered handeler specified. returns empty list otherwise 
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
