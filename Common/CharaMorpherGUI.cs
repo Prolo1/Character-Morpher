@@ -44,6 +44,8 @@ namespace Character_Morpher
 		private static MakerCategory category;
 
 		private static Coroutine lastExtent;
+		public static readonly string subCatagoryName = "Morph";
+		public static readonly string displayName = "Chara Morph";
 		internal static void Initialize()
 		{
 			MakerAPI.RegisterCustomSubCategories += (s, e) =>
@@ -55,7 +57,7 @@ namespace Character_Morpher
 #else
 				MakerCategory peram = MakerConstants.Parameter.Character;
 #endif
-				category = new MakerCategory(peram.CategoryName, "Morph", displayName: "Chara Morph");
+				category = new MakerCategory(peram.CategoryName, subCatagoryName, displayName: displayName);
 
 				e.AddSubCategory(category);
 			};
@@ -76,6 +78,16 @@ namespace Character_Morpher
 				faceCustom = (CvsFaceShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsFaceShapeAll))[0];
 #endif
 
+#if HONEY_API
+
+				GameObject subcatagory =
+				//I hate this as much as you lol
+				GameObject.Find($"CharaCustom/CustomControl/CanvasMain/SubMenu/SubMenuOption/Scroll View/Viewport/Content/Category(Clone)/CategoryTop/{subCatagoryName}");
+
+				subcatagory?
+				.GetComponent<UI_ButtonEx>()?
+				.onClick?.AddListener(() => charaCustom.customBase.drawMenu.ChangeMenuFunc());
+#endif
 			};
 			MakerAPI.MakerExiting += (s, e) => { Cleanup(); };
 			cfg.sliderExtents.SettingChanged += (m, n) =>
@@ -171,7 +183,7 @@ namespace Character_Morpher
 
 			saveWithMorph.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.saveWithMorph.Value,
-				(ctrl, val) => { cfg.saveWithMorph.Value = val; });
+				(ctrl, val) => { if(val != cfg.saveWithMorph.Value) cfg.saveWithMorph.Value = val; });
 
 
 
@@ -510,78 +522,102 @@ namespace Character_Morpher
 
 			#region Save/Load Buttons
 
-			IEnumerator ChangeLayout(BaseGuiEntry gui)
+			IEnumerator ChangeGUILayout(BaseGuiEntry gui)
 			{
 				//#if !KK
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("moving object");
 
 				yield return new WaitWhile(() => gui?.ControlObject?.GetComponentInParent<ScrollRect>()?.transform == null);
+				//#if KOI_API
 				var par = gui.ControlObject.GetComponentInParent<ScrollRect>()?.transform;
+				//#else
+				//				var par = gui.ControlObject.GetComponentInParent<ScrollRect>()?.transform.parent;
+				//
+				//#endif
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Parent: " + par);
 
 				//This fixes the KOI_API rendering issue & enables scrolling over viewport
 #if KOI_API
-				//#if KKS
-				par.GetComponent<ScrollRect>().GetComponent<Image>().sprite = par.GetComponent<ScrollRect>().content.GetComponent<Image>()?.sprite;
-				//				if(!par.GetComponent<ScrollRect>().GetComponent<Image>().sprite)
-				//					par.GetComponent<ScrollRect>().GetComponent<Image>().sprite = par.GetComponent<ScrollRect>().viewport.GetComponent<Image>()?.sprite;
-				//#else
-				par.GetComponent<ScrollRect>().GetComponent<Image>().color = (Color)par.GetComponent<ScrollRect>().content.GetComponent<Image>()?.color;
-				//#endif
-				par.GetComponent<ScrollRect>().GetComponent<Image>().enabled = true;
-				par.GetComponent<ScrollRect>().GetComponent<Image>().raycastTarget = true;
-				var img = par.GetComponent<ScrollRect>().content.GetComponent<Image>();
+				par.GetComponentInChildren<ScrollRect>().GetComponent<Image>().sprite = par.GetComponentInChildren<ScrollRect>().content.GetComponent<Image>()?.sprite;
+				par.GetComponentInChildren<ScrollRect>().GetComponent<Image>().color = (Color)par.GetComponentInChildren<ScrollRect>().content.GetComponent<Image>()?.color;
+
+
+				par.GetComponentInChildren<ScrollRect>().GetComponent<Image>().enabled = true;
+				par.GetComponentInChildren<ScrollRect>().GetComponent<Image>().raycastTarget = true;
+				var img = par.GetComponentInChildren<ScrollRect>().content.GetComponent<Image>();
 				if(!img)
-					img = par.GetComponent<ScrollRect>().viewport.GetComponent<Image>();
+					img = par.GetComponentInChildren<ScrollRect>().viewport.GetComponent<Image>();
 				img.enabled = false;
 #endif
 
 				//Setup LayoutElements 
-				par.GetComponent<ScrollRect>().verticalScrollbar.GetOrAddComponent<LayoutElement>().ignoreLayout = true;
-				par.GetComponent<ScrollRect>().content.GetOrAddComponent<LayoutElement>().ignoreLayout = true;
-				par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minHeight = par.GetComponent<RectTransform>().rect.height;
-				par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minWidth = par.GetComponent<RectTransform>().rect.width * .95f;
+				par.GetComponentInChildren<ScrollRect>().verticalScrollbar.GetOrAddComponent<LayoutElement>().ignoreLayout = true;
+				par.GetComponentInChildren<ScrollRect>().content.GetOrAddComponent<LayoutElement>().ignoreLayout = true;
+				//par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minHeight = par.GetComponent<RectTransform>().rect.height;
+				var viewLE = par.GetComponentInChildren<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>();
+				viewLE.minWidth = par.GetComponentInChildren<ScrollRect>().GetComponent<RectTransform>().rect.width * .95f;
+				viewLE.transform.Cast<RectTransform>();
+
+				//	if(viewLE.flexibleHeight < cfg.unknownTest.Value)
+				//		viewLE.flexibleHeight = cfg.unknownTest.Value;
+				//	else
+				viewLE.flexibleHeight = 0;
+
+
+				//#if HONEY_API
+				var elements = par.GetComponentsInChildren<LayoutElement>();
+				foreach(var ele in elements)
+				{
+					ele.preferredHeight = ele.GetComponent<RectTransform>().rect.height;
+					ele.preferredWidth = ele.GetComponent<RectTransform>().rect.width;
+				}
+				//#endif
+
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("setting as last");
 				gui.ControlObject.transform.SetParent(par);
 				gui.ControlObject.transform.SetAsLastSibling();
-				gui.ControlObject.GetOrAddComponent<LayoutElement>().minWidth =
+				var thisLE = gui.ControlObject.GetOrAddComponent<LayoutElement>();
+				thisLE.flexibleWidth = 0;
+				thisLE.preferredWidth = par.GetComponentInChildren<ScrollRect>().content.rect.width * .95f;
+				thisLE.minWidth =
 #if HONEY_API
 					par.GetComponent<RectTransform>().rect.width;
 #else
-					par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minWidth;
+					viewLE.minWidth;
 #endif
 
-				par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minHeight =
-#if HONEY_API
-					par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minHeight * .80f;
-#else
-					par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minHeight * .90f;
-#endif
-				gui.ControlObject.GetOrAddComponent<LayoutElement>().flexibleWidth = 0;
+
+				thisLE.flexibleHeight = 0;
+				thisLE.preferredHeight = gui.ControlObject.GetComponent<RectTransform>().rect.height;
 
 				//setup VerticalLayoutGroup
 				var vlg = par.gameObject.GetOrAddComponent<VerticalLayoutGroup>();
+#if HONEY_API
+				vlg.childAlignment = TextAnchor.UpperCenter;
+#else
 				vlg.childAlignment = TextAnchor.LowerCenter;
+#endif
+				vlg.padding = new RectOffset((int)cfg.unknownTest.Value, (int)cfg.unknownTest.Value + 5, 0, 0);
 				vlg.childControlHeight = true;
 				vlg.childControlWidth = true;
 				vlg.childForceExpandHeight = false;
 				vlg.childForceExpandWidth = false;
 
 				//Reorder scrollbar
-				par.GetComponent<ScrollRect>().verticalScrollbar.transform.SetAsLastSibling();
+				par.GetComponentInChildren<ScrollRect>().verticalScrollbar.transform.SetAsLastSibling();
 				//#endif
 				yield break;
 			}
 
 
 			var sep = e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance))
-				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeLayout(gui)));
+				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)));
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Adding buttons");
 			var btn1 = (MakerButton)e.AddControl(new MakerButton("Save Default", category, CharaMorpher_Core.Instance))
-				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeLayout(gui)));
+				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)));
 
 			btn1.OnClick.AddListener(
 			  () =>
@@ -604,7 +640,7 @@ namespace Character_Morpher
 			  });
 
 			var btn2 = (MakerButton)e.AddControl(new MakerButton("Load Default", category, CharaMorpher_Core.Instance))
-				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeLayout(gui)));
+				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)));
 
 			btn2.OnClick.AddListener(
 			  () =>
@@ -629,7 +665,7 @@ namespace Character_Morpher
 				  }
 				  int count = 0;
 				  foreach(var slider in sliders)
-					 slider.Value = (float)cfg.defaults[count++].Value * .01f;
+					  slider.Value = (float)cfg.defaults[count++].Value * .01f;
 
 
 				  CharaMorpher_Core.Logger.LogMessage("Loaded CharaMorpher default");
@@ -689,7 +725,7 @@ namespace Character_Morpher
 				(ctrl) => cfg.easyMorphBtnOverallSet.Value,
 				(ctrl, val) => cfg.easyMorphBtnOverallSet.Value = val
 				);
-			var tgl2 = e.AddControl(new MakerToggle(category, "Other values default to 100%", true, owner));
+			var tgl2 = e.AddControl(new MakerToggle(category, "Other values default to 100%", cfg.easyMorphBtnEnableDefaulting.Value, owner));
 			tgl2.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.easyMorphBtnEnableDefaulting.Value,
 				(ctrl, val) => cfg.easyMorphBtnEnableDefaulting.Value = val
@@ -809,14 +845,15 @@ namespace Character_Morpher
 
 		public class MorphMakerSlider : MakerSlider
 		{
+			float m_storedDefault;
+			public float StoreDefault { get => m_storedDefault; set { m_storedDefault = value; } }
 
 			//public MorphMakerSlider(MakerSlider slider) :base(slider.Category,"",0f,0f,slider.DefaultValue,slider.Owner){ }
 			public MorphMakerSlider(MakerCategory category, string settingName, float minValue, float maxValue, float defaultValue, BaseUnityPlugin owner)
 				: base(category, settingName, minValue, maxValue, defaultValue, owner)
 			{
+				m_storedDefault = defaultValue;
 			}
-
-			public float StoreDefault { get; set; } = 0;
 
 			public void ApplyDefault() => DefaultValue = StoreDefault;
 		}

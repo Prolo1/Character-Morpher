@@ -844,7 +844,7 @@ namespace Character_Morpher
 			//post update 
 			IEnumerator CoReloadComplete(int delayFrames, BoneController _boneCtrl)
 			{
-				reloading = true;
+				reloading = true;//just in case
 				for(int a = 0; a < delayFrames; ++a)
 					yield return null;
 
@@ -1016,6 +1016,7 @@ namespace Character_Morpher
 			//	ResetFace();//may work ¯\_(ツ)_/¯
 		}
 
+		Coroutine coTexUpdate = null;
 		/// <summary>
 		/// Update values for the entire body (use MorphChangeUpdate() instead to make sure lists are balanced)
 		/// </summary>
@@ -1068,7 +1069,7 @@ namespace Character_Morpher
 
 				//ChaControl.resetDynamicBoneAll =
 				//ChaControl.reSetupDynamicBoneBust = 
-				ChaControl.updateBustSize = true;
+				//ChaControl.updateBustSize = true;
 
 				//Skin Colour
 				bool newcol = false;
@@ -1086,7 +1087,7 @@ namespace Character_Morpher
 				charaCtrl.fileBody.skinMainColor = col1;
 #elif HONEY_API
 				newcol |= charaCtrl.fileBody.skinColor != col1;
-				charaCtrl.fileBody.skinColor = col1.DeepCopy();
+				charaCtrl.fileBody.skinColor = col1;
 #endif
 
 				var col2 = Color.LerpUnclamped(m_data1.main.custom.body.sunburnColor, m_data2.main.custom.body.sunburnColor,
@@ -1100,13 +1101,13 @@ namespace Character_Morpher
 				{
 					charaCtrl.AddUpdateCMBodyColorFlags
 #if HONEY_API
-						(true, true, true, true);
+						(inpBase: true, inpSunburn: true, inpPaint01: false, inpPaint02: false);
 #elif KOI_API
-					(true, true, true, true, true, true);
+					(inpBase: true, inpSub: true, inpSunburn: true, inpNail: true, inpPaint01: false, inpPaint02: false);
 #endif
 
 					charaCtrl.AddUpdateCMFaceColorFlags
-						(true, true, true, true, true, true, true);
+						(true, false, false, false, false, false, false);
 
 					if(!MakerAPI.InsideMaker)
 					{
@@ -1123,8 +1124,18 @@ namespace Character_Morpher
 
 
 					//reset the textures in game
-					charaCtrl.CreateBodyTexture();
-					charaCtrl.CreateFaceTexture();
+					IEnumerator UpdateTextures()
+					{
+						for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
+							yield return new WaitForEndOfFrame();
+
+						charaCtrl.CreateBodyTexture();
+						charaCtrl.CreateFaceTexture();
+
+						yield break;
+					}
+					if(coTexUpdate != null) StopCoroutine(coTexUpdate);
+					coTexUpdate = StartCoroutine(UpdateTextures());
 				}
 
 
@@ -1167,6 +1178,9 @@ namespace Character_Morpher
 			//Slider Defaults set
 			if(MakerAPI.InsideMaker)
 				SetDefaultSliders();
+
+			//This may be needed
+			if(!reloading) ResetHeight();
 
 		}
 
@@ -1546,43 +1560,35 @@ namespace Character_Morpher
 			}
 		}
 
+		bool resettingHeihgt = false;
 		/// <summary>
 		/// Don't ask me why this works it just does
 		/// </summary>
 		internal void ResetHeight()
 		{
 			//reset the height using shoes
-
+			if(resettingHeihgt) return;
+			resettingHeihgt = true;
 #if KOI_API
 			var tmpstate1 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_inner];
 			var tmpstate2 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_outer];
-			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, tmpstate1);
-			ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, tmpstate2);
 #else
 			var tmpstate = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes];
-			//	ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, (byte)(tmpstate ? 1 : 0));
 #endif
 
-			//	ChaControl.LateUpdateForce();
 #if KOI_API
 			void heightReset(byte shoestate1, byte shoestate2)
 #else
 			void heightReset(byte shoestate)
 #endif
 			{
-				//for(int a = 0; a < 1; ++a)
-				//	yield return null;
-
-
+				
 #if KOI_API
 				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, shoestate1);
 				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, shoestate2);
 #else
 				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, shoestate);
 #endif
-
-				//ChaControl.LateUpdateForce();
-				//	yield break;
 			}
 
 
@@ -1598,13 +1604,15 @@ namespace Character_Morpher
 			IEnumerator CoAfterReset(byte state)
 #endif
 			{
-				for(int a = -1; a < (int)cfg.reloadTest.Value; ++a)
-					yield return null;
+				if(reloading)
+					for(int a = -1; a < (int)cfg.reloadTest.Value; ++a)
+						yield return new WaitForEndOfFrame();
 #if KOI_API
 				heightReset(state1, state2);
 #else
 				heightReset(state);
 #endif
+				resettingHeihgt = false;
 				yield break;
 			}
 #if KOI_API
@@ -1973,26 +1981,29 @@ namespace Character_Morpher
 			public void Populate(CharaMorpherController morphControl, bool morph = false)
 			{
 
-				var boneCtrl = morph ? MorphTarget.extraCharacter.GetComponent<BoneController>() : morphControl.GetComponent<BoneController>();
-				var charaCtrl = morphControl.ChaControl;
+				var boneCtrl = morph ? MorphTarget.extraCharacter?.GetComponent<BoneController>() : morphControl?.GetComponent<BoneController>();
+				var charaCtrl = morphControl?.ChaControl;
 
 				if(isLoaded) return;
 				//Store Bonemod Extended Data
 				{//helps get rid of data sooner
 
-					if(!boneCtrl) CharaMorpher_Core.Logger.LogDebug("Bone controller don't exist");
-					if(!morphControl.ChaControl) CharaMorpher_Core.Logger.LogDebug("Character controller don't exist");
+					if(!boneCtrl) CharaMorpher_Core.Logger.LogDebug("Bone controller doesn't exist");
+					if(!charaCtrl) CharaMorpher_Core.Logger.LogDebug("Character controller doesn't exist");
 
 					//This is the second dumbest fix
 					//(I was changing the player character's bones when this was true ¯\_(ツ)_/¯)
 					var data = boneCtrl?.GetExtendedData(!morph);
 
 					var newModifiers = ReadBoneModifiers(data);
+					//body bonemods on
 					if(morph || bodyBonemodTgl)
 						body = new List<BoneModifier>(newModifiers);
+					//face bonemods on
 					if(morph || faceBonemodTgl)
 						face = new List<BoneModifier>(newModifiers);
-					isLoaded = true;
+
+					isLoaded = !!boneCtrl;//it can be shortened to just "boneCtrl" if I want
 				}
 
 				if(cfg.debug.Value)
@@ -2002,24 +2013,22 @@ namespace Character_Morpher
 					foreach(var part in body) CharaMorpher_Core.Logger.LogDebug("Bone: " + part.BoneName);
 				}
 
-
 				BoneSplit(morphControl, charaCtrl, morph);
-
 			}
 
 			//split up body & head bones
-			public void BoneSplit(CharaMorpherController charaControl, ChaControl charaCtrl, bool morph = false)
+			public void BoneSplit(CharaMorpherController charaControl, ChaControl bodyCharaCtrl, bool morph = false)
 			{
-				var ChaControl = charaControl.GetComponent<ChaControl>();
-				var ChaFileControl = ChaControl.chaFile;
+				var ChaControl = charaControl?.GetComponent<ChaControl>();
+				var ChaFileControl = ChaControl?.chaFile;
 
-				if(!charaCtrl.objHeadBone) return;
+				if(!bodyCharaCtrl?.objHeadBone) return;
 				if(isSplit || !isLoaded) return;
 
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Splitting bones apart (this is gonna hurt)");
 
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Splitting bones apart");
 
-				var headRoot = charaCtrl.objHeadBone.transform.parent.parent;
+				var headRoot = bodyCharaCtrl.objHeadBone.transform.parent.parent;
 
 				var headBones = new HashSet<string>(headRoot.GetComponentsInChildren<Transform>().Select(x => x.name)) { /*Additional*/headRoot.name };
 
@@ -2030,7 +2039,7 @@ namespace Character_Morpher
 				//Load face
 				if(morph || faceBonemodTgl)
 				{
-					var bodyBones = new HashSet<string>(charaCtrl.objTop.transform.
+					var bodyBones = new HashSet<string>(bodyCharaCtrl.objTop.transform.
 						GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
 					face.RemoveAll(x => bodyBones.Contains(x.BoneName));
 				}

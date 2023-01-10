@@ -97,8 +97,8 @@ namespace Character_Morpher
 				var txtPro = __instance?.GetComponentInChildren<TMPro.TMP_Text>();
 				var txt = __instance?.GetComponentInChildren<Text>();
 
-				if(txtPro ? txtPro.text.ToLower().Contains("face bonemod") : false ||
-					txt ? txt.text.ToLower().Contains("face bonemod") : false)
+				if((txtPro ? txtPro.text.ToLower().Contains("face bonemod") : false) ||
+					(txt ? txt.text.ToLower().Contains("face bonemod") : false))
 				{
 					if(cfg.debug.Value) Logger.LogDebug("Change to face bonemod toggle");
 					CharaMorpherController.faceBonemodTgl = __instance.isOn;
@@ -110,8 +110,8 @@ namespace Character_Morpher
 				var txtPro = __instance.GetComponentInChildren<TMPro.TMP_Text>();
 				var txt = __instance.GetComponentInChildren<Text>();
 
-				if(txtPro ? txtPro.text.ToLower().Contains("body bonemod") : false ||
-					txt ? txt.text.ToLower().Contains("body bonemod") : false)
+				if((txtPro ? txtPro.text.ToLower().Contains("body bonemod") : false) ||
+					(txt ? txt.text.ToLower().Contains("body bonemod") : false))
 				{
 					if(cfg.debug.Value) Logger.LogDebug("Change to body bonemod toggle");
 					CharaMorpherController.bodyBonemodTgl = __instance.isOn;
@@ -210,10 +210,10 @@ namespace Character_Morpher
 					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
 #endif
 
-					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
-						if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
-							
-							foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+						if(cfg.enable.Value && !cfg.saveWithMorph.Value)
+							if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
+
+								foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 								{
 									if(!ctrl) continue;
 									if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
@@ -222,7 +222,7 @@ namespace Character_Morpher
 										ctrl.MorphChangeUpdate(forceReset: true);
 
 									//ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
-									
+
 									//ctrl.ChaControl.LateUpdateForce();
 									//	ctrl.StartCoroutine(ctrl?.CoABMXFullRefresh(0));
 								}
@@ -244,15 +244,15 @@ namespace Character_Morpher
 #endif
 					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
 						if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
-						
-								foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
-								{
-									if(!ctrl) continue;
-									if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
 
-									for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-										ctrl.MorphChangeUpdate();
-								}
+							foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+							{
+								if(!ctrl) continue;
+								if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
+
+								for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+									ctrl.MorphChangeUpdate();
+							}
 			}
 		}
 	}
