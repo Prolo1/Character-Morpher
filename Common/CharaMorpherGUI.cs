@@ -257,8 +257,6 @@ namespace Character_Morpher
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
 
-							////for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
-							//	ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value  + 1));//this may be necessary (it is)
 
 						});
 
@@ -280,8 +278,6 @@ namespace Character_Morpher
 
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
-
-							//	ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
 						});
 
 
@@ -350,39 +346,17 @@ namespace Character_Morpher
 							inst.StartCoroutine(MakerAPI.GetCharacterControl().
 							GetComponent<CharaMorpherController>().CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
 
-
-						//inst.StartCoroutine(MakerAPI.GetCharacterControl().
-						//GetComponent<CharaMorpherController>().CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
-
-						//inst.StartCoroutine(MakerAPI.GetCharacterControl().
-						//	GetComponent<CharaMorpherController>().CoResetHeight((int)cfg.multiUpdateEnableTest.Value + 1));
-
-
-						//inst.StartCoroutine(MakerAPI.GetCharacterControl().
-						//	GetComponent<CharaMorpherController>()?.CoABMXFullRefresh(3 + (int)cfg.multiUpdateEnableTest.Value));
-
 					}
 
 					gui.ControlObject.
 					GetComponentInChildren<Slider>().OnPointerUpAsObservable().Subscribe(
-						(p) =>
-						{
-							inst.StartCoroutine(CoBoodyAfterRefresh());
-						});
+						(p) => inst.StartCoroutine(CoBoodyAfterRefresh()));
 
 					OnSliderTextboxEdit((MakerSlider)gui,
-						(p) =>
-						{
-							inst.StartCoroutine(CoBoodyAfterRefresh());
-
-						});
+						(p) => inst.StartCoroutine(CoBoodyAfterRefresh()));
 
 					OnSliderResetClicked((MakerSlider)gui,
-						() =>
-						{
-							inst.StartCoroutine(CoBoodyAfterRefresh());
-
-						});
+						() => inst.StartCoroutine(CoBoodyAfterRefresh()));
 
 				});
 
@@ -430,7 +404,8 @@ namespace Character_Morpher
 
 
 			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
-																				  //	e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
+
+			//e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			#endregion
 
 			#region Init Slider Visibility
@@ -511,9 +486,6 @@ namespace Character_Morpher
 					cfg.enableCalcTypes.Value = val;
 					ShowEnabledSliders();
 
-					//if(!ctrl.initLoadFinished) return;
-					//for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
-					//	ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
 
 				});
 
@@ -524,16 +496,12 @@ namespace Character_Morpher
 
 			IEnumerator ChangeGUILayout(BaseGuiEntry gui)
 			{
-				//#if !KK
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("moving object");
 
 				yield return new WaitWhile(() => gui?.ControlObject?.GetComponentInParent<ScrollRect>()?.transform == null);
-				//#if KOI_API
+
 				var par = gui.ControlObject.GetComponentInParent<ScrollRect>()?.transform;
-				//#else
-				//				var par = gui.ControlObject.GetComponentInParent<ScrollRect>()?.transform.parent;
-				//
-				//#endif
+
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Parent: " + par);
 
@@ -559,21 +527,16 @@ namespace Character_Morpher
 				viewLE.minWidth = par.GetComponentInChildren<ScrollRect>().GetComponent<RectTransform>().rect.width * .95f;
 				viewLE.transform.Cast<RectTransform>();
 
-				//	if(viewLE.flexibleHeight < cfg.unknownTest.Value)
-				//		viewLE.flexibleHeight = cfg.unknownTest.Value;
-				//	else
 				viewLE.flexibleHeight = 0;
 
 
-				//#if HONEY_API
 				var elements = par.GetComponentsInChildren<LayoutElement>();
 				foreach(var ele in elements)
 				{
 					ele.preferredHeight = ele.GetComponent<RectTransform>().rect.height;
 					ele.preferredWidth = ele.GetComponent<RectTransform>().rect.width;
 				}
-				//#endif
-
+				
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("setting as last");
 				gui.ControlObject.transform.SetParent(par);
@@ -599,7 +562,8 @@ namespace Character_Morpher
 #else
 				vlg.childAlignment = TextAnchor.LowerCenter;
 #endif
-				vlg.padding = new RectOffset((int)cfg.unknownTest.Value, (int)cfg.unknownTest.Value + 5, 0, 0);
+				var pad = 10;//(int)cfg.unknownTest.Value;//10
+				vlg.padding = new RectOffset(pad, pad + 5, 0, 0);
 				vlg.childControlHeight = true;
 				vlg.childControlWidth = true;
 				vlg.childForceExpandHeight = false;
@@ -607,7 +571,6 @@ namespace Character_Morpher
 
 				//Reorder scrollbar
 				par.GetComponentInChildren<ScrollRect>().verticalScrollbar.transform.SetAsLastSibling();
-				//#endif
 				yield break;
 			}
 
@@ -656,11 +619,7 @@ namespace Character_Morpher
 					  for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
 						  ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
 
-					  //	  ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
-					  //  ctrl.StartCoroutine(ctrl.CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
-
-					  // ctrl.StartCoroutine(ctrl?.CoABMXFullRefresh(3 + (int)cfg.multiUpdateTest.Value));
-
+					
 					  break;
 				  }
 				  int count = 0;
@@ -692,7 +651,7 @@ namespace Character_Morpher
 				for(int a = 0; a < 4; ++a)
 					yield return null;
 
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"The SetTextureCo was called");
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"The CoSetTexture was called");
 				img.Texture = MorphUtil.CreateTexture(path);
 			}
 
@@ -759,9 +718,7 @@ namespace Character_Morpher
 						for(int a = -1; a < cfg.multiUpdateEnableTest.Value;)
 							ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(++a));
 
-						//	ctrl.StartCoroutine(ctrl.CoResetFace((int)cfg.multiUpdateSliderTest.Value + 1));//this may be necessary (it is)
-						//	ctrl.StartCoroutine(ctrl.CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
-
+					
 						CharaMorpher_Core.Logger.LogMessage($"Morphed to {percent}%");
 						break;
 					}
@@ -823,7 +780,6 @@ namespace Character_Morpher
 			get
 			{
 				var tmp = MakeDirPath(Path.GetFileName(cfg.imageName.Value));
-				//tmp.Substring(tmp.LastIndexOf('/') + 1);
 				var path = Path.Combine(MakeDirPath(Path.GetDirectoryName(cfg.charDir.Value)), tmp);
 
 				return File.Exists(path) ? path : Path.Combine(_defaultOverlayDirectory, tmp);
@@ -848,7 +804,6 @@ namespace Character_Morpher
 			float m_storedDefault;
 			public float StoreDefault { get => m_storedDefault; set { m_storedDefault = value; } }
 
-			//public MorphMakerSlider(MakerSlider slider) :base(slider.Category,"",0f,0f,slider.DefaultValue,slider.Owner){ }
 			public MorphMakerSlider(MakerCategory category, string settingName, float minValue, float maxValue, float defaultValue, BaseUnityPlugin owner)
 				: base(category, settingName, minValue, maxValue, defaultValue, owner)
 			{

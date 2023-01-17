@@ -26,12 +26,8 @@ using ChaCustom;
 #endif
 
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpherController;
-using ADV.Commands.Base;
-using Illusion.Extensions;
 
 namespace Character_Morpher
 {
@@ -636,11 +632,6 @@ namespace Character_Morpher
 		#endregion
 #endif
 ;
-		public CharaMorpherController()
-		{
-
-			//	CharacterApi.CharacterReloaded += (s, e) => { reloading = false; if(!MakerAPI.InsideMaker) OnCharaReload(KoikatuAPI.GetCurrentGameMode()); };
-		}
 
 		public IEnumerator CoResetFace(int delayFrames, bool forceReset = false)
 		{
@@ -708,8 +699,6 @@ namespace Character_Morpher
 
 			yield return StartCoroutine(CoMorphChangeUpdate(delay, forceReset, forceChange: forceChange));
 
-			//	yield return StartCoroutine(CoResetHeight((int)cfg.multiUpdateSliderTest.Value));
-
 			yield break;
 		}
 
@@ -764,16 +753,6 @@ namespace Character_Morpher
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
 
-
-
-			//IEnumerator tmpFunc()
-			//{
-			//	yield return null;
-			//	OnReload(KoikatuAPI.GetCurrentGameMode(), false);
-			//	yield break;
-			//}
-
-			//StartCoroutine(tmpFunc());
 		}
 
 		public void LateUpdate()
@@ -909,15 +888,15 @@ namespace Character_Morpher
 
 		}
 
-		bool singleReset = true;//needed
+		bool initReset = true;//needed
 		/// <inheritdoc/>
 		protected override void OnReload(GameMode currentGameMode, bool keepState)
 		{
 			if(keepState) return;
 
 
-			if(singleReset && !initLoadFinished)
-				singleReset = reloading = false;
+			if(initReset && !initLoadFinished)
+				initReset = reloading = false;
 
 			OnCharaReload(currentGameMode);
 
@@ -934,8 +913,6 @@ namespace Character_Morpher
 																											 //	StartCoroutine(CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
 		}
 
-		// /// <inheritdoc/> 
-		// protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate) { }
 
 		/// <summary>
 		/// 
@@ -1012,8 +989,7 @@ namespace Character_Morpher
 
 
 			MorphValuesUpdate(forceReset || ResetCheck, initReset: initReset, abmx: abmx);
-			//if(!reloading)
-			//	ResetFace();//may work ¯\_(ツ)_/¯
+
 		}
 
 		Coroutine coTexUpdate = null;
@@ -1066,10 +1042,6 @@ namespace Character_Morpher
 
 				charaCtrl.fileBody.bustWeight = Mathf.LerpUnclamped(m_data1.main.custom.body.bustWeight, m_data2.main.custom.body.bustWeight,
 				(reset ? enable : GetControlValue("body").Value.Item1 * GetControlValue("Boob Phys.").Value.Item1));
-
-				//ChaControl.resetDynamicBoneAll =
-				//ChaControl.reSetupDynamicBoneBust = 
-				//ChaControl.updateBustSize = true;
 
 				//Skin Colour
 				bool newcol = false;
@@ -1179,7 +1151,7 @@ namespace Character_Morpher
 			if(MakerAPI.InsideMaker)
 				SetDefaultSliders();
 
-			//This may be needed
+			//This may be needed (it is for keeping the character on the ground)
 			if(!reloading) ResetHeight();
 
 		}
@@ -1271,7 +1243,6 @@ namespace Character_Morpher
 					}
 
 					//load values to character
-					//	charaCtrl.fileCustom.body.shapeValueBody[a] = result;
 					if(result != ChaControl.GetShapeBodyValue(a))
 						ChaControl.SetShapeBodyValue(a, result);
 				}
@@ -1328,8 +1299,6 @@ namespace Character_Morpher
 					}
 
 					//load values to character
-
-					//charaCtrl.fileCustom.face.shapeValueFace[a] = result;
 					if(result != ChaControl.GetShapeBodyValue(a))
 						ChaControl.SetShapeFaceValue(a, result);
 				}
@@ -1582,7 +1551,7 @@ namespace Character_Morpher
 			void heightReset(byte shoestate)
 #endif
 			{
-				
+
 #if KOI_API
 				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, shoestate1);
 				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, shoestate2);
@@ -1804,10 +1773,9 @@ namespace Character_Morpher
 					mod.LengthModifier = len;
 					if(cfg.debug.Value)
 					{
-						//   CharaMorpher_Core.Logger.LogDebug($"updated values");
 						if(count == 0)
 						{
-
+							CharaMorpher_Core.Logger.LogDebug($"~updated values~");
 							CharaMorpher_Core.Logger.LogDebug($"lerp Value {index}: {enable * modVal.Item1}");
 							CharaMorpher_Core.Logger.LogDebug($"{current.BoneName} modifiers!!");
 							CharaMorpher_Core.Logger.LogDebug($"Body Bone 1 scale {index}: {bone1.CoordinateModifiers[count].ScaleModifier}");
@@ -2121,7 +2089,7 @@ namespace Character_Morpher
 		{
 
 #if HONEY_API
-			//CopyAll will not copy this data in hs2
+			//CopyAll will not copy this data in hs2/AI
 			main.dataID = morph ? MorphTarget.chaFile.dataID : data.ChaControl.chaFile.dataID;
 #endif
 
@@ -2150,7 +2118,6 @@ namespace Character_Morpher
 					_lastAll = new Dictionary<string, Tuple<float, MorphCalcType>>();
 				}
 
-				//var ctrl = this;
 				IEnumerator CoPost()
 				{
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)

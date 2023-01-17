@@ -11,11 +11,21 @@ namespace Character_Morpher
 
 	public class Test
 	{
-		public static UnityEvent<string> myEvent;
+		public static UnityEvent<string> myStrEvent;
+		public static UnityEvent myEvent;
 		Test()
 		{
 
-			myEvent = new StringEvent();
+			myStrEvent = new StringEvent();
+			myEvent = new UnityEvent();
+
+			myStrEvent.AddListener((s) => { task(); });
+			myEvent.AddListener(() => { task(); });
+		}
+
+		private void task()
+		{
+			//This is a task
 		}
 
 	}
@@ -26,7 +36,8 @@ namespace Character_Morpher
 		void InvokeTestEvent()
 		{
 
-			Test.myEvent.Invoke("Hi");
+			Test.myStrEvent.Invoke("Hi");
+			Test.myEvent.Invoke();
 
 		}
 

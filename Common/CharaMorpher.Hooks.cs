@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using BepInEx;
 using BepInEx.Configuration;
-//using ConfigurationManager.Utilities;
 using BepInEx.Logging;
 using HarmonyLib;
 using KKAPI.Chara;
@@ -220,11 +219,6 @@ namespace Character_Morpher
 
 									for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 										ctrl.MorphChangeUpdate(forceReset: true);
-
-									//ctrl.GetComponent<BoneController>().NeedsFullRefresh = true;
-
-									//ctrl.ChaControl.LateUpdateForce();
-									//	ctrl.StartCoroutine(ctrl?.CoABMXFullRefresh(0));
 								}
 			}
 
