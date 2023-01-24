@@ -15,6 +15,7 @@ using KKABMX;
 using KKABMX.Core;
 using UnityEngine;
 using UnityEngine.UI;
+using Manager;
 
 #if HONEY_API
 using CharaCustom;
@@ -38,6 +39,58 @@ namespace Character_Morpher
 #if KOI_API
 
 
+			[HarmonyPrefix]
+			[HarmonyPatch(typeof(Scene), nameof(Scene.LoadStart),
+				new Type[] { typeof(Scene.Data), typeof(bool) }),]
+
+#if KKS
+			//[HarmonyPatch(typeof(Scene), nameof(Scene.Add),
+			//	new Type[] { typeof(Scene.IOverlap), }),]
+			//
+			//[HarmonyPatch(typeof(Scene), nameof(Scene.Load),
+			//			new Type[] { typeof(Scene.Data), }),]
+			//[HarmonyPatch(typeof(Scene), nameof(Scene.LoadAsync),
+			//			new Type[] { typeof(Scene.Data) }),]
+			[HarmonyPatch(typeof(ActionScene), nameof(ActionScene.SceneEvent),
+						new Type[] { typeof(ActionGame.Chara.NPC) }),]
+			
+
+#endif
+			static void OnSceneLoad()
+			{
+				Logger.LogDebug("The Scene was changed!!!");
+				if(!MakerAPI.InsideMaker)
+					foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+					{
+						if(!ctrl) continue;
+
+						ctrl.MorphChangeUpdate(forceReset: true);
+					}
+			}
+
+
+
+			[HarmonyPostfix]
+			[HarmonyPatch(typeof(Scene.Data), nameof(Scene.Data.Unload),
+				new Type[] { }),]
+#if KKS
+			[HarmonyPatch(typeof(Scene), nameof(Scene.Remove),
+				new Type[] { typeof(Scene.IOverlap), }),]
+
+			//			[HarmonyPatch(typeof(Scene), nameof(Scene.UnloadAsync),
+			//							new Type[] { typeof(bool)}),]
+#endif
+			static void OnSceneUnLoad()
+			{
+				Logger.LogDebug("The Scene was unchanged!!!");
+				if(!MakerAPI.InsideMaker)
+					foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+					{
+						if(!ctrl) continue;
+
+						ctrl.MorphChangeUpdate();
+					}
+			}
 
 
 			[HarmonyPostfix]
@@ -71,7 +124,7 @@ namespace Character_Morpher
 #if !KK
 					if(ctrl.ChaControl.chaFile == __instance)
 #endif
-					Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
+						Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
 				}
 
 			}
@@ -209,17 +262,17 @@ namespace Character_Morpher
 					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
 #endif
 
-						if(cfg.enable.Value && !cfg.saveWithMorph.Value)
-							if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
+					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
+						if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
 
-								foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
-								{
-									if(!ctrl) continue;
-									if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
+							foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+							{
+								if(!ctrl) continue;
+								if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
 
-									for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-										ctrl.MorphChangeUpdate(forceReset: true);
-								}
+								for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+									ctrl.MorphChangeUpdate(forceReset: true);
+							}
 			}
 
 			/// <summary>

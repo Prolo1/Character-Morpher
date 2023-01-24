@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31829.152
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "[HS2] Character Morpher", "[HS2] Character Morpher\[HS2] Character Morpher.csproj", "{E96314CF-3D68-4A08-94E7-DD86D7BFA157}"
 EndProject
@@ -13,14 +13,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "[KKS] Character Morpher", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "[AI] Character Morpher", "[AI] Character Morpher\[AI] Character Morpher.csproj", "{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Master", "Master\Master.csproj", "{015CED6A-049A-48FB-9DC0-EED58B486325}"
+	ProjectSection(ProjectDependencies) = postProject
+		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55} = {15BB6C66-5B78-4EAA-B02D-99B0FE257F55}
+		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4} = {5297F533-AE0E-4A80-83B5-A4ACC5758CB4}
+		{676B828F-DE2D-4F54-9B96-3A965EBD2042} = {676B828F-DE2D-4F54-9B96-3A965EBD2042}
+		{E96314CF-3D68-4A08-94E7-DD86D7BFA157} = {E96314CF-3D68-4A08-94E7-DD86D7BFA157}
+	EndProjectSection
+EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		Common\Common.projitems*{15bb6c66-5b78-4eaa-b02d-99b0fe257f55}*SharedItemsImports = 4
-		Common\Common.projitems*{5297f533-ae0e-4a80-83b5-a4acc5758cb4}*SharedItemsImports = 4
-		Common\Common.projitems*{676b828f-de2d-4f54-9b96-3a965ebd2042}*SharedItemsImports = 4
-		Common\Common.projitems*{e96314cf-3d68-4a08-94e7-dd86d7bfa157}*SharedItemsImports = 4
-		Common\Common.projitems*{f835505b-0492-45c9-a446-c4bf82473cee}*SharedItemsImports = 13
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -42,11 +43,22 @@ Global
 		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{015CED6A-049A-48FB-9DC0-EED58B486325}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{015CED6A-049A-48FB-9DC0-EED58B486325}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{015CED6A-049A-48FB-9DC0-EED58B486325}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{015CED6A-049A-48FB-9DC0-EED58B486325}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {363853CC-19E3-41DE-A695-D0F2AA9EFE0E}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Common\Common.projitems*{15bb6c66-5b78-4eaa-b02d-99b0fe257f55}*SharedItemsImports = 4
+		Common\Common.projitems*{5297f533-ae0e-4a80-83b5-a4acc5758cb4}*SharedItemsImports = 4
+		Common\Common.projitems*{676b828f-de2d-4f54-9b96-3a965ebd2042}*SharedItemsImports = 4
+		Common\Common.projitems*{e96314cf-3d68-4a08-94e7-dd86d7bfa157}*SharedItemsImports = 4
+		Common\Common.projitems*{f835505b-0492-45c9-a446-c4bf82473cee}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

@@ -46,6 +46,7 @@ namespace Character_Morpher
 		private static Coroutine lastExtent;
 		public static readonly string subCatagoryName = "Morph";
 		public static readonly string displayName = "Chara Morph";
+		
 		internal static void Initialize()
 		{
 			MakerAPI.RegisterCustomSubCategories += (s, e) =>

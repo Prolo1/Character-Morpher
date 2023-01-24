@@ -898,7 +898,8 @@ namespace Character_Morpher
 			if(initReset && !initLoadFinished)
 				initReset = reloading = false;
 
-			OnCharaReload(currentGameMode);
+		//	if(MakerAPI.InsideMaker || !initLoadFinished)
+				OnCharaReload(currentGameMode);
 
 		}
 
@@ -951,7 +952,7 @@ namespace Character_Morpher
 			var charaCtrl = ChaControl;
 			var boneCtrl = charaCtrl.GetComponent<BoneController>();
 
-			#region Merge results
+#region Merge results
 
 			//add non-existent bones to other lists
 			if(BoneSplitCheck(true))
@@ -982,7 +983,7 @@ namespace Character_Morpher
 #endif
 			}
 
-			#endregion
+#endregion
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("update values check?");
 			if(!updateValues) return;
@@ -1324,7 +1325,7 @@ namespace Character_Morpher
 				});
 				++a)
 			{
-				#region Body
+#region Body
 				enable = ((reset || !cfg.enableABMX.Value) ? (initReset ? cfg.initialMorphBodyTest.Value : 0) : 1);
 				if(a < m_data1.abmx.body.Count)
 				{
@@ -1421,9 +1422,9 @@ namespace Character_Morpher
 						GetControlValue("Body", abmx: true, fullVal: initReset).Value.Item1,
 						enable: enable, reset: reset);
 				}
-				#endregion
+#endregion
 
-				#region Head
+#region Head
 				enable = ((reset || !cfg.enableABMX.Value) ? (initReset ? cfg.initialMorphFaceTest.Value : 0) : 1);
 				if(a < m_data1.abmx.face.Count)
 				{
@@ -1493,7 +1494,7 @@ namespace Character_Morpher
 						GetControlValue("head", true, fullVal: initReset).Value.Item1,
 						enable: enable, reset: reset);
 				}
-				#endregion
+#endregion
 			}
 
 
@@ -1807,46 +1808,12 @@ namespace Character_Morpher
 
 		}
 
-		/// <summary>
-		/// Taken from ABMX to get the data from card more easily 
-		/// </summary>
-		/// <param name="data"></param>
-		/// <returns></returns>
-		internal static List<BoneModifier> ReadBoneModifiers(PluginData data)
-		{
-			if(data != null)
-			{
-				try
-				{
-					switch(data.version)
-					{
-					case 2:
-						return MessagePack.LZ4MessagePackSerializer.Deserialize<List<BoneModifier>>(
-								(byte[])data.data["boneData"]);
-					//TODO: get the old data converter
-#if KK || EC || KKS
-					case 1:
-						if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("[KKABMX] Loading legacy embedded ABM data");
-						return ABMXOldDataConverterKoiAPI.MigrateOldExtData(data);
-#endif
-
-					default:
-						throw new NotSupportedException($"[KKABMX] Save version {data.version} is not supported");
-					}
-				}
-				catch(Exception ex)
-				{
-					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogError("[KKABMX] Failed to load extended data - " + ex);
-				}
-			}
-			return new List<BoneModifier>();
-		}
 
 		/// <inheritdoc/>
 		protected override void OnDestroy()
 		{
-			if(!dummy)
-				MorphTarget.initalize = false;
+			//if(!dummy)
+			//	MorphTarget.initalize = false;
 			base.OnDestroy();
 		}
 
@@ -1877,7 +1844,7 @@ namespace Character_Morpher
 
 						Transform parent = null;
 						parent = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>()?.First()?.transform.parent;
-						_extraCharacter = new ChaControl();
+						//_extraCharacter = new ChaControl();
 
 						_extraCharacter =
 
@@ -1889,7 +1856,7 @@ namespace Character_Morpher
 							Character.CreateFemale(parent?.gameObject, -10, hiPoly: false);
 #endif
 
-						if(!_extraCharacter.gameObject) { _extraCharacter = null; return; }
+						if(!(_extraCharacter?.gameObject)) { _extraCharacter = null; return; }
 
 						//remove character from internal list
 #if KKS
@@ -1908,14 +1875,14 @@ namespace Character_Morpher
 							CharaMorpher_Core.Logger.LogDebug("Destroying dummy chara controller");
 							ctrler.dummy = true;
 							ctrler.enabled = false;
-							GameObject.DestroyImmediate(ctrler);//change back to destroy if issues arise
+							GameObject.Destroy(ctrler);//change back to destroy if issues arise
 						}
 
 						_extraCharacter.gameObject.SetActive(false);
 						CharaMorpher_Core.Logger.LogDebug("created new Morph character instance");
 					}
 
-					if(_bonectrl) _bonectrl.hideFlags = HideFlags.HideAndDontSave;
+					//	if(_bonectrl) _bonectrl.hideFlags = HideFlags.HideAndDontSave;
 
 					return;
 				}
@@ -1963,7 +1930,7 @@ namespace Character_Morpher
 					//(I was changing the player character's bones when this was true ¯\_(ツ)_/¯)
 					var data = boneCtrl?.GetExtendedData(!morph);
 
-					var newModifiers = ReadBoneModifiers(data);
+					var newModifiers = data.ReadBoneModifiers();
 					//body bonemods on
 					if(morph || bodyBonemodTgl)
 						body = new List<BoneModifier>(newModifiers);
@@ -2182,6 +2149,46 @@ namespace Character_Morpher
 		{
 			get
 			=> all.Where((p) => !Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
+		}
+
+	}
+
+	internal static class ABMXUtils
+	{
+
+		/// <summary>
+		/// Taken from ABMX to get the data from card more easily 
+		/// </summary>
+		/// <param name="data"></param>
+		/// <returns></returns>
+		internal static List<BoneModifier> ReadBoneModifiers(this PluginData data)
+		{
+			if(data != null)
+			{
+				try
+				{
+					switch(data.version)
+					{
+					case 2:
+						return MessagePack.LZ4MessagePackSerializer.Deserialize<List<BoneModifier>>(
+								(byte[])data.data["boneData"]);
+					//TODO: get the old data converter
+#if KK || EC || KKS
+					case 1:
+						if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("[KKABMX] Loading legacy embedded ABM data");
+						return ABMXOldDataConverterKoiAPI.MigrateOldExtData(data);
+#endif
+
+					default:
+						throw new NotSupportedException($"[KKABMX] Save version {data.version} is not supported");
+					}
+				}
+				catch(Exception ex)
+				{
+					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogError("[KKABMX] Failed to load extended data - " + ex);
+				}
+			}
+			return new List<BoneModifier>();
 		}
 
 	}

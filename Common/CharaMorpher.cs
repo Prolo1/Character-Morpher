@@ -492,8 +492,9 @@ namespace Character_Morpher
 
 			//if it's needed
 			if(cfg.unknownTest != null)
-				cfg.unknownTest.SettingChanged += (m, n) => {
-				
+				cfg.unknownTest.SettingChanged += (m, n) =>
+				{
+
 				};
 
 			//This works so it stays
