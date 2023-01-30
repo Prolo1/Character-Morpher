@@ -17,10 +17,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using Manager;
 
+
 #if HONEY_API
 using CharaCustom;
 using AIChara;
 #else
+using StrayTech;
 using ChaCustom;
 #endif
 
@@ -36,62 +38,78 @@ namespace Character_Morpher
 				Harmony.CreateAndPatchAll(typeof(Hooks), GUID);
 			}
 
-#if KOI_API
 
-
-			[HarmonyPrefix]
-			[HarmonyPatch(typeof(Scene), nameof(Scene.LoadStart),
-				new Type[] { typeof(Scene.Data), typeof(bool) }),]
-
-#if KKS
-			//[HarmonyPatch(typeof(Scene), nameof(Scene.Add),
-			//	new Type[] { typeof(Scene.IOverlap), }),]
-			//
-			//[HarmonyPatch(typeof(Scene), nameof(Scene.Load),
-			//			new Type[] { typeof(Scene.Data), }),]
-			//[HarmonyPatch(typeof(Scene), nameof(Scene.LoadAsync),
-			//			new Type[] { typeof(Scene.Data) }),]
-			[HarmonyPatch(typeof(ActionScene), nameof(ActionScene.SceneEvent),
-						new Type[] { typeof(ActionGame.Chara.NPC) }),]
-			
-
-#endif
-			static void OnSceneLoad()
+			static void UpdateCurrentCharacters(bool forcereset = false)
 			{
-				Logger.LogDebug("The Scene was changed!!!");
-				if(!MakerAPI.InsideMaker)
+
+				if(MakerAPI.InsideMaker || cfg.enableInGame.Value)//Make sure the in-game flag is checked
 					foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 					{
 						if(!ctrl) continue;
-
-						ctrl.MorphChangeUpdate(forceReset: true);
+						if(ctrl.initLoadFinished && !ctrl.reloading)
+							ctrl.MorphChangeUpdate(forceReset: forcereset);
 					}
 			}
 
+
+#if KOI_API
+
+#if KK
+		
+			[HarmonyPrefix]
+			[HarmonyPatch(typeof(SimpleFade), nameof(SimpleFade.FadeSet))]
+			static void OnSceneLoad()
+			{
+				if(!MakerAPI.InsideMaker) UpdateCurrentCharacters(true);
+			}
 
 
 			[HarmonyPostfix]
-			[HarmonyPatch(typeof(Scene.Data), nameof(Scene.Data.Unload),
-				new Type[] { }),]
-#if KKS
-			[HarmonyPatch(typeof(Scene), nameof(Scene.Remove),
-				new Type[] { typeof(Scene.IOverlap), }),]
-
-			//			[HarmonyPatch(typeof(Scene), nameof(Scene.UnloadAsync),
-			//							new Type[] { typeof(bool)}),]
-#endif
-			static void OnSceneUnLoad()
+			[HarmonyPatch(typeof(SimpleFade), nameof(SimpleFade.FadeSet))]
+			static void OnSceneFadeIn(SimpleFade __instance)
 			{
-				Logger.LogDebug("The Scene was unchanged!!!");
-				if(!MakerAPI.InsideMaker)
-					foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
-					{
-						if(!ctrl) continue;
+				IEnumerator after(SimpleFade inst)
+				{
+					yield return new WaitUntil(() => inst.IsEnd);
+					for(int a = -1; a < cfg.reloadTest.Value; ++a)
+						yield return null;
 
-						ctrl.MorphChangeUpdate();
-					}
+					if(inst._Fade == SimpleFade.Fade.Out)
+						if(!MakerAPI.InsideMaker) UpdateCurrentCharacters();
+					
+				}
+
+				Instance?.StartCoroutine(after(__instance));
 			}
 
+#else
+
+			[HarmonyPrefix]
+			[HarmonyPatch(typeof(FadeCanvas), nameof(FadeCanvas.StartAysnc),
+				new Type[] { typeof(FadeCanvas.Fade), typeof(float), typeof(bool), typeof(bool), }),]
+			static void OnSceneLoad()
+			{
+				if(!MakerAPI.InsideMaker) UpdateCurrentCharacters(true);
+			}
+
+			[HarmonyPostfix]
+			[HarmonyPatch(typeof(FadeCanvas), nameof(FadeCanvas.StartAysnc),
+				new Type[] { typeof(FadeCanvas.Fade), typeof(float), typeof(bool), typeof(bool), }),]
+			static void OnSceneUnLoad(FadeCanvas.Fade __0)
+			{
+				IEnumerator after()
+				{
+					for(int a = -1; a < cfg.reloadTest.Value; ++a)
+						yield return null;
+
+					if(!MakerAPI.InsideMaker) UpdateCurrentCharacters();
+				}
+
+				//if((__0 & FadeCanvas.Fade.Out) > 0)
+				if(__0 == FadeCanvas.Fade.Out)
+					if(!MakerAPI.InsideMaker) Instance?.StartCoroutine(after());
+			}
+#endif
 
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(ChaFile), nameof(ChaFile.LoadFile),
@@ -139,7 +157,6 @@ namespace Character_Morpher
 
 				if(!MakerAPI.InsideMaker) return;
 
-				Logger.LogDebug("toggle was pressed");
 				OnFaceBonemodToggleClick(__instance);
 				OnBodyBonemodToggleClick(__instance);
 			}
@@ -197,22 +214,15 @@ namespace Character_Morpher
 				if(!ctrler || ctrler.name.IsNullOrEmpty()) return;
 				//reset character to default before saving or loading character 
 #if HONEY_API
-				if(ctrler.GetComponentInParent<CvsO_CharaLoad>())
-					if(ctrler.name.ToLower().Contains("overwrite"))
+				if(!(ctrler.GetComponentInParent<CvsO_CharaLoad>())) return;
+				if(!(ctrler.name.ToLower().Contains("overwrite"))) return;
 #elif KOI_API
 
-				if(ctrler.GetComponentInParent<CustomCharaFile>())
-					if(ctrler.name.ToLower().Contains("load"))
+				if(!(ctrler.GetComponentInParent<CustomCharaFile>())) return;
+				if(!(ctrler.name.ToLower().Contains("load"))) return;
 #endif
-						foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
-						{
-							if(!ctrl) continue;
-							Logger.LogDebug("The Chara Load Button was called!!!");
-
-							for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-								ctrl.MorphChangeUpdate(forceReset: true);
-
-						}
+				if(cfg.debug.Value) Logger.LogDebug("The Chara Load Button was called!!!");
+				UpdateCurrentCharacters(true);
 			}
 
 			/// <summary>
@@ -225,21 +235,15 @@ namespace Character_Morpher
 				if(!ctrler || ctrler.name.IsNullOrEmpty()) return;
 				//reset character to default before saving or loading character 
 #if HONEY_API
-				if(ctrler.GetComponentInParent<CvsC_ClothesLoad>())
-					if(ctrler.name.ToLower().Contains("overwrite"))
+				if(!(ctrler.GetComponentInParent<CvsC_ClothesLoad>())) return;
+				if(!(ctrler.name.ToLower().Contains("overwrite"))) return;
 #elif KOI_API
 
-				if(ctrler.GetComponentInParent<CustomCoordinateFile>())
-					if(ctrler.name.ToLower().Contains("load"))
+				if(!(ctrler.GetComponentInParent<CustomCoordinateFile>())) return;
+				if(!(ctrler.name.ToLower().Contains("load"))) return;
 #endif
-						foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
-						{
-							if(!ctrl) continue;
-							Logger.LogDebug("The Coord Load Button was called!!!");
-
-							for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-								ctrl.MorphChangeUpdate();
-						}
+				if(cfg.debug.Value) Logger.LogDebug("The Coord Load Button was called!!!");
+				UpdateCurrentCharacters();
 			}
 
 			/// <summary>
@@ -253,26 +257,18 @@ namespace Character_Morpher
 				if(!ctrler || ctrler.name.IsNullOrEmpty()) return;
 				//reset character to default before saving or loading character 
 #if HONEY_API
-				if(ctrler.transform.parent?.parent?.GetComponentInParent<CharaCustom.CustomCharaWindow>())
-					if(ctrler.name.ToLower().Contains("overwrite") || ctrler.name.ToLower().Contains("save"))
+				if(!(ctrler.transform.parent?.parent?.GetComponentInParent<CharaCustom.CustomCharaWindow>())) return;
+				if(!(ctrler.name.ToLower().Contains("overwrite") || ctrler.name.ToLower().Contains("save"))) return;
 #elif KOI_API
 
-				if(ctrler.name.ToLower().Contains("reload")) return;
-				if(ctrler.name.ToLower().Contains("override") || ctrler.name.ToLower().Contains("save")
-					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))
+				if(ctrler.name.ToLower().Contains("reload")) return;//edge case
+				if(!(ctrler.name.ToLower().Contains("override") || ctrler.name.ToLower().Contains("save")
+					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))) return;
 #endif
 
-					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
-						if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
-
-							foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
-							{
-								if(!ctrl) continue;
-								if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
-
-								for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-									ctrl.MorphChangeUpdate(forceReset: true);
-							}
+				if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
+				if(cfg.enable.Value && !cfg.saveWithMorph.Value)
+					UpdateCurrentCharacters(true);
 			}
 
 			/// <summary>
@@ -285,22 +281,16 @@ namespace Character_Morpher
 				var ctrler = __instance.gameObject;
 				if(!ctrler || ctrler.name.IsNullOrEmpty()) return;
 #if HONEY_API
-				if(ctrler.name.ToLower().Contains("exit") || ctrler.name.Contains("No")/*fixes issue with finding false results*/)
+				if(!(ctrler.name.ToLower().Contains("exit") || ctrler.name.Contains("No")/*fixes issue with finding false results*/)) return;
 #elif KOI_API
-				if(ctrler.name.ToLower().Contains("exit") || ctrler.name.Contains("No")/*fixes issue with finding false results*/)
+				if(!(ctrler.name.ToLower().Contains("exit") || ctrler.name.Contains("No")/*fixes issue with finding false results*/)) return;
 #endif
-					if(cfg.enable.Value && !cfg.saveWithMorph.Value)
-						if(MakerAPI.InsideMaker || cfg.enableInGame.Value)
-
-							foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
-							{
-								if(!ctrl) continue;
-								if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
-
-								for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-									ctrl.MorphChangeUpdate();
-							}
+				if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
+				if(cfg.enable.Value && !cfg.saveWithMorph.Value)
+					UpdateCurrentCharacters();
 			}
+
+
 		}
 	}
 }

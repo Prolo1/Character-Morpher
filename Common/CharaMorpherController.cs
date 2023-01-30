@@ -894,13 +894,15 @@ namespace Character_Morpher
 		{
 			if(keepState) return;
 
-
 			if(initReset && !initLoadFinished)
 				initReset = reloading = false;
 
-		//	if(MakerAPI.InsideMaker || !initLoadFinished)
-				OnCharaReload(currentGameMode);
+			//for in game load correction
+			if(!MakerAPI.InsideMaker && initLoadFinished)
+				MorphChangeUpdate(forceReset: true);
 
+			//if(MakerAPI.InsideMaker || !initLoadFinished)
+			OnCharaReload(currentGameMode);
 		}
 
 		/// <inheritdoc/>
@@ -933,7 +935,6 @@ namespace Character_Morpher
 				tmp.Find(m => m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)) :
 				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)))
 				;
-
 		}
 
 		/// <summary>
@@ -952,7 +953,7 @@ namespace Character_Morpher
 			var charaCtrl = ChaControl;
 			var boneCtrl = charaCtrl.GetComponent<BoneController>();
 
-#region Merge results
+			#region Merge results
 
 			//add non-existent bones to other lists
 			if(BoneSplitCheck(true))
@@ -983,14 +984,13 @@ namespace Character_Morpher
 #endif
 			}
 
-#endregion
+			#endregion
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("update values check?");
 			if(!updateValues) return;
 
 
 			MorphValuesUpdate(forceReset || ResetCheck, initReset: initReset, abmx: abmx);
-
 		}
 
 		Coroutine coTexUpdate = null;
@@ -1154,7 +1154,6 @@ namespace Character_Morpher
 
 			//This may be needed (it is for keeping the character on the ground)
 			if(!reloading) ResetHeight();
-
 		}
 
 		/// <summary>
@@ -1325,7 +1324,7 @@ namespace Character_Morpher
 				});
 				++a)
 			{
-#region Body
+				#region Body
 				enable = ((reset || !cfg.enableABMX.Value) ? (initReset ? cfg.initialMorphBodyTest.Value : 0) : 1);
 				if(a < m_data1.abmx.body.Count)
 				{
@@ -1422,9 +1421,9 @@ namespace Character_Morpher
 						GetControlValue("Body", abmx: true, fullVal: initReset).Value.Item1,
 						enable: enable, reset: reset);
 				}
-#endregion
+				#endregion
 
-#region Head
+				#region Head
 				enable = ((reset || !cfg.enableABMX.Value) ? (initReset ? cfg.initialMorphFaceTest.Value : 0) : 1);
 				if(a < m_data1.abmx.face.Count)
 				{
@@ -1494,7 +1493,7 @@ namespace Character_Morpher
 						GetControlValue("head", true, fullVal: initReset).Value.Item1,
 						enable: enable, reset: reset);
 				}
-#endregion
+				#endregion
 			}
 
 
@@ -1636,7 +1635,6 @@ namespace Character_Morpher
 			Reset(-val);
 			if(ResetCheck || forceReset)
 				MorphValuesUpdate(true, abmx: false);
-
 		}
 
 		/// <summary>
@@ -1805,7 +1803,6 @@ namespace Character_Morpher
 			{
 				CharaMorpher_Core.Logger.LogError($"Error: {e.TargetSite} went boom... {e.Message}");
 			}
-
 		}
 
 
@@ -1872,17 +1869,15 @@ namespace Character_Morpher
 						if(ctrler)
 						{
 
-							CharaMorpher_Core.Logger.LogDebug("Destroying dummy chara controller");
+							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Destroying dummy chara controller");
 							ctrler.dummy = true;
 							ctrler.enabled = false;
-							GameObject.Destroy(ctrler);//change back to destroy if issues arise
+							GameObject.Destroy(ctrler);//change back to Destroy if issues arise
 						}
 
 						_extraCharacter.gameObject.SetActive(false);
-						CharaMorpher_Core.Logger.LogDebug("created new Morph character instance");
+						if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("created new Morph character instance");
 					}
-
-					//	if(_bonectrl) _bonectrl.hideFlags = HideFlags.HideAndDontSave;
 
 					return;
 				}
@@ -1898,7 +1893,7 @@ namespace Character_Morpher
 		}
 		public static ChaControl extraCharacter { get => _extraCharacter; }
 
-		public static ChaFileControl chaFile { get { return extraCharacter?.chaFile; } }
+		public static ChaFileControl chaFile { get => extraCharacter?.chaFile; }
 	}
 
 	public class MorphData
@@ -2018,7 +2013,6 @@ namespace Character_Morpher
 
 		public void Clear()
 		{
-
 			main = new ChaFile();
 			abmx.Clear();
 		}
@@ -2049,7 +2043,6 @@ namespace Character_Morpher
 			}
 			catch { }
 			abmx = data.abmx.Copy();
-
 		}
 
 		public void Copy(CharaMorpherController data, bool morph = false)
