@@ -146,14 +146,7 @@ namespace Character_Morpher
 			public List<ConfigEntry<int>> noseIndex { set; get; }
 		}
 
-		public class MyButton
-		{
-			public MyButton() { }
-			public readonly UnityEvent onPressed = new UnityEvent();
 
-
-
-		}
 		void Awake()
 		{
 			Instance = this;
@@ -595,8 +588,6 @@ namespace Character_Morpher
 
 
 		}
-
-
 
 	}
 
