@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{015CED6A-049A-48FB-9DC0-EED58B486325}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Master</RootNamespace>
+    <AssemblyName>Master</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\Builds\Master\BepInEx\plugins\Prolo\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>Always</RunPostBuildEvent>
+  </PropertyGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>call "$(SolutionDir)zipper master.bat" "$(TargetDir)..\..\..\..\Master.zip" "$(TargetDir)..\..\..\..\" "$(SolutionDir)Readme.md"
+</PostBuildEvent>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\[AI] Character Morpher\[AI] Character Morpher.csproj">
+      <Project>{5297f533-ae0e-4a80-83b5-a4acc5758cb4}</Project>
+      <Name>[AI] Character Morpher</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\[HS2] Character Morpher\[HS2] Character Morpher.csproj">
+      <Project>{e96314cf-3d68-4a08-94e7-dd86d7bfa157}</Project>
+      <Name>[HS2] Character Morpher</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\[KKS] Character Morpher\[KKS] Character Morpher.csproj">
+      <Project>{15bb6c66-5b78-4eaa-b02d-99b0fe257f55}</Project>
+      <Name>[KKS] Character Morpher</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\[KK] Character Morpher\[KK] Character Morpher.csproj">
+      <Project>{676b828f-de2d-4f54-9b96-3a965ebd2042}</Project>
+      <Name>[KK] Character Morpher</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

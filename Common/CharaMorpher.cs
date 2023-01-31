@@ -80,7 +80,7 @@ namespace Character_Morpher
 		// Avoid changing GUID unless absolutely necessary. Plugins that rely on your plugin will no longer recognize it, and if you use it in function controllers you will lose all data saved to cards before the change!
 		public const string ModName = "Character Morpher";
 		public const string GUID = "prolo.chararmorpher";//never change this
-		public const string Version = "0.2.4";
+		public const string Version = "0.2.5";
 
 		internal static CharaMorpher_Core Instance;
 		internal static new ManualLogSource Logger;
@@ -121,7 +121,7 @@ namespace Character_Morpher
 
 			//tests
 
-			public ConfigEntry<float> unknownTest { internal set; get; }
+			public ConfigEntry<bool> unknownTest { internal set; get; }
 			//	public ConfigEntry<float> initialMorphTest { internal set; get; }
 			public ConfigEntry<float> initialMorphFaceTest { get; internal set; }
 			public ConfigEntry<float> initialMorphBodyTest { get; internal set; }
@@ -146,14 +146,7 @@ namespace Character_Morpher
 			public List<ConfigEntry<int>> noseIndex { set; get; }
 		}
 
-		public class MyButton
-		{
-			public MyButton() { }
-			public readonly UnityEvent onPressed = new UnityEvent();
 
-
-
-		}
 		void Awake()
 		{
 			Instance = this;
@@ -168,8 +161,8 @@ namespace Character_Morpher
 			int faceBoneAmount = ChaFileDefine.cf_headshapename.Length - 1;
 
 
-			Logger.LogDebug($"Body bones amount: {bodyBoneAmount}");
-			Logger.LogDebug($"Face bones amount: {faceBoneAmount}");
+			//Logger.LogDebug($"Body bones amount: {bodyBoneAmount}");
+			//Logger.LogDebug($"Face bones amount: {faceBoneAmount}");
 
 			int index = 0, defaultIndex = -1;//easier to input index order values
 			cfg = new MorphConfig
@@ -291,7 +284,7 @@ namespace Character_Morpher
 
 				cfg.debug = Config.Bind("_Testing_", "Debug Logging", false, new ConfigDescription("Allows debug logs to be written to the log file", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true })).ConfigDefaulter();
 
-				//cfg.unknownTest = Config.Bind("_Testing_", "Unknown Test value", 0.00f, new ConfigDescription("Used for whatever the hell I WANT (if you see this I forgot to take it out). RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.unknownTest = Config.Bind("_Testing_", "Unknown Test value", true, new ConfigDescription("Used for whatever the hell I WANT (if you see this I forgot to take it out). RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				//	cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 1.00f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				cfg.multiUpdateEnableTest = Config.Bind("_Testing_", "Multi Update Enable value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				cfg.multiUpdateSliderTest = Config.Bind("_Testing_", "Multi Update Slider value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
@@ -490,8 +483,14 @@ namespace Character_Morpher
 
 			};
 
+			//if it's needed
+			if(cfg.unknownTest != null)
+				cfg.unknownTest.SettingChanged += (m, n) =>
+				{
 
-			//This works so it stays
+				};
+
+			//This works so it stays 😂
 			void KeyUpdates()
 			{
 				IEnumerator CoKeyUpdates()
@@ -519,7 +518,6 @@ namespace Character_Morpher
 						if(ctrl.initLoadFinished)
 						{
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-							StartCoroutine(ctrl?.CoABMXFullRefresh(5+1));
 
 						}
 				}
@@ -538,7 +536,6 @@ namespace Character_Morpher
 						if(ctrl.initLoadFinished)
 						{
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-							StartCoroutine(ctrl?.CoABMXFullRefresh(5 + 1));
 						}
 
 				}
@@ -553,8 +550,6 @@ namespace Character_Morpher
 
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
-
-					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateEnableTest.Value + 1));
 				}
 			};
 
@@ -565,8 +560,6 @@ namespace Character_Morpher
 				{
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
-
-					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateEnableTest.Value + 1));
 				}
 			};
 
@@ -576,8 +569,6 @@ namespace Character_Morpher
 				{
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
-
-					StartCoroutine(ctrl?.CoABMXFullRefresh((int)cfg.multiUpdateEnableTest.Value + 1));
 				}
 			};
 
@@ -597,8 +588,6 @@ namespace Character_Morpher
 
 
 		}
-
-
 
 	}
 
@@ -674,7 +663,7 @@ namespace Character_Morpher
 		}
 
 		/// <summary>
-		/// Returns a list of the regestered handeler specified. returns default list otherwise 
+		/// Returns a list of the regestered handeler specified. returns empty list otherwise 
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
