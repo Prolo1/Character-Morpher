@@ -34,7 +34,6 @@ using UnityEngine.UI;
 
 using static Character_Morpher.CharaMorpher_Core;
 using KKABMX.Core;
-using Illusion.Extensions;
 using BepInEx;
 
 namespace Character_Morpher
@@ -46,7 +45,7 @@ namespace Character_Morpher
 		private static Coroutine lastExtent;
 		public static readonly string subCatagoryName = "Morph";
 		public static readonly string displayName = "Chara Morph";
-		
+
 		internal static void Initialize()
 		{
 			MakerAPI.RegisterCustomSubCategories += (s, e) =>
@@ -196,6 +195,18 @@ namespace Character_Morpher
 			enableQuadManip.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.enableCalcTypes.Value,
 				(ctrl, val) => { cfg.enableCalcTypes.Value = val; });
+
+
+			((MakerToggle)e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.useCardMorphDataMaker.Value, CharaMorpher_Core.Instance))
+				.OnGUIExists((gui) =>
+					cfg.useCardMorphDataMaker.SettingChanged += (s, o) =>
+					{
+						gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.useCardMorphDataMaker.Value);
+					}
+				)).BindToFunctionController<CharaMorpherController, bool>(
+				(ctrl) => cfg.useCardMorphDataMaker.Value,
+				(ctrl, val) => cfg.useCardMorphDataMaker.Value = val
+				);
 
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			#endregion
@@ -537,7 +548,7 @@ namespace Character_Morpher
 					ele.preferredHeight = ele.GetComponent<RectTransform>().rect.height;
 					ele.preferredWidth = ele.GetComponent<RectTransform>().rect.width;
 				}
-				
+
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("setting as last");
 				gui.ControlObject.transform.SetParent(par);
@@ -620,7 +631,7 @@ namespace Character_Morpher
 					  for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
 						  ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
 
-					
+
 					  break;
 				  }
 				  int count = 0;
@@ -719,7 +730,7 @@ namespace Character_Morpher
 						for(int a = -1; a < cfg.multiUpdateEnableTest.Value;)
 							ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(++a));
 
-					
+
 						CharaMorpher_Core.Logger.LogMessage($"Morphed to {percent}%");
 						break;
 					}

@@ -14,6 +14,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)CharaMorpherController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CharaMorpherGUI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConfigurationManagerAttributes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SaveLoadController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Test.cs" />
   </ItemGroup>
 </Project>

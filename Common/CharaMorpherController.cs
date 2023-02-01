@@ -34,9 +34,7 @@ namespace Character_Morpher
 
 	public class CharaMorpherController : CharaCustomFunctionController
 	{
-
-		private string MorphTargetLoc = "";
-		private static MorphData charData = null;
+		private static MorphData morphCharData = null;
 		private static string lastCharDir = "";
 		private static DateTime lastDT = new DateTime();
 
@@ -662,6 +660,8 @@ namespace Character_Morpher
 
 			yield return null;
 
+			if(reloading) yield break;
+
 			for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 				MorphChangeUpdate(updateValues: updateValues, initReset: initReset);
 
@@ -785,6 +785,7 @@ namespace Character_Morpher
 				m_data2.Clear();
 			}
 
+
 			//get character info
 			{
 
@@ -853,38 +854,43 @@ namespace Character_Morpher
 			//create path to morph target
 			string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
 
+			bool check = false;
+			check = !(MakerAPI.InsideMaker ? cfg.useCardMorphDataMaker.Value : cfg.useCardMorphDataGame.Value);
+
+			//load Ext. card data
+			if(!check)
+				check |= this.LoadExtData() == null;
 
 			//Get referenced character data (only needs to be loaded once)
-			if(File.Exists(path))
 
-				if(/*charData == null ||*/
-					!MorphTarget.initalize ||
-					lastCharDir != path ||
-					File.GetLastWriteTime(path).Ticks != lastDT.Ticks)
-				{
+			if((File.Exists(path)/* && check*/) &&
+				(!MorphTarget.initalize ||
+				lastCharDir != path ||
+				File.GetLastWriteTime(path).Ticks != lastDT.Ticks))
+			{
 
 
-					CharaMorpher_Core.Logger.LogDebug("Initializing secondary character");
-					(this).MorphTargetLoc = path;//TODO: get this in working order 
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Initializing secondary character");
+			
+				lastDT = File.GetLastWriteTime(path);
+				lastCharDir = path;
+				morphCharData = new MorphData();
 
-					lastDT = File.GetLastWriteTime(path);
-					lastCharDir = path;
-					charData = new MorphData();
+				//initialize secondary model
+				MorphTarget.initalize = true;
 
-					//initialize secondary model
-					MorphTarget.initalize = true;
+				//MorphTarget.extraCharacter?.gameObject?.SetActive(false);
 
-					MorphTarget.extraCharacter?.gameObject?.SetActive(false);
+				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("load morph target");
+				MorphTarget.chaFile.LoadCharaFile(path, noLoadPng: true);
 
-					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("load morph target");
-					MorphTarget.chaFile.LoadCharaFile(path, noLoadPng: true);
-
-					charData.Copy(this, true);
-				}
-
+				morphCharData.Copy(this, true);
+			}
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("replace data 2");
-			(this).m_data2.Copy(charData);
+
+			if(check)
+				m_data2.Copy(morphCharData);
 
 		}
 
@@ -908,12 +914,16 @@ namespace Character_Morpher
 		/// <inheritdoc/>
 		protected override void OnCardBeingSaved(GameMode currentGameMode)
 		{
+			if(!cfg.saveWithMorph.Value)
+			{
+				MorphChangeUpdate(forceReset: true);
+				this.SaveExtData();
+			}
+
 			//reset values to normal after saving
 			if(cfg.enable.Value && !cfg.saveWithMorph.Value)
 				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					StartCoroutine(CoMorphChangeUpdate(delay: (int)cfg.multiUpdateEnableTest.Value + a + 1));//turn the card back after(do not change)
-																											 //StartCoroutine(CoResetFace((int)cfg.multiUpdateEnableTest.Value));
-																											 //	StartCoroutine(CoResetHeight((int)cfg.multiUpdateEnableTest.Value));
 		}
 
 
@@ -928,8 +938,6 @@ namespace Character_Morpher
 			var tmp = controls.all.ToList();
 			if(fullVal)
 				tmp = controls.fullVal.ToList();
-
-
 
 			return (abmx ?
 				tmp.Find(m => m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)) :
@@ -1315,6 +1323,7 @@ namespace Character_Morpher
 			if(!m_data1.abmx.isSplit || !m_data2.abmx.isSplit) return;
 			if(m_data1.abmx.body.Count != m_data2.abmx.body.Count ||
 				m_data1.abmx.face.Count != m_data2.abmx.face.Count) return;
+
 			var boneCtrl = ChaControl?.GetComponent<BoneController>();
 			reset = initReset || reset;
 			float enable;
@@ -1896,16 +1905,19 @@ namespace Character_Morpher
 		public static ChaFileControl chaFile { get => extraCharacter?.chaFile; }
 	}
 
+	[Serializable]
 	public class MorphData
 	{
+		[Serializable]
 		public class AMBXSections
 		{
 			public List<BoneModifier> body = new List<BoneModifier>();
 			public List<BoneModifier> face = new List<BoneModifier>();
+			private bool m_isLoaded = false;
+			private bool m_isSplit = false;
 
-
-			public bool isLoaded { get; private set; } = false;
-			public bool isSplit { get; private set; } = false;
+			public bool isLoaded { get => m_isLoaded; private set => m_isLoaded = value; }
+			public bool isSplit { get => m_isSplit; private set => m_isSplit = value; }
 
 
 			public void Populate(CharaMorpherController morphControl, bool morph = false)
@@ -1978,6 +1990,7 @@ namespace Character_Morpher
 			}
 
 			public void ResetSplitStatus() { isSplit = false; isLoaded = false; }
+			public void ForceSplitStatus() { isSplit = true; isLoaded = true; }
 
 
 			public void Clear()
@@ -2001,8 +2014,8 @@ namespace Character_Morpher
 					body = new List<BoneModifier>(body ?? new List<BoneModifier>()),
 					face = new List<BoneModifier>(face ?? new List<BoneModifier>()),
 
-					isSplit = isSplit,
-					isLoaded = isLoaded,
+					m_isSplit = m_isSplit,
+					m_isLoaded = m_isLoaded,
 				};
 			}
 		}
@@ -2041,7 +2054,7 @@ namespace Character_Morpher
 			{
 				main.CopyAll(data.main);
 			}
-			catch { }
+			catch { CharaMorpher_Core.Logger.LogError("Could not copy character data"); }
 			abmx = data.abmx.Copy();
 		}
 
@@ -2057,7 +2070,7 @@ namespace Character_Morpher
 			{
 				main.CopyAll(morph ? MorphTarget.chaFile : data.ChaFileControl);
 			}
-			catch { CharaMorpher_Core.Logger.LogDebug("Could not copy character data"); }
+			catch { CharaMorpher_Core.Logger.LogError("Could not copy character data"); }
 
 			abmx.Populate(data, morph);
 		}
@@ -2122,6 +2135,20 @@ namespace Character_Morpher
 				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
 				for(int a = 0; a < tmp.Count; ++a)
 					tmp[tmp.Keys.ElementAt(a)] = Tuple.Create(1f, tmp[tmp.Keys.ElementAt(a)].Item2);
+				return tmp;
+			}
+		}
+
+		/// <summary>
+		/// each value is set to zero
+		/// </summary>
+		public Dictionary<string, Tuple<float, MorphCalcType>> noVal
+		{
+			get
+			{
+				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
+				for(int a = 0; a < tmp.Count; ++a)
+					tmp[tmp.Keys.ElementAt(a)] = Tuple.Create(0f, tmp[tmp.Keys.ElementAt(a)].Item2);
 				return tmp;
 			}
 		}

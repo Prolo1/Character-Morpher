@@ -2,8 +2,6 @@
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 //using System.Threading.Tasks;
@@ -103,6 +101,8 @@ namespace Character_Morpher
 			public ConfigEntry<bool> linkOverallABMXSliders { set; get; }
 			public ConfigEntry<bool> enableCalcTypes { set; get; }
 			public ConfigEntry<bool> saveWithMorph { set; get; }
+			public ConfigEntry<bool> useCardMorphDataMaker { set; get; }
+			public ConfigEntry<bool> useCardMorphDataGame { set; get; }
 
 			public ConfigEntry<string> pathBtn { set; get; }
 			public ConfigEntry<string> charDir { set; get; }
@@ -175,6 +175,8 @@ namespace Character_Morpher
 				linkOverallABMXSliders = Config.Bind("_Main_", "Link Overall Base Sliders to ABMX Sliders", true, new ConfigDescription("Allows ABMX overall sliders to be affected by its counterpart (i.e. Body:50% * ABMXBody:100% = ABMXBody:50%)", null, new ConfigurationManagerAttributes { Order = --index })),
 				enableCalcTypes = Config.Bind("_Main_", "Enable Calculation Types", false, new ConfigDescription("Enables quadratic mode where value gets squared (i.e. 1.2 = 1.2^2 = 1.44)", null, new ConfigurationManagerAttributes { Order = --index })),
 				saveWithMorph = Config.Bind("_Main_", "Save As Seen", true, new ConfigDescription("Allows the card to save as seen in maker (must be set before saving. If false card is set to default card values but keeps accessory changes)", null, new ConfigurationManagerAttributes { Order = --index })),
+				useCardMorphDataMaker = Config.Bind("_Main_", "Use Card Morph Data (Maker)", true, new ConfigDescription("Allows the mod to use data from card instead of default data (If false card is set to default card values)", null, new ConfigurationManagerAttributes { Order = --index })),
+				useCardMorphDataGame = Config.Bind("_Main_", "Use Card Morph Data (Game)", true, new ConfigDescription("Allows the card to use data from card instead of default data (If false card is set to default card values)", null, new ConfigurationManagerAttributes { Order = --index })),
 
 				charDir = Config.Bind("_Main_", "Directory Path", femalepath, new ConfigDescription("Directory where character is stored", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
 				imageName = Config.Bind("_Main_", "Card Name", "sample.png", new ConfigDescription("The character card used to morph", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
@@ -543,6 +545,26 @@ namespace Character_Morpher
 					OnNewTargetImage.Invoke(path);
 			};
 
+			cfg.useCardMorphDataMaker.SettingChanged += (m, n) =>
+			{
+				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				{
+
+					if(ctrl.initLoadFinished)
+						StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
+				}
+			};
+
+			cfg.useCardMorphDataGame.SettingChanged += (m, n) =>
+			{
+				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				{
+
+					if(ctrl.initLoadFinished)
+						StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
+				}
+			};
+
 			cfg.enable.SettingChanged += (m, n) =>
 			{
 				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
@@ -741,6 +763,10 @@ namespace Character_Morpher
 
 			return gui;
 		}
+
+		static CurrentSaveLoadController saveLoad = new CurrentSaveLoadController();
+		public static PluginData SaveExtData(this CharaCustomFunctionController ctrl) => saveLoad.Save(ctrl);
+		public static PluginData LoadExtData(this CharaCustomFunctionController ctrl) => saveLoad.Load(ctrl);
 
 	}
 
