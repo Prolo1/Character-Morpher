@@ -30,6 +30,7 @@ using KKAPI.Utilities;
 using KKAPI.Maker.UI;
 
 
+
 #if HONEY_API
 
 using AIChara;
@@ -512,44 +513,38 @@ namespace Character_Morpher
 
 			cfg.charDir.SettingChanged += (m, n) =>
 			{
+				bool check = !(MakerAPI.InsideMaker ?
+				cfg.useCardMorphDataMaker.Value :
+				cfg.useCardMorphDataGame.Value);
 
 				string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
 				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-					if(File.Exists(path))
+					if(File.Exists(path) && check)
 						if(ctrl.initLoadFinished)
-						{
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-
-						}
 				}
-
-				if(File.Exists(path))
-					OnNewTargetImage.Invoke(path);
 			};
 
 			cfg.imageName.SettingChanged += (m, n) =>
 			{
+				bool check = !(MakerAPI.InsideMaker ?
+				cfg.useCardMorphDataMaker.Value :
+				cfg.useCardMorphDataGame.Value);
+
 				string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
 				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-
-					if(File.Exists(path))
+					if(File.Exists(path) && check)
 						if(ctrl.initLoadFinished)
-						{
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-						}
-
 				}
-				if(File.Exists(path))
-					OnNewTargetImage.Invoke(path);
 			};
 
 			cfg.useCardMorphDataMaker.SettingChanged += (m, n) =>
 			{
 				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-
 					if(ctrl.initLoadFinished)
 						StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 				}
@@ -614,7 +609,7 @@ namespace Character_Morpher
 	}
 
 	public class OnValueChange : UnityEvent { }
-	public class OnNewImage : UnityEvent<string> { }
+	public class OnNewImage : UnityEvent<string, byte[]> { }
 
 	/// <summary>
 	/// utility to bring process to foreground (mainly the game after file select)
@@ -672,7 +667,7 @@ namespace Character_Morpher
 		/// </summary>
 		/// <param name="dir"></param>
 		/// <returns></returns>
-		public static string MakeDirPath(string dir)
+		public static string MakeDirPath(this string dir)
 		{
 
 			dir = (dir ?? "").Trim().Replace('\\', '/').Replace("//", "/");
@@ -746,11 +741,11 @@ namespace Character_Morpher
 		/// </summary>
 		/// <param name="path">directory path to image (i.e. C:/path/to/image.png)</param>
 		/// <returns>An Texture2D created from path if passed, else a black texture</returns>
-		public static Texture2D CreateTexture(this string path) =>
-			File.Exists(path) ?
-			File.ReadAllBytes(path)?
-			.LoadTexture(TextureFormat.RGBA32) ??
-			Texture2D.blackTexture : Texture2D.blackTexture;
+		public static Texture2D CreateTexture(this string path, byte[] data = null) =>
+			((data != null) || !File.Exists(path)) ?
+			data?.LoadTexture(TextureFormat.RGBA32) ?? Texture2D.blackTexture :
+			File.ReadAllBytes(path)?.LoadTexture(TextureFormat.RGBA32) ??
+			Texture2D.blackTexture;
 
 		public static BaseGuiEntry OnGUIExists(this BaseGuiEntry gui, UnityAction<BaseGuiEntry> act)
 		{
@@ -766,7 +761,26 @@ namespace Character_Morpher
 
 		static CurrentSaveLoadController saveLoad = new CurrentSaveLoadController();
 		public static PluginData SaveExtData(this CharaCustomFunctionController ctrl) => saveLoad.Save(ctrl);
-		public static PluginData LoadExtData(this CharaCustomFunctionController ctrl) => saveLoad.Load(ctrl);
+		public static PluginData LoadExtData(this CharaCustomFunctionController ctrl, PluginData data = null)
+		{
+			var tmp = saveLoad.Load(ctrl, data);
+			CharaMorpher_Core.Logger.LogInfo("extended data loaded");
+
+			string path = Path.Combine(
+				CharaMorpher_Core.cfg.charDir.Value.MakeDirPath(),
+				CharaMorpher_Core.cfg.imageName.Value.MakeDirPath());
+
+			bool check = (MakerAPI.InsideMaker ?
+				CharaMorpher_Core.cfg.useCardMorphDataMaker.Value :
+				CharaMorpher_Core.cfg.useCardMorphDataGame.Value);
+
+			CharaMorpher_Core.Logger.LogInfo($"Load check status: {check}");
+
+			var ctrler = (CharaMorpherController)ctrl;
+			CharaMorpher_Core.OnNewTargetImage.Invoke(path, check ? ctrler?.ChaFileControl?.pngData : null);
+
+			return tmp;
+		}
 
 	}
 

@@ -34,6 +34,7 @@ namespace Character_Morpher
 
 	public class CharaMorpherController : CharaCustomFunctionController
 	{
+		private PluginData m_extData = null;
 		private static MorphData morphCharData = null;
 		private static string lastCharDir = "";
 		private static DateTime lastDT = new DateTime();
@@ -783,6 +784,7 @@ namespace Character_Morpher
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("clear data");
 				m_data1.Clear();
 				m_data2.Clear();
+				m_extData = null;
 			}
 
 
@@ -854,12 +856,8 @@ namespace Character_Morpher
 			//create path to morph target
 			string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
 
-			bool check = false;
-			check = !(MakerAPI.InsideMaker ? cfg.useCardMorphDataMaker.Value : cfg.useCardMorphDataGame.Value);
 
 			//load Ext. card data
-			if(!check)
-				check |= this.LoadExtData() == null;
 
 			//Get referenced character data (only needs to be loaded once)
 
@@ -871,7 +869,7 @@ namespace Character_Morpher
 
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Initializing secondary character");
-			
+
 				lastDT = File.GetLastWriteTime(path);
 				lastCharDir = path;
 				morphCharData = new MorphData();
@@ -882,15 +880,23 @@ namespace Character_Morpher
 				//MorphTarget.extraCharacter?.gameObject?.SetActive(false);
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("load morph target");
-				MorphTarget.chaFile.LoadCharaFile(path, noLoadPng: true);
+				MorphTarget.chaFile.LoadCharaFile(path);
 
 				morphCharData.Copy(this, true);
 			}
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("replace data 2");
+			m_extData = this.LoadExtData(m_extData);
+			bool check = !(MakerAPI.InsideMaker ?
+				cfg.useCardMorphDataMaker.Value :
+				cfg.useCardMorphDataGame.Value) ||
+				m_extData == null;
 
+
+			CharaMorpher_Core.Logger.LogInfo($"Morph check status: {check}");
 			if(check)
 				m_data2.Copy(morphCharData);
+			//	this.LoadExtData();
 
 		}
 
@@ -1989,8 +1995,7 @@ namespace Character_Morpher
 				isSplit = true;
 			}
 
-			public void ResetSplitStatus() { isSplit = false; isLoaded = false; }
-			public void ForceSplitStatus() { isSplit = true; isLoaded = true; }
+			public void ForceSplitStatus(bool force = true) { isSplit = force; isLoaded = force; }
 
 
 			public void Clear()
@@ -2020,19 +2025,19 @@ namespace Character_Morpher
 			}
 		}
 
-		public ChaFile main = new ChaFile();
+		public ChaFileControl main = new ChaFileControl();
 		public AMBXSections abmx = new AMBXSections();
 
 
 		public void Clear()
 		{
-			main = new ChaFile();
+			main = new ChaFileControl();
 			abmx.Clear();
 		}
 
 		public MorphData Clone()
 		{
-			var tmp = new ChaFile();
+			var tmp = new ChaFileControl();
 			try
 			{
 				tmp.CopyAll(main);

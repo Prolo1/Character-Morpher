@@ -45,6 +45,7 @@ namespace Character_Morpher
 		private static Coroutine lastExtent;
 		public static readonly string subCatagoryName = "Morph";
 		public static readonly string displayName = "Chara Morph";
+		//		public static bool showCardImage = false;
 
 		internal static void Initialize()
 		{
@@ -192,21 +193,20 @@ namespace Character_Morpher
 					cfg.enableCalcTypes.SettingChanged += (s, o) =>
 					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableCalcTypes.Value)
 				);
-			enableQuadManip.BindToFunctionController<CharaMorpherController, bool>(
-				(ctrl) => cfg.enableCalcTypes.Value,
-				(ctrl, val) => { cfg.enableCalcTypes.Value = val; });
 
 
-			((MakerToggle)e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.useCardMorphDataMaker.Value, CharaMorpher_Core.Instance))
+			e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.useCardMorphDataMaker.Value, CharaMorpher_Core.Instance))
 				.OnGUIExists((gui) =>
+				{
 					cfg.useCardMorphDataMaker.SettingChanged += (s, o) =>
 					{
-						gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.useCardMorphDataMaker.Value);
-					}
-				)).BindToFunctionController<CharaMorpherController, bool>(
-				(ctrl) => cfg.useCardMorphDataMaker.Value,
-				(ctrl, val) => cfg.useCardMorphDataMaker.Value = val
-				);
+						gui?.ControlObject?.GetComponentInChildren<Toggle>()?.
+						Set(cfg.useCardMorphDataMaker.Value);
+					};
+
+					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.
+					OnValueChangedAsObservable().Subscribe((_1) => { cfg.useCardMorphDataMaker.Value = _1; });
+				});
 
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			#endregion
@@ -497,8 +497,6 @@ namespace Character_Morpher
 				{
 					cfg.enableCalcTypes.Value = val;
 					ShowEnabledSliders();
-
-
 				});
 
 			ShowEnabledSliders();
@@ -658,20 +656,21 @@ namespace Character_Morpher
 
 			var img = e.AddControl(new MakerImage(null, category, owner)
 			{ Height = 200, Width = 150, Texture = MorphUtil.CreateTexture(TargetPath), });
-			IEnumerator CoSetTexture(string path)
+			IEnumerator CoSetTexture(string path, byte[] png = null)
 			{
 				for(int a = 0; a < 4; ++a)
 					yield return null;
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"The CoSetTexture was called");
-				img.Texture = MorphUtil.CreateTexture(path);
+				img.Texture = path.CreateTexture(png);
+				img.ControlObject.GetComponentInChildren<RawImage>().color = Color.white * ((png != null) ? .65f : 1);
 			}
 
 			CharaMorpher_Core.OnNewTargetImage.AddListener(
-				path =>
+				(path, png) =>
 				{
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Calling OnNewTargetImage callback");
-					CharaMorpher_Core.Instance.StartCoroutine(CoSetTexture(path));
+					CharaMorpher_Core.Instance.StartCoroutine(CoSetTexture(path, png));
 				});
 
 			var button = e.AddControl(new MakerButton($"Set New Morph Target", category, owner));
@@ -775,8 +774,8 @@ namespace Character_Morpher
 
 			if(string.IsNullOrEmpty(texPath)) return;
 
-			cfg.charDir.Value = MakeDirPath(Path.GetDirectoryName(texPath));
-			cfg.imageName.Value = MakeDirPath((texPath.Substring(texPath.LastIndexOf('/') + 1)));//not sure why this happens on hs2?
+			cfg.charDir.Value = Path.GetDirectoryName(texPath).MakeDirPath();
+			cfg.imageName.Value = texPath.Substring(texPath.LastIndexOf('/') + 1).MakeDirPath();//not sure why this happens on hs2?
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Exit accept");
 		}
