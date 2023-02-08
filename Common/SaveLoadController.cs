@@ -58,7 +58,17 @@ namespace Character_Morpher
 
 		public override string DataKey => "MorphData";
 
-		
+		/*
+		 Data that can affect save:
+		* enum MorphCalcType
+		* class MorphData
+		* class MorphData.AMBXSections
+		* class MorphConfig 
+		* var CharaMorpher_Core.cfg.defaults
+		* var CharaMorpher_Core.cfg.controlCategories
+		* all I can think of for now
+		 */
+
 		public override PluginData Load(CharaCustomFunctionController ctrler, PluginData data)
 		{
 			//data = base.Load(ctrler,data);// use if version goes up (i.e. 1->2)
@@ -79,13 +89,11 @@ namespace Character_Morpher
 
 				if(png == null) throw new Exception("png data does not exist...");
 
-
 				target.abmx.ForceSplitStatus();//needed since split is not saved 😥
 
 				ctrl.controls.all = values;
 				ctrl.m_data2.Copy(target);
-				//	ctrl.m_data2.main.GetChaControl().Load();
-
+			
 			}
 			catch(Exception e)
 			{
@@ -109,7 +117,7 @@ namespace Character_Morpher
 				data.data.Add(DataKey + "_targetCard", LZ4MessagePackSerializer.Serialize(ctrl.m_data2, CompositeResolver.Instance));
 
 
-				if(ctrl.m_data2.main.pngData == null) throw new Exception("png data does not exist...");
+				if(ctrl.m_data2.main.pngData.IsNullOrEmpty()) throw new Exception("png data does not exist...");
 				data.data.Add(DataKey + "_targetPng", ctrl.m_data2.main.pngData);
 			}
 			catch(Exception e)
