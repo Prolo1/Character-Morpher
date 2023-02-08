@@ -861,7 +861,7 @@ namespace Character_Morpher
 
 			//Get referenced character data (only needs to be loaded once)
 
-			if((File.Exists(path)/* && check*/) &&
+			if((File.Exists(path)) &&
 				(!MorphTarget.initalize ||
 				lastCharDir != path ||
 				File.GetLastWriteTime(path).Ticks != lastDT.Ticks))
@@ -893,7 +893,7 @@ namespace Character_Morpher
 				m_extData == null;
 
 
-			CharaMorpher_Core.Logger.LogInfo($"Morph check status: {check}");
+			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Morph check status: {check}");
 			if(check)
 				m_data2.Copy(morphCharData);
 			//	this.LoadExtData();
@@ -2041,8 +2041,12 @@ namespace Character_Morpher
 			try
 			{
 				tmp.CopyAll(main);
+				tmp.pngData = main.pngData.ToArray();//copy
+#if KOI_API
+				tmp.facePngData = main.facePngData.ToArray();//copy
+#endif
 			}
-			catch { }
+			catch(Exception e) { CharaMorpher_Core.Logger.LogError("Could not copy character data:\n" + e); }
 #if HONEY_API
 			//CopyAll will not copy this data in hs2
 			tmp.dataID = main.dataID;
@@ -2055,12 +2059,9 @@ namespace Character_Morpher
 		{
 			if(data == null) return;
 
-			try
-			{
-				main.CopyAll(data.main);
-			}
-			catch { CharaMorpher_Core.Logger.LogError("Could not copy character data"); }
-			abmx = data.abmx.Copy();
+			var tmp = data.Clone();
+			this.main = tmp.main;
+			this.abmx = tmp.abmx;
 		}
 
 		public void Copy(CharaMorpherController data, bool morph = false)
@@ -2074,8 +2075,14 @@ namespace Character_Morpher
 			try
 			{
 				main.CopyAll(morph ? MorphTarget.chaFile : data.ChaFileControl);
+				main.pngData = (morph ? MorphTarget.chaFile.pngData :
+					data.ChaFileControl.pngData)?.ToArray();
+#if KOI_API
+				main.facePngData = (morph ? MorphTarget.chaFile.facePngData :
+					data.ChaFileControl.facePngData)?.ToArray();
+#endif
 			}
-			catch { CharaMorpher_Core.Logger.LogError("Could not copy character data"); }
+			catch(Exception e) { CharaMorpher_Core.Logger.LogError("Could not copy character data:\n" + e); }
 
 			abmx.Populate(data, morph);
 		}

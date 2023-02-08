@@ -36,7 +36,8 @@ using KKAPI.Maker.UI;
 using AIChara;
 #endif
 
-
+using static Character_Morpher.CharaMorpher_Core;
+using static Character_Morpher.CharaMorpherController;
 
 /***********************************************
   Features:
@@ -122,7 +123,7 @@ namespace Character_Morpher
 
 			//tests
 
-			public ConfigEntry<bool> unknownTest { internal set; get; }
+			public ConfigEntry<int> unknownTest { internal set; get; }
 			//	public ConfigEntry<float> initialMorphTest { internal set; get; }
 			public ConfigEntry<float> initialMorphFaceTest { get; internal set; }
 			public ConfigEntry<float> initialMorphBodyTest { get; internal set; }
@@ -183,7 +184,7 @@ namespace Character_Morpher
 				imageName = Config.Bind("_Main_", "Card Name", "sample.png", new ConfigDescription("The character card used to morph", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
 				sliderExtents = Config.Bind("_Main_", "Slider Extents", 200u, new ConfigDescription("How far the slider values go above default (e.i. setting value to 10 gives values -10 -> 110)", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true })),
 				enableKey = Config.Bind("_Main_", "Toggle Enable Keybinding", new KeyboardShortcut(KeyCode.Return, KeyCode.RightShift), new ConfigDescription("Enable/Disable toggle button", null, new ConfigurationManagerAttributes { Order = --index })),
-				pathBtn = Config.Bind("_Main_", "Set Morph Target", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = --index, CustomDrawer = MorphUtil.MyButtonDrawer, ObjToStr = (o) => "", StrToObj = (s) => null })),
+				pathBtn = Config.Bind("_Main_", "Set Morph Target", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = --index, CustomDrawer = MorphUtil.MyImageButtonDrawer, ObjToStr = (o) => "", StrToObj = (s) => null })),
 				resetOnLaunch = Config.Bind("_Testing_", "Reset On Launch", true, new ConfigDescription("will reset advanced values to defaults after launch", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true })),
 
 				//you don't need to see this in game
@@ -287,7 +288,7 @@ namespace Character_Morpher
 
 				cfg.debug = Config.Bind("_Testing_", "Debug Logging", false, new ConfigDescription("Allows debug logs to be written to the log file", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true })).ConfigDefaulter();
 
-				cfg.unknownTest = Config.Bind("_Testing_", "Unknown Test value", true, new ConfigDescription("Used for whatever the hell I WANT (if you see this I forgot to take it out). RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				cfg.unknownTest = Config.Bind("_Testing_", "Unknown Test value", 20, new ConfigDescription("Used for whatever the hell I WANT (if you see this I forgot to take it out). RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				//	cfg.initialMorphTest = Config.Bind("_Testing_", "Init morph value", 1.00f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				cfg.multiUpdateEnableTest = Config.Bind("_Testing_", "Multi Update Enable value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
 				cfg.multiUpdateSliderTest = Config.Bind("_Testing_", "Multi Update Slider value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
@@ -520,7 +521,7 @@ namespace Character_Morpher
 				string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
 				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-					if(File.Exists(path) && check)
+					if(File.Exists(path))
 						if(ctrl.initLoadFinished)
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 				}
@@ -535,7 +536,7 @@ namespace Character_Morpher
 				string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
 				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
-					if(File.Exists(path) && check)
+					if(File.Exists(path))
 						if(ctrl.initLoadFinished)
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 				}
@@ -647,8 +648,10 @@ namespace Character_Morpher
 		static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
 	}
 
-	internal static class MorphUtil
+	public static class MorphUtil
 	{
+		public static ManualLogSource Logger { get => CharaMorpher_Core.Logger; }
+
 		/// <summary>
 		/// Adds a value to the end of a list and returns it
 		/// </summary>
@@ -718,22 +721,32 @@ namespace Character_Morpher
 		public static ConfigEntry<T> ConfigDefaulter<T>(this ConfigEntry<T> v1) =>
 			v1.ConfigDefaulter((T)v1.DefaultValue);
 
-
-		static Texture2D tmpTex = null;
+		static RenderTexture tmpTex = new RenderTexture((int)150, (int)200, 0);
 		static string lastPath = null;
-		internal static void MyButtonDrawer(ConfigEntryBase entry)
+		internal static void MyImageButtonDrawer(ConfigEntryBase entry)
 		{
 			// Make sure to use GUILayout.ExpandWidth(true) to use all available space
-
 			GUILayout.BeginVertical();
 
 			if(GUILayout.Button(new GUIContent(entry.Definition.Key, entry.Description.Description), GUILayout.ExpandWidth(true)))
 				CharaMorpherGUI.GetNewImageTarget();
 
-			GUILayout.Box(tmpTex = (lastPath != CharaMorpherGUI.TargetPath ? CharaMorpherGUI.TargetPath.CreateTexture() : tmpTex), GUILayout.Width(150), GUILayout.Height(200));
-			if(lastPath != CharaMorpherGUI.TargetPath) lastPath = CharaMorpherGUI.TargetPath;
-			GUILayout.EndVertical();
+			if(tmpTex)
+			{
+				//tmpTex.Release();
+				tmpTex.autoGenerateMips = false;
+				tmpTex.antiAliasing = 4;
+				tmpTex.filterMode = FilterMode.Bilinear;
 
+				if(lastPath != CharaMorpherGUI.TargetPath)
+					Graphics.Blit(CharaMorpherGUI.TargetPath.CreateTexture(), tmpTex);
+			}
+
+			GUILayout.Box(tmpTex, GUILayout.Width(150), GUILayout.Height(200));
+
+			if(lastPath != CharaMorpherGUI.TargetPath) lastPath = CharaMorpherGUI.TargetPath;
+
+			GUILayout.EndVertical();
 		}
 
 		/// <summary>
@@ -742,7 +755,7 @@ namespace Character_Morpher
 		/// <param name="path">directory path to image (i.e. C:/path/to/image.png)</param>
 		/// <returns>An Texture2D created from path if passed, else a black texture</returns>
 		public static Texture2D CreateTexture(this string path, byte[] data = null) =>
-			((data != null) || !File.Exists(path)) ?
+			(!data.IsNullOrEmpty() || !File.Exists(path)) ?
 			data?.LoadTexture(TextureFormat.RGBA32) ?? Texture2D.blackTexture :
 			File.ReadAllBytes(path)?.LoadTexture(TextureFormat.RGBA32) ??
 			Texture2D.blackTexture;
@@ -754,7 +767,7 @@ namespace Character_Morpher
 				yield return new WaitUntil(() => gui1.Exists);//the thing neeeds to exist first
 				act1(gui);
 			}
-			CharaMorpher_Core.Instance.StartCoroutine(func(gui, act));
+			Instance.StartCoroutine(func(gui, act));
 
 			return gui;
 		}
@@ -764,24 +777,25 @@ namespace Character_Morpher
 		public static PluginData LoadExtData(this CharaCustomFunctionController ctrl, PluginData data = null)
 		{
 			var tmp = saveLoad.Load(ctrl, data);
-			CharaMorpher_Core.Logger.LogInfo("extended data loaded");
+			if(cfg.debug.Value)
+				Logger.LogDebug("extended data loaded");
 
 			string path = Path.Combine(
-				CharaMorpher_Core.cfg.charDir.Value.MakeDirPath(),
-				CharaMorpher_Core.cfg.imageName.Value.MakeDirPath());
+				cfg.charDir.Value.MakeDirPath(),
+				cfg.imageName.Value.MakeDirPath());
 
-			bool check = (MakerAPI.InsideMaker ?
-				CharaMorpher_Core.cfg.useCardMorphDataMaker.Value :
-				CharaMorpher_Core.cfg.useCardMorphDataGame.Value);
-
-			CharaMorpher_Core.Logger.LogInfo($"Load check status: {check}");
+			bool check = !(!(MakerAPI.InsideMaker ?
+				cfg.useCardMorphDataMaker.Value :
+				cfg.useCardMorphDataGame.Value) ||
+				tmp == null);
+			if(cfg.debug.Value)
+				Logger.LogDebug($"Load check status: {check}");
 
 			var ctrler = (CharaMorpherController)ctrl;
-			CharaMorpher_Core.OnNewTargetImage.Invoke(path, check ? ctrler?.ChaFileControl?.pngData : null);
+			OnNewTargetImage.Invoke(path, check ? ctrler?.m_data2?.main?.pngData : null);
 
 			return tmp;
 		}
-
 	}
 
 }

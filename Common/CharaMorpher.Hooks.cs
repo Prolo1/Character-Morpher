@@ -172,6 +172,7 @@ namespace Character_Morpher
 					if(cfg.debug.Value) Logger.LogDebug("Change to face bonemod toggle");
 					CharaMorpherController.faceBonemodTgl = __instance.isOn;
 				}
+
 			}
 
 			static void OnBodyBonemodToggleClick(Toggle __instance)
@@ -198,7 +199,7 @@ namespace Character_Morpher
 
 				if(!MakerAPI.InsideMaker) return;
 
-				OnSaveLoadClick(__instance);
+			//	OnSaveLoadClick(__instance);
 				OnExitSaveClick(__instance);
 
 				OnCoordLoadClick(__instance);

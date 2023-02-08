@@ -45,7 +45,6 @@ namespace Character_Morpher
 		private static Coroutine lastExtent;
 		public static readonly string subCatagoryName = "Morph";
 		public static readonly string displayName = "Chara Morph";
-		//		public static bool showCardImage = false;
 
 		internal static void Initialize()
 		{
@@ -662,8 +661,9 @@ namespace Character_Morpher
 					yield return null;
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"The CoSetTexture was called");
-				img.Texture = path.CreateTexture(png);
-				img.ControlObject.GetComponentInChildren<RawImage>().color = Color.white * ((png != null) ? .65f : 1);
+				img.Texture = path?.CreateTexture(png);
+				//(img.Texture as Texture2D).Resize(150, 200);
+				img.ControlObject.GetComponentInChildren<RawImage>().color = Color.white * ((!png.IsNullOrEmpty()) ? .65f : 1);
 			}
 
 			CharaMorpher_Core.OnNewTargetImage.AddListener(
