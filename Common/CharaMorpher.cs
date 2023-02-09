@@ -102,7 +102,7 @@ namespace Character_Morpher
 			public ConfigEntry<bool> enableInGame { set; get; }
 			public ConfigEntry<bool> linkOverallABMXSliders { set; get; }
 			public ConfigEntry<bool> enableCalcTypes { set; get; }
-			public ConfigEntry<bool> saveWithMorph { set; get; }
+			public ConfigEntry<bool> saveAsMorphData { set; get; }
 			public ConfigEntry<bool> useCardMorphDataMaker { set; get; }
 			public ConfigEntry<bool> useCardMorphDataGame { set; get; }
 
@@ -176,7 +176,10 @@ namespace Character_Morpher
 				enableInGame = Config.Bind("_Main_", "Enable in Game", true, new ConfigDescription("Allows the plugin to run while in main game", null, new ConfigurationManagerAttributes { Order = --index })),
 				linkOverallABMXSliders = Config.Bind("_Main_", "Link Overall Base Sliders to ABMX Sliders", true, new ConfigDescription("Allows ABMX overall sliders to be affected by its counterpart (i.e. Body:50% * ABMXBody:100% = ABMXBody:50%)", null, new ConfigurationManagerAttributes { Order = --index })),
 				enableCalcTypes = Config.Bind("_Main_", "Enable Calculation Types", false, new ConfigDescription("Enables quadratic mode where value gets squared (i.e. 1.2 = 1.2^2 = 1.44)", null, new ConfigurationManagerAttributes { Order = --index })),
-				saveWithMorph = Config.Bind("_Main_", "Save As Seen", true, new ConfigDescription("Allows the card to save as seen in maker (must be set before saving. If false card is set to default card values but keeps accessory changes)", null, new ConfigurationManagerAttributes { Order = --index })),
+				saveAsMorphData = Config.Bind("_Main_", "Save As Morph Data", false,
+				new ConfigDescription("Allows the card to save using morph data. " +
+				"If true, card is set to default values and saves Morph Ext. data but keeps accessory changes, " +
+				"else the card is saved normally w/o Morph Ext. data and saved as seen (must be set before saving)", null, new ConfigurationManagerAttributes { Order = --index })),
 				useCardMorphDataMaker = Config.Bind("_Main_", "Use Card Morph Data (Maker)", true, new ConfigDescription("Allows the mod to use data from card instead of default data (If false card is set to default card values)", null, new ConfigurationManagerAttributes { Order = --index })),
 				useCardMorphDataGame = Config.Bind("_Main_", "Use Card Morph Data (Game)", true, new ConfigDescription("Allows the card to use data from card instead of default data (If false card is set to default card values)", null, new ConfigurationManagerAttributes { Order = --index })),
 
@@ -776,7 +779,8 @@ namespace Character_Morpher
 		public static PluginData SaveExtData(this CharaCustomFunctionController ctrl) => saveLoad.Save(ctrl);
 		public static PluginData LoadExtData(this CharaCustomFunctionController ctrl, PluginData data = null)
 		{
-			var tmp = saveLoad.Load(ctrl, data);
+
+			var tmp = CharaMorpherGUI.MorphLoadToggle ? saveLoad.Load(ctrl, data) : null;
 			if(cfg.debug.Value)
 				Logger.LogDebug("extended data loaded");
 
@@ -788,6 +792,7 @@ namespace Character_Morpher
 				cfg.useCardMorphDataMaker.Value :
 				cfg.useCardMorphDataGame.Value) ||
 				tmp == null);
+
 			if(cfg.debug.Value)
 				Logger.LogDebug($"Load check status: {check}");
 
@@ -795,6 +800,15 @@ namespace Character_Morpher
 			OnNewTargetImage.Invoke(path, check ? ctrler?.m_data2?.main?.pngData : null);
 
 			return tmp;
+		}
+
+		public static PluginData Copy(this PluginData source)
+		{
+			return new PluginData
+			{
+				version = source.version,
+				data = source.data.ToDictionary((p) => p.Key, (p) => p.Value),
+			};
 		}
 	}
 

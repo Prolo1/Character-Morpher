@@ -11,6 +11,7 @@ using UniRx;
 using static BepInEx.Logging.LogLevel;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using Illusion.Extensions;
 
 namespace Character_Morpher
 {
@@ -46,6 +47,7 @@ namespace Character_Morpher
 
 		public abstract PluginData Save(CharaCustomFunctionController ctrler);
 		public abstract PluginData Load(CharaCustomFunctionController ctrler, PluginData data);
+		protected abstract PluginData UpdateVersionFromPrev(CharaCustomFunctionController ctrler, PluginData data);
 
 	}
 
@@ -66,21 +68,39 @@ namespace Character_Morpher
 		* class MorphConfig 
 		* var CharaMorpher_Core.cfg.defaults
 		* var CharaMorpher_Core.cfg.controlCategories
-		* all I can think of for now
+		
+		 all I can think of for now
 		 */
+
+		/// <summary>
+		/// creates an updated version 
+		/// </summary>
+		/// <param name="data"></param>
+		/// <returns></returns>
+		protected override PluginData UpdateVersionFromPrev(CharaCustomFunctionController ctrler, PluginData data)
+		{
+			var ctrl = (CharaMorpherController)ctrler;
+
+			//useless for now
+			//if(data?.version != Version) data = base.Load(ctrler, data).Copy();
+
+			if(data == null)
+				data = ctrler?.GetExtendedData(ctrl.reloading);
+
+			return data;
+		}
 
 		public override PluginData Load(CharaCustomFunctionController ctrler, PluginData data)
 		{
-			//data = base.Load(ctrler,data);// use if version goes up (i.e. 1->2)
 			var ctrl = (CharaMorpherController)ctrler;
-			if(data == null)
-				data = ctrler?.GetExtendedData(ctrl.reloading);
+
+			data = UpdateVersionFromPrev(ctrler, data);// use if version goes up (i.e. 1->2)
 
 			if(data == null) return null;
 
 			try
 			{
-				if(data.version != Version) throw new Exception($"Target card data was incorrect version: expected V{Version} instead of V{data.version}");
+				if(data.version != Version) throw new Exception($"Target card data was incorrect version: expected [V{Version}] instead of [V{data.version}]");
 
 
 				var values = LZ4MessagePackSerializer.Deserialize<Dictionary<string, Tuple<float, MorphCalcType>>>((byte[])data.data[DataKey + "_values"], CompositeResolver.Instance);
@@ -93,11 +113,11 @@ namespace Character_Morpher
 
 				ctrl.controls.all = values;
 				ctrl.m_data2.Copy(target);
-			
+
 			}
 			catch(Exception e)
 			{
-				CharaMorpher_Core.Logger.Log(Error | Message, $"Could not load PluginData: \n {e} \n {e.StackTrace}");
+				CharaMorpher_Core.Logger.Log(Error | Message, $"Could not load PluginData: \n {e} ");
 				return null;
 			}
 
@@ -106,7 +126,7 @@ namespace Character_Morpher
 
 		public override PluginData Save(CharaCustomFunctionController ctrler)
 		{
-			if(CharaMorpher_Core.cfg.saveWithMorph.Value) return null;
+			if(!CharaMorpher_Core.cfg.saveAsMorphData.Value) return null;
 			PluginData data = new PluginData() { version = Version, };
 			try
 			{
@@ -122,13 +142,14 @@ namespace Character_Morpher
 			}
 			catch(Exception e)
 			{
-				CharaMorpher_Core.Logger.Log(Error | Message, $"Could not save PluginData: \n {e} \n {e.StackTrace}");
+				CharaMorpher_Core.Logger.Log(Error | Message, $"Could not save PluginData: \n {e} ");
 				return null;
 			}
 			ctrler.SetExtendedData(data);
 
 			return data;
 		}
+
 	}
 
 

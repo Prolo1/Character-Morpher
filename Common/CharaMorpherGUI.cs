@@ -138,6 +138,12 @@ namespace Character_Morpher
 		private static int abmxIndex = -1;
 		private readonly static List<MorphMakerSlider> sliders = new List<MorphMakerSlider>();
 		private readonly static List<MakerDropdown> modes = new List<MakerDropdown>();
+		private static bool m_morphLoadToggle = true;
+		public static bool MorphLoadToggle
+		{
+			get => !MakerAPI.InsideMaker || m_morphLoadToggle;
+			private set => m_morphLoadToggle = value;
+		}
 
 		private static void Cleanup()
 		{
@@ -147,12 +153,24 @@ namespace Character_Morpher
 
 		private static void AddCharaMorpherMenu(RegisterCustomControlsEvent e)
 		{
-			Cleanup();
+			Cleanup();//must be called
 
 
 			var inst = Instance;
 
 			if(MakerAPI.GetMakerSex() == 0 && !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
+
+			#region Load Toggles
+			
+			e.AddLoadToggle(new MakerLoadToggle("Chara Morph."))
+				.OnGUIExists((gui) =>
+				{
+					var tgl = (MakerLoadToggle)gui;
+					tgl.ValueChanged.Subscribe((b) => MorphLoadToggle = b);
+
+					MorphLoadToggle = tgl.Value;
+				});
+			#endregion
 
 			#region Enables
 
@@ -175,15 +193,16 @@ namespace Character_Morpher
 					//	ctrl.StartCoroutine(ctrl.CoResetHeight(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
 				});
 
-			var saveWithMorph = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable Save As Seen", cfg.saveWithMorph.Value, CharaMorpher_Core.Instance))
+			var saveAsMorph = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable Save As Morph Data", cfg.saveAsMorphData.Value, CharaMorpher_Core.Instance))
 				.OnGUIExists((gui) =>
-					cfg.saveWithMorph.SettingChanged += (s, o) =>
-					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.saveWithMorph.Value)
+					cfg.saveAsMorphData.SettingChanged += (s, o) =>
+					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.saveAsMorphData.Value)
 				);
 
-			saveWithMorph.BindToFunctionController<CharaMorpherController, bool>(
-				(ctrl) => cfg.saveWithMorph.Value,
-				(ctrl, val) => { if(val != cfg.saveWithMorph.Value) cfg.saveWithMorph.Value = val; });
+
+			saveAsMorph.BindToFunctionController<CharaMorpherController, bool>(
+				(ctrl) => cfg.saveAsMorphData.Value,
+				(ctrl, val) => { if(val != cfg.saveAsMorphData.Value) cfg.saveAsMorphData.Value = val; });
 
 
 
@@ -648,7 +667,7 @@ namespace Character_Morpher
 
 		}
 
-		private static void ImageControls(RegisterCustomControlsEvent e, BepInEx.BaseUnityPlugin owner)
+		private static void ImageControls(RegisterCustomControlsEvent e, BaseUnityPlugin owner)
 		{
 			e.AddControl(new MakerText("Morph Target", category, CharaMorpher_Core.Instance));
 

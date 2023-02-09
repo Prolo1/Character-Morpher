@@ -44,12 +44,12 @@ namespace Character_Morpher
 		private static bool m_faceBonemodTgl = true, m_bodyBonemodTgl = true;
 		internal static bool faceBonemodTgl
 		{
-			get { if(MakerAPI.InsideMaker) return m_faceBonemodTgl; else return true; }
+			get { return !MakerAPI.InsideMaker || m_faceBonemodTgl; }
 			set { m_faceBonemodTgl = value; }
 		}
 		internal static bool bodyBonemodTgl
 		{
-			get { if(MakerAPI.InsideMaker) return m_bodyBonemodTgl; else return true; }
+			get { return !MakerAPI.InsideMaker || m_bodyBonemodTgl; }
 			set { m_bodyBonemodTgl = value; }
 		}
 
@@ -920,14 +920,14 @@ namespace Character_Morpher
 		/// <inheritdoc/>
 		protected override void OnCardBeingSaved(GameMode currentGameMode)
 		{
-			if(!cfg.saveWithMorph.Value)
+			if(cfg.saveAsMorphData.Value)
 			{
 				MorphChangeUpdate(forceReset: true);
 				this.SaveExtData();
 			}
 
 			//reset values to normal after saving
-			if(cfg.enable.Value && !cfg.saveWithMorph.Value)
+			if(cfg.enable.Value && cfg.saveAsMorphData.Value)
 				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					StartCoroutine(CoMorphChangeUpdate(delay: (int)cfg.multiUpdateEnableTest.Value + a + 1));//turn the card back after(do not change)
 		}
