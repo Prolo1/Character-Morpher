@@ -172,6 +172,7 @@ namespace Character_Morpher
 					if(cfg.debug.Value) Logger.LogDebug("Change to face bonemod toggle");
 					CharaMorpherController.faceBonemodTgl = __instance.isOn;
 				}
+
 			}
 
 			static void OnBodyBonemodToggleClick(Toggle __instance)
@@ -267,8 +268,11 @@ namespace Character_Morpher
 #endif
 
 				if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
-				if(cfg.enable.Value && !cfg.saveWithMorph.Value)
+				if(cfg.enable.Value && cfg.saveAsMorphData.Value)
+				{
 					UpdateCurrentCharacters(true);
+					UpdateCurrentCharacters();
+				}
 			}
 
 			/// <summary>
@@ -286,7 +290,7 @@ namespace Character_Morpher
 				if(!(ctrler.name.ToLower().Contains("exit") || ctrler.name.Contains("No")/*fixes issue with finding false results*/)) return;
 #endif
 				if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
-				if(cfg.enable.Value && !cfg.saveWithMorph.Value)
+				if(cfg.enable.Value && cfg.saveAsMorphData.Value)
 					UpdateCurrentCharacters();
 			}
 

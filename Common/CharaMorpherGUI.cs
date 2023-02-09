@@ -34,7 +34,6 @@ using UnityEngine.UI;
 
 using static Character_Morpher.CharaMorpher_Core;
 using KKABMX.Core;
-using Illusion.Extensions;
 using BepInEx;
 
 namespace Character_Morpher
@@ -46,7 +45,7 @@ namespace Character_Morpher
 		private static Coroutine lastExtent;
 		public static readonly string subCatagoryName = "Morph";
 		public static readonly string displayName = "Chara Morph";
-		
+
 		internal static void Initialize()
 		{
 			MakerAPI.RegisterCustomSubCategories += (s, e) =>
@@ -139,6 +138,12 @@ namespace Character_Morpher
 		private static int abmxIndex = -1;
 		private readonly static List<MorphMakerSlider> sliders = new List<MorphMakerSlider>();
 		private readonly static List<MakerDropdown> modes = new List<MakerDropdown>();
+		private static bool m_morphLoadToggle = true;
+		public static bool MorphLoadToggle
+		{
+			get => !MakerAPI.InsideMaker || m_morphLoadToggle;
+			private set => m_morphLoadToggle = value;
+		}
 
 		private static void Cleanup()
 		{
@@ -148,12 +153,24 @@ namespace Character_Morpher
 
 		private static void AddCharaMorpherMenu(RegisterCustomControlsEvent e)
 		{
-			Cleanup();
+			Cleanup();//must be called
 
 
 			var inst = Instance;
 
 			if(MakerAPI.GetMakerSex() == 0 && !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
+
+			#region Load Toggles
+			
+			e.AddLoadToggle(new MakerLoadToggle("Chara Morph."))
+				.OnGUIExists((gui) =>
+				{
+					var tgl = (MakerLoadToggle)gui;
+					tgl.ValueChanged.Subscribe((b) => MorphLoadToggle = b);
+
+					MorphLoadToggle = tgl.Value;
+				});
+			#endregion
 
 			#region Enables
 
@@ -176,15 +193,16 @@ namespace Character_Morpher
 					//	ctrl.StartCoroutine(ctrl.CoResetHeight(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
 				});
 
-			var saveWithMorph = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable Save As Seen", cfg.saveWithMorph.Value, CharaMorpher_Core.Instance))
+			var saveAsMorph = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable Save As Morph Data", cfg.saveAsMorphData.Value, CharaMorpher_Core.Instance))
 				.OnGUIExists((gui) =>
-					cfg.saveWithMorph.SettingChanged += (s, o) =>
-					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.saveWithMorph.Value)
+					cfg.saveAsMorphData.SettingChanged += (s, o) =>
+					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.saveAsMorphData.Value)
 				);
 
-			saveWithMorph.BindToFunctionController<CharaMorpherController, bool>(
-				(ctrl) => cfg.saveWithMorph.Value,
-				(ctrl, val) => { if(val != cfg.saveWithMorph.Value) cfg.saveWithMorph.Value = val; });
+
+			saveAsMorph.BindToFunctionController<CharaMorpherController, bool>(
+				(ctrl) => cfg.saveAsMorphData.Value,
+				(ctrl, val) => { if(val != cfg.saveAsMorphData.Value) cfg.saveAsMorphData.Value = val; });
 
 
 
@@ -193,9 +211,20 @@ namespace Character_Morpher
 					cfg.enableCalcTypes.SettingChanged += (s, o) =>
 					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableCalcTypes.Value)
 				);
-			enableQuadManip.BindToFunctionController<CharaMorpherController, bool>(
-				(ctrl) => cfg.enableCalcTypes.Value,
-				(ctrl, val) => { cfg.enableCalcTypes.Value = val; });
+
+
+			e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.useCardMorphDataMaker.Value, CharaMorpher_Core.Instance))
+				.OnGUIExists((gui) =>
+				{
+					cfg.useCardMorphDataMaker.SettingChanged += (s, o) =>
+					{
+						gui?.ControlObject?.GetComponentInChildren<Toggle>()?.
+						Set(cfg.useCardMorphDataMaker.Value);
+					};
+
+					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.
+					OnValueChangedAsObservable().Subscribe((_1) => { cfg.useCardMorphDataMaker.Value = _1; });
+				});
 
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			#endregion
@@ -486,8 +515,6 @@ namespace Character_Morpher
 				{
 					cfg.enableCalcTypes.Value = val;
 					ShowEnabledSliders();
-
-
 				});
 
 			ShowEnabledSliders();
@@ -537,7 +564,7 @@ namespace Character_Morpher
 					ele.preferredHeight = ele.GetComponent<RectTransform>().rect.height;
 					ele.preferredWidth = ele.GetComponent<RectTransform>().rect.width;
 				}
-				
+
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("setting as last");
 				gui.ControlObject.transform.SetParent(par);
@@ -620,7 +647,7 @@ namespace Character_Morpher
 					  for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
 						  ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
 
-					
+
 					  break;
 				  }
 				  int count = 0;
@@ -640,27 +667,29 @@ namespace Character_Morpher
 
 		}
 
-		private static void ImageControls(RegisterCustomControlsEvent e, BepInEx.BaseUnityPlugin owner)
+		private static void ImageControls(RegisterCustomControlsEvent e, BaseUnityPlugin owner)
 		{
 			e.AddControl(new MakerText("Morph Target", category, CharaMorpher_Core.Instance));
 
 
 			var img = e.AddControl(new MakerImage(null, category, owner)
 			{ Height = 200, Width = 150, Texture = MorphUtil.CreateTexture(TargetPath), });
-			IEnumerator CoSetTexture(string path)
+			IEnumerator CoSetTexture(string path, byte[] png = null)
 			{
 				for(int a = 0; a < 4; ++a)
 					yield return null;
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"The CoSetTexture was called");
-				img.Texture = MorphUtil.CreateTexture(path);
+				img.Texture = path?.CreateTexture(png);
+				//(img.Texture as Texture2D).Resize(150, 200);
+				img.ControlObject.GetComponentInChildren<RawImage>().color = Color.white * ((!png.IsNullOrEmpty()) ? .65f : 1);
 			}
 
 			CharaMorpher_Core.OnNewTargetImage.AddListener(
-				path =>
+				(path, png) =>
 				{
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Calling OnNewTargetImage callback");
-					CharaMorpher_Core.Instance.StartCoroutine(CoSetTexture(path));
+					CharaMorpher_Core.Instance.StartCoroutine(CoSetTexture(path, png));
 				});
 
 			var button = e.AddControl(new MakerButton($"Set New Morph Target", category, owner));
@@ -719,7 +748,7 @@ namespace Character_Morpher
 						for(int a = -1; a < cfg.multiUpdateEnableTest.Value;)
 							ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(++a));
 
-					
+
 						CharaMorpher_Core.Logger.LogMessage($"Morphed to {percent}%");
 						break;
 					}
@@ -764,8 +793,8 @@ namespace Character_Morpher
 
 			if(string.IsNullOrEmpty(texPath)) return;
 
-			cfg.charDir.Value = MakeDirPath(Path.GetDirectoryName(texPath));
-			cfg.imageName.Value = MakeDirPath((texPath.Substring(texPath.LastIndexOf('/') + 1)));//not sure why this happens on hs2?
+			cfg.charDir.Value = Path.GetDirectoryName(texPath).MakeDirPath();
+			cfg.imageName.Value = texPath.Substring(texPath.LastIndexOf('/') + 1).MakeDirPath();//not sure why this happens on hs2?
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Exit accept");
 		}
