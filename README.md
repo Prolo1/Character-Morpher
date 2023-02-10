@@ -58,6 +58,7 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 ## Known Issues
 * ~~changing morph values to far extremes may cause issues loading subsequent characters in maker. When this happens just close maker and open it back up (this isn't a problem in game since you cant use the sliders)~~ (Fixed this to the best of my knowlage)
 * ~~With KK[S], trying to change OG face and body sliders may change bust values to original state, that's because the original sliders don't update when values change internally so keep that in mind (using the character morpher sliders will turn it back)~~ (This should be fixed too)
+* some people when using sliders, may have the value snaps back to the original value when you release the slider. this is mostlikely a config issue which should be fixable in 2 ways (I'm not quite sure). Option 1, press the "Save Default" in maker. Try closing and opening the maker if it doesn't work imidiately. Option 2, find the mod config file in `"root_game_folder/BepInEx/Configs/prolo.chararmorpher.config"` and deleat it while the game is off **(this will deleate all saved settings)**, then re-launch the game.
 
 ## Issues / Requests? <a name="issues"></a>
 Want to request a new feature or report a bug you found? If you find any mod issues, you can add it to the [Git Issues](https://github.com/Prolo1/Character-Morpher/issues) page and if you have any requests or cool ideas add it to the [Discussions](https://github.com/Prolo1/Character-Morpher/discussions) page and I'll see what I can do  
