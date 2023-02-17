@@ -161,7 +161,7 @@ namespace Character_Morpher
 			if(MakerAPI.GetMakerSex() == 0 && !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
 
 			#region Load Toggles
-			
+
 			e.AddLoadToggle(new MakerLoadToggle("Chara Morph."))
 				.OnGUIExists((gui) =>
 				{
@@ -236,7 +236,7 @@ namespace Character_Morpher
 
 			#region Sliders
 			//creates a slider that controls the bodies' shape
-			void CreatSlider(string settingName, int index,
+			MorphMakerSlider CreatSlider(string settingName, int index,
 				float min = 0, float max = 1)
 			{
 				string[] searchHits = new string[] { "overall", "abmx" };
@@ -289,12 +289,13 @@ namespace Character_Morpher
 
 
 						});
-
+				currSlider.ModSettingName = settingName;
 
 
 				//mode dropdown 
-				var ting = new string[] { "Linear", "Quadratic" };
-				var currMode = modes.AddNReturn(e.AddControl(new MakerDropdown("", ting, category, 0, CharaMorpher_Core.Instance)));
+
+				var ting = Enum.GetNames(typeof(MorphCalcType));
+				var currMode = modes.AddNReturn(e.AddControl(new MakerDropdown("", ting, category, cfg.defaultModes[index].Value, Instance)));
 				currMode.BindToFunctionController<CharaMorpherController, int>(
 						(ctrl) => (int)ctrl.controls.all[settingName].Item2,
 						(ctrl, val) =>
@@ -311,9 +312,6 @@ namespace Character_Morpher
 						});
 
 
-
-
-
 				//make sure values can be changed internally
 				OnSliderValueChange.AddListener(() =>
 				{
@@ -321,18 +319,20 @@ namespace Character_Morpher
 
 					foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())//first one only
 					{
+						if(ctrl == null) continue;
+
 						if(currSlider.Value != ctrl.controls.all[settingName].Item1)
 							if(currSlider.ControlObject)
 							{
 								currSlider.Value = ctrl.controls.all[settingName].Item1;
-								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Slider control changed");
+								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Slider control changed: {currSlider.Value}");
 							}
 
 						if(currMode.Value != (int)ctrl.controls.all[settingName].Item2)
 							if(currMode.ControlObject)
 							{
 								currMode.Value = (int)ctrl.controls.all[settingName].Item2;
-								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Calc control changed");
+								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Calc control changed: {currMode.Value}");
 							}
 
 						break;
@@ -343,6 +343,8 @@ namespace Character_Morpher
 				if(Regex.IsMatch(settingName, searchHits[0], RegexOptions.IgnoreCase))
 					e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));//create separator line
 
+
+				return currSlider;
 			}
 
 			void OnSliderTextboxEdit(BaseGuiEntry slider, UnityAction<string> act)
@@ -362,40 +364,39 @@ namespace Character_Morpher
 
 			void CreateShapeSlider(string settingName, int index)
 			{
-				CreatSlider(settingName, index, -cfg.sliderExtents.Value * .01f, 1 + cfg.sliderExtents.Value * .01f);
-
-				sliders.Last().OnGUIExists((gui) =>
-				{
-					var slid = gui.ControlObject.
-						GetComponentInChildren<Slider>();
-
-					IEnumerator CoBoodyAfterRefresh()
+				CreatSlider(settingName, index, -cfg.sliderExtents.Value * .01f, 1 + cfg.sliderExtents.Value * .01f).
+					OnGUIExists((gui) =>
 					{
-						if(!slid.interactable) yield break;
-						for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-							inst.StartCoroutine(MakerAPI.GetCharacterControl().
-							GetComponent<CharaMorpherController>().CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
+						var slid = gui.ControlObject.
+							GetComponentInChildren<Slider>();
 
-					}
+						IEnumerator CoBoodyAfterRefresh()
+						{
+							if(!slid.interactable) yield break;
+							for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+								inst.StartCoroutine(MakerAPI.GetCharacterControl().
+								GetComponent<CharaMorpherController>().CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
 
-					gui.ControlObject.
-					GetComponentInChildren<Slider>().OnPointerUpAsObservable().Subscribe(
-						(p) => inst.StartCoroutine(CoBoodyAfterRefresh()));
+						}
 
-					OnSliderTextboxEdit((MakerSlider)gui,
-						(p) => inst.StartCoroutine(CoBoodyAfterRefresh()));
+						gui.ControlObject.
+						GetComponentInChildren<Slider>().OnPointerUpAsObservable().Subscribe(
+							(p) => inst.StartCoroutine(CoBoodyAfterRefresh()));
 
-					OnSliderResetClicked((MakerSlider)gui,
-						() => inst.StartCoroutine(CoBoodyAfterRefresh()));
+						OnSliderTextboxEdit((MakerSlider)gui,
+							(p) => inst.StartCoroutine(CoBoodyAfterRefresh()));
 
-				});
+						OnSliderResetClicked((MakerSlider)gui,
+							() => inst.StartCoroutine(CoBoodyAfterRefresh()));
+
+					});
 
 			}
 			void CreateVoiceSlider(string settingName, int index)
 			{
-				CreatSlider(settingName, index);
 
-				var mySlider = sliders.Last();
+				var mySlider = CreatSlider(settingName, index);
+
 				IEnumerator CoVoiceAfterFullRefresh()
 				{
 					yield return new WaitWhile(
@@ -607,57 +608,53 @@ namespace Character_Morpher
 				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)));
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Adding buttons");
-			var btn1 = (MakerButton)e.AddControl(new MakerButton("Save Default", category, CharaMorpher_Core.Instance))
-				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)));
+			((MakerButton)e.AddControl(new MakerButton("Save Default", category, CharaMorpher_Core.Instance))
+				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)))).
+				OnClick.AddListener(() =>
+				{
 
-			btn1.OnClick.AddListener(
-			  () =>
-			  {
+					foreach(var slider in sliders)
+						slider.ApplyDefault();
 
-				  foreach(var slider in sliders)
-					  slider.ApplyDefault();
+					int count = 0;
+					foreach(var def in cfg.defaults)
+						def.Value = sliders[count++].Value * 100f;
 
-				  int count = 0;
-				  foreach(var def in cfg.defaults)
-					  def.Value = sliders[count++].Value * 100f;
+					count = 0;
+					foreach(var def in cfg.defaultModes)
+						def.Value = modes[count++].Value;
 
-				  count = 0;
-				  foreach(var def in cfg.defaultModes)
-					  def.Value = modes[count++].Value;
+					CharaMorpher_Core.Logger.LogMessage("Saved as CharaMorpher default");
 
-				  CharaMorpher_Core.Logger.LogMessage("Saved as CharaMorpher default");
+					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
+				});
 
-				  Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
-			  });
+			((MakerButton)e.AddControl(new MakerButton("Load Default", category, CharaMorpher_Core.Instance))
+				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)))).
+				OnClick.AddListener(() =>
+				{
+					foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+					{
+						for(int a = 0; a < ctrl.controls.all.Count; ++a)
+						{
+							var cal = (MorphCalcType)cfg.defaultModes[a].Value;
+							ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create((float)cfg.defaults[a].Value * .01f, cal);
+						}
 
-			var btn2 = (MakerButton)e.AddControl(new MakerButton("Load Default", category, CharaMorpher_Core.Instance))
-				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)));
-
-			btn2.OnClick.AddListener(
-			  () =>
-			  {
-				  foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
-				  {
-					  for(int a = 0; a < ctrl.controls.all.Count; ++a)
-					  {
-						  var cal = (MorphCalcType)cfg.defaultModes[a].Value;
-						  ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create((float)cfg.defaults[a].Value * .01f, cal);
-					  }
-
-					  for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
-						  ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
+						for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
+							ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
 
 
-					  break;
-				  }
-				  int count = 0;
-				  foreach(var slider in sliders)
-					  slider.Value = (float)cfg.defaults[count++].Value * .01f;
+						break;
+					}
+					int count = 0;
+					foreach(var slider in sliders)
+						slider.Value = (float)cfg.defaults[count++].Value * .01f;
 
 
-				  CharaMorpher_Core.Logger.LogMessage("Loaded CharaMorpher default");
-				  Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
-			  });
+					CharaMorpher_Core.Logger.LogMessage("Loaded CharaMorpher default");
+					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
+				});
 
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Finished adding buttons");
@@ -832,7 +829,8 @@ namespace Character_Morpher
 		public class MorphMakerSlider : MakerSlider
 		{
 			float m_storedDefault;
-			public float StoreDefault { get => m_storedDefault; set { m_storedDefault = value; } }
+			public float StoreDefault { get => m_storedDefault; internal set { m_storedDefault = value; } }
+			public string ModSettingName { internal set; get; } = null;
 
 			public MorphMakerSlider(MakerCategory category, string settingName, float minValue, float maxValue, float defaultValue, BaseUnityPlugin owner)
 				: base(category, settingName, minValue, maxValue, defaultValue, owner)

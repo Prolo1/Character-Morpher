@@ -749,8 +749,10 @@ namespace Character_Morpher
 
 			var core = Instance;
 
-			foreach(var ctrl in core.controlCategories)
-				controls.all[ctrl.Value] = Tuple.Create(cfg.defaults[ctrl.Key].Value * .01f, (MorphCalcType)cfg.defaultModes[ctrl.Key].Value);
+			//var defaultName = "Default";//this is temporary!!!
+			foreach(var category in core.controlCategories)
+				foreach(var ctrl in category.Value)
+					controls.all[category.Key][ctrl.Value] = Tuple.Create(cfg.defaults[category.Key][ctrl.Key].Value * .01f, (MorphCalcType)cfg.defaultModes[category.Key][ctrl.Key].Value);
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
 
@@ -941,10 +943,10 @@ namespace Character_Morpher
 		/// <returns></returns>
 		private KeyValuePair<string, Tuple<float, MorphCalcType>> GetControlValue(string contain, bool abmx = false, bool overall = false, bool fullVal = false)
 		{
-			var tmp = controls.all.ToList();
+			var tmp = controls.all[controls.currentSet].ToList();
 			if(fullVal)
-				tmp = controls.fullVal.ToList();
-
+				tmp = controls.fullVal[controls.currentSet].ToList();
+			
 			return (abmx ?
 				tmp.Find(m => m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)) :
 				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)))
@@ -1539,8 +1541,8 @@ namespace Character_Morpher
 				mkBase.updateCvsBodyShapeBreast = true;
 #endif
 
-
-				KKABMX.GUI.KKABMX_GUI.SpawnedSliders.Last().Sliders.Last().Value = KKABMX.GUI.KKABMX_GUI.SpawnedSliders.Last().Sliders.Last().DefaultValue;
+				KKABMX.GUI.KKABMX_GUI.SpawnedSliders.Last();
+				//KKABMX.GUI.KKABMX_GUI.SpawnedSliders.Last().Sliders.Last().Value = KKABMX.GUI.KKABMX_GUI.SpawnedSliders.Last().Sliders.Last().DefaultValue;
 			}
 		}
 
@@ -1629,15 +1631,15 @@ namespace Character_Morpher
 				//Use if prior don't work
 				var
 				tmp = GetControlValue("eyes");
-				controls.all[tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				controls.all[controls.currentSet][tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
 				tmp = GetControlValue("mouth");
-				controls.all[tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				controls.all[controls.currentSet][tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
 				tmp = GetControlValue("ears");
-				controls.all[tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				controls.all[controls.currentSet][tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
 				tmp = GetControlValue("nose");
-				controls.all[tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				controls.all[controls.currentSet][tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
 				tmp = GetControlValue("face other");
-				controls.all[tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				controls.all[controls.currentSet][tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
 
 
 
@@ -2090,17 +2092,18 @@ namespace Character_Morpher
 
 	internal class MorphControls
 	{
-		Dictionary<string, Tuple<float, MorphCalcType>> _all, _lastAll;
+		Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> _all, _lastAll;
 
+		public string currentSet { get; internal set; } = "";
 		Coroutine post;
-		public Dictionary<string, Tuple<float, MorphCalcType>> all
+		public Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> all
 		{
 			get
 			{
 				if(_all == null)
 				{
-					_all = new Dictionary<string, Tuple<float, MorphCalcType>>();
-					_lastAll = new Dictionary<string, Tuple<float, MorphCalcType>>();
+					_all = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
+					_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
 				}
 
 				IEnumerator CoPost()
@@ -2111,11 +2114,12 @@ namespace Character_Morpher
 
 					bool Check()
 					{
-						if(_all.Count != _lastAll.Count)
+						//if(_all.Count != _lastAll.Count)
+						if(_all[currentSet].Count != _lastAll[currentSet].Count)
 							return false;
 
 						for(int a = 0; a < _all.Count; ++a)
-							if(_all[_all.Keys.ElementAt(a)].Item1 != _lastAll[_lastAll.Keys.ElementAt(a)].Item1)
+							if(_all[currentSet][_all[currentSet].Keys.ElementAt(a)].Item1 != _lastAll[currentSet][_lastAll[currentSet].Keys.ElementAt(a)].Item1)
 								return true;
 
 
@@ -2125,7 +2129,7 @@ namespace Character_Morpher
 					if(Check())
 						OnSliderValueChange.Invoke();
 
-					_lastAll = new Dictionary<string, Tuple<float, MorphCalcType>>(_all);
+					_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(_all);
 				}
 
 				if(post != null)
@@ -2140,13 +2144,13 @@ namespace Character_Morpher
 		/// <summary>
 		/// each value is set to one
 		/// </summary>
-		public Dictionary<string, Tuple<float, MorphCalcType>> fullVal
+		public Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> fullVal
 		{
 			get
 			{
 				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
 				for(int a = 0; a < tmp.Count; ++a)
-					tmp[tmp.Keys.ElementAt(a)] = Tuple.Create(1f, tmp[tmp.Keys.ElementAt(a)].Item2);
+					tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)] = Tuple.Create(1f, tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)].Item2);
 				return tmp;
 			}
 		}
@@ -2154,33 +2158,33 @@ namespace Character_Morpher
 		/// <summary>
 		/// each value is set to zero
 		/// </summary>
-		public Dictionary<string, Tuple<float, MorphCalcType>> noVal
+		public Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> noVal
 		{
 			get
 			{
 				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
 				for(int a = 0; a < tmp.Count; ++a)
-					tmp[tmp.Keys.ElementAt(a)] = Tuple.Create(0f, tmp[tmp.Keys.ElementAt(a)].Item2);
+					tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)] = Tuple.Create(0f, tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)].Item2);
 				return tmp;
 			}
 		}
 
 		/// <summary>
-		/// list of every control with an "overall" name
+		/// list of every control with an "overall" in the name
 		/// </summary>
 		public IEnumerable<KeyValuePair<string, Tuple<float, MorphCalcType>>> overall
 		{
 			get
-			=> all.Where((p) => Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
+			=> all[currentSet].Where((p) => Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
 		}
 
 		/// <summary>
-		/// list of every control w/o an "overall" name
+		/// list of every control w/o an "overall" in the name
 		/// </summary>
 		public IEnumerable<KeyValuePair<string, Tuple<float, MorphCalcType>>> notOverall
 		{
 			get
-			=> all.Where((p) => !Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
+			=> all[currentSet].Where((p) => !Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
 		}
 
 	}
