@@ -1,6 +1,9 @@
 [![Latest release](https://img.shields.io/github/release/Prolo1/Character-Morpher.svg?style=flat)](https://github.com/Prolo1/Character-Morpher/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/Prolo1/Character-Morpher/total.svg?style=flat)](https://github.com/Prolo1/Character-Morpher/releases)
 
+[![Ko-Fi](https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/prolo)
+[![BuyMeACoffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/prolo)
+
 # Character Morpher
 ## Table Of Contents
 1. [Description](#description)
