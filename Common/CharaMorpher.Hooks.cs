@@ -101,7 +101,6 @@ namespace Character_Morpher
 				{
 					for(int a = -1; a < cfg.reloadTest.Value; ++a)
 						yield return null;
-
 					if(!MakerAPI.InsideMaker) UpdateCurrentCharacters();
 				}
 

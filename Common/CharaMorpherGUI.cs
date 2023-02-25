@@ -7,7 +7,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 
 
-
+using BepInEx;
+using BepInEx.Configuration;
 using KKAPI;
 using KKAPI.MainGame;
 using KKAPI.Utilities;
@@ -26,15 +27,16 @@ using ChaCustom;
 #endif
 
 using UnityEngine;
+using TMPro;
+using UnityEngine.UI;
 using UnityEngine.UI.Collections;
 using UnityEngine.Events;
 
-using UnityEngine.UI;
 
 
 using static Character_Morpher.CharaMorpher_Core;
 using KKABMX.Core;
-using BepInEx;
+
 
 namespace Character_Morpher
 {
@@ -272,17 +274,20 @@ namespace Character_Morpher
 
 
 				//setup slider
-				var currSlider = sliders.AddNReturn(e.AddControl(new MorphMakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[index].Value * .01f, CharaMorpher_Core.Instance)));
+				var currSlider = sliders.AddNReturn(e.AddControl(new MorphMakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[DefaultStr][index].Value * .01f, CharaMorpher_Core.Instance)));
 				currSlider.BindToFunctionController<CharaMorpherController, float>(
-						(ctrl) => ctrl.controls.all[settingName].Item1,
+						(ctrl) => ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1,
 						(ctrl, val) =>
 						{
 							if(!ctrl) return;
 							if(!ctrl.initLoadFinished || ctrl.reloading) return;
-							if(ctrl.controls.all[settingName].Item1 == (float)Math.Round(val, 2)) return;
+							if(ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1 == (float)Math.Round(val, 2)) return;
 
 							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {(float)Math.Round(val, 2)}");
-							ctrl.controls.all[settingName] = Tuple.Create(currSlider.StoreDefault = (float)Math.Round(val, 2), ctrl.controls.all[settingName].Item2);
+							ctrl.controls.all[ctrl.controls.currentSet][settingName] = Tuple.Create(currSlider.StoreDefault = (float)Math.Round(val, 2), ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2);
+
+							CharaMorpher_Core.Logger.LogDebug($"ctrl.controls.all[{ctrl.controls.currentSet}][{ctrl.controls.currentSet}]");
+
 
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
@@ -295,17 +300,17 @@ namespace Character_Morpher
 				//mode dropdown 
 
 				var ting = Enum.GetNames(typeof(MorphCalcType));
-				var currMode = modes.AddNReturn(e.AddControl(new MakerDropdown("", ting, category, cfg.defaultModes[index].Value, Instance)));
+				var currMode = modes.AddNReturn(e.AddControl(new MakerDropdown("", ting, category, cfg.defaultModes[DefaultStr][index].Value, Instance)));
 				currMode.BindToFunctionController<CharaMorpherController, int>(
-						(ctrl) => (int)ctrl.controls.all[settingName].Item2,
+						(ctrl) => (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2,
 						(ctrl, val) =>
 						{
 							if(!ctrl) return;
 							if(!ctrl.initLoadFinished || ctrl.reloading) return;
-							if((int)ctrl.controls.all[settingName].Item2 == val) return;
+							if((int)ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2 == val) return;
 
 							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {val}");
-							ctrl.controls.all[settingName] = Tuple.Create(ctrl.controls.all[settingName].Item1, (MorphCalcType)val);
+							ctrl.controls.all[ctrl.controls.currentSet][settingName] = Tuple.Create(ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1, (MorphCalcType)val);
 
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
@@ -321,17 +326,17 @@ namespace Character_Morpher
 					{
 						if(ctrl == null) continue;
 
-						if(currSlider.Value != ctrl.controls.all[settingName].Item1)
+						if(currSlider.Value != ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1)
 							if(currSlider.ControlObject)
 							{
-								currSlider.Value = ctrl.controls.all[settingName].Item1;
+								currSlider.StoreDefault = currSlider.Value = ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1;
 								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Slider control changed: {currSlider.Value}");
 							}
 
-						if(currMode.Value != (int)ctrl.controls.all[settingName].Item2)
+						if(currMode.Value != (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2)
 							if(currMode.ControlObject)
 							{
-								currMode.Value = (int)ctrl.controls.all[settingName].Item2;
+								currMode.Value = (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2;
 								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Calc control changed: {currMode.Value}");
 							}
 
@@ -427,7 +432,7 @@ namespace Character_Morpher
 				});
 			}
 
-			foreach(var ctrl in CharaMorpher_Core.Instance.controlCategories)
+			foreach(var ctrl in CharaMorpher_Core.Instance.controlCategories[DefaultStr])
 				if(Regex.IsMatch(ctrl.Value, "voice", RegexOptions.IgnoreCase))
 					CreateVoiceSlider(ctrl.Value, ctrl.Key);
 				else
@@ -554,7 +559,7 @@ namespace Character_Morpher
 				//par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minHeight = par.GetComponent<RectTransform>().rect.height;
 				var viewLE = par.GetComponentInChildren<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>();
 				viewLE.minWidth = par.GetComponentInChildren<ScrollRect>().GetComponent<RectTransform>().rect.width * .95f;
-				viewLE.transform.Cast<RectTransform>();
+				//viewLE.transform.Cast<RectTransform>();
 
 				viewLE.flexibleHeight = 0;
 
@@ -564,6 +569,13 @@ namespace Character_Morpher
 				{
 					ele.preferredHeight = ele.GetComponent<RectTransform>().rect.height;
 					ele.preferredWidth = ele.GetComponent<RectTransform>().rect.width;
+				}
+				//test
+				elements = par.GetComponentInChildren<ScrollRect>().content.GetComponentsInChildren<LayoutElement>();
+				foreach(var ele in elements)
+				{
+					ele.preferredHeight = ele.GetComponent<RectTransform>().rect.height;
+					ele.preferredWidth = par.GetComponentInChildren<ScrollRect>().GetComponent<RectTransform>().rect.width * .95f;
 				}
 
 
@@ -603,12 +615,219 @@ namespace Character_Morpher
 				yield break;
 			}
 
+			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Adding buttons");
 
 			var sep = e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance))
 				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)));
 
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Adding buttons");
-			((MakerButton)e.AddControl(new MakerButton("Save Default", category, CharaMorpher_Core.Instance))
+			int SwitchControlSet(MakerDropdown selection, int val)
+			{
+				var ctrl = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>().First();
+				if(selection.Options.Length <= 0) return -1;
+
+				var name = selection.Options[val = Mathf.Clamp(val, 0, selection.Options.Length - 1)] + ':';
+				//Replace the new set with the last settings before changing the setting name (loading will call the actual settings)
+				ctrl.controls.all[name] =
+				new Dictionary<string, Tuple<float, MorphCalcType>>(ctrl.controls.all[ctrl.controls.currentSet]);
+				ctrl.controls.currentSet = name;
+
+				return val;
+			}
+
+			void UpdateDrpodown(MakerDropdown selecter)
+			{
+				//set new dropdown list 
+				Component dropdown;
+				if(dropdown = selecter.ControlObject.GetComponentInChildren<TMP_Dropdown>())
+				{
+					((TMP_Dropdown)dropdown).options = cfg.defaults.Keys.Attempt((k) =>
+					new TMP_Dropdown.OptionData(k.LastIndexOf(':') >= 0 ? k.Substring(0, k.LastIndexOf(':')) : k)).ToList();
+				}
+				else
+				{
+					dropdown = selecter.ControlObject.GetComponentInChildren<Dropdown>();
+					((Dropdown)dropdown).options = cfg.defaults.Keys.Attempt((k) =>
+					new Dropdown.OptionData(k.LastIndexOf(':') >= 0 ? k.Substring(0, k.LastIndexOf(':')) : k)).ToList();
+				}
+
+				if(selecter.Value >= selecter.Options.Length)
+					selecter.Value = selecter.Options.Length - 1;
+
+				selecter.Value = SwitchControlSet(selecter, selecter.Value);
+
+			}
+
+			var select = ((MakerDropdown)e.AddControl(
+				new MakerDropdown("Select", cfg.defaults.Keys
+				.Attempt((k) => k.LastIndexOf(':') >= 0 ? k.Substring(0, k.LastIndexOf(':')) : k).ToArray(), category, 0, Instance))
+				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui))));
+			select.ValueChanged.Subscribe((val) =>
+			{
+				SwitchControlSet(select, val);
+			});
+
+			((MakerButton)e.AddControl(new MakerButton("Add New Slot", category, Instance))
+				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)))).
+				OnClick.AddListener(() =>
+				{
+					int count = 1;
+					var ctrl1 = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>().First();
+
+					string name = "Error";
+					var defList = Instance.Config.Where((k) => k.Key.Section == "Defaults");
+					var modeDefList = Instance.Config.Where((k) => k.Key.Section == "Mode Defaults");
+
+					while(defList?.Any((k) =>
+					k.Key.Key.Contains(name = $"Slot {count}:")) ?? false) ++count;
+					inst.controlCategories[name] = new List<KeyValuePair<int, string>> { };//init list
+
+					CharaMorpher_Core.Logger.LogDebug("creating Defaults");
+
+					int defaultIndex = -1;
+					cfg.defaults[name] = new List<ConfigEntry<float>>
+					{
+						Instance.Config.Bind("Defaults", $"{name} "+"Vioce Default", (00f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Voice")).Key, Browsable = false })),
+
+						Instance.Config.Bind("Defaults", $"{name} "+"Skin Default", (100f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Skin Colour")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+ "Base Skin Default", (00f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Base Skin Colour")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Sunburn Default", (00f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Sunburn Colour")).Key, Browsable = false })),
+
+						Instance.Config.Bind("Defaults", $"{name} "+"Body  Default", (100f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Body")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Head  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Head")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Boobs Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Boobs")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Boob Phys. Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Boob Phys.")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Torso Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Torso")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Arms  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Arms")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Butt  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Butt")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Legs  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Legs")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Body Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Body Other")).Key, Browsable = false })),
+
+						Instance.Config.Bind("Defaults", $"{name} "+"Face  Default", (100f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Face")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Ears  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Ears")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+ "Eyes  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Eyes")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Nose  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Nose")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Mouth Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Mouth")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"Face Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Face Other")).Key, Browsable = false })),
+
+
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Body Default", (100f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Overall Body")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Boobs Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Boobs")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Torso Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Torso")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Arms Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Arms")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Hands Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Hands")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Butt Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Butt")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Legs Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Legs")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Feet Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Feet")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Genitals Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Genitals")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Body Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Body Other")).Key, Browsable = false })),
+
+
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Head Default", (100f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Overall Head ")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Ears Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Ears")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Eyes Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Eyes")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Nose Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Nose ")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Mouth Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Mouth")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Hair Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Hair")).Key, Browsable = false })),
+						Instance.Config.Bind("Defaults", $"{name} "+"ABMX  Head Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+						new ConfigurationManagerAttributes { Order = -Instance.controlCategories[name].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Head Other")).Key, Browsable = false })),
+
+					};
+
+					cfg.defaultModes[name] = new List<ConfigEntry<int>>();//will link up with the defaults
+					foreach(var mode in cfg.defaults[name])
+					{
+						var atrib = (ConfigurationManagerAttributes)mode.Description.Tags[0];
+						cfg.defaultModes[name].Add
+						(
+							inst.Config.Bind("Mode Defaults", $"{mode.Definition.Key} Mode", (int)MorphCalcType.LINEAR,
+							new ConfigDescription("Set default value on maker startup", null, atrib))
+						);
+					}
+
+					CharaMorpher_Core.Logger.LogDebug("creating Controls");
+					ctrl1.controls.all[name] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+
+					foreach(var ctrl in inst.controlCategories[name])
+						ctrl1.controls.all[name][ctrl.Value] = Tuple.Create(cfg.defaults[name][ctrl.Key].Value * .01f, (MorphCalcType)cfg.defaultModes[name][ctrl.Key].Value);
+
+					//	MorphUtil.UpdateDefaultsList();
+
+
+					//update dropdown list 
+					UpdateDrpodown(select);
+
+				});
+
+			((MakerButton)e.AddControl(new MakerButton("Remove Current Slot", category, Instance))
+				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)))).
+				OnClick.AddListener(() =>
+				{
+					var ctrl = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>().First();
+					var name = select.Options[select.Value] + ':';
+					if(name == DefaultStr) return;
+					CharaMorpher_Core.Logger.LogDebug("remove Defaults");
+
+					foreach(var def in cfg.defaults)
+						foreach(var val in def.Value)
+							if(def.Key == name)
+								Instance.Config.Remove(val.Definition);
+					foreach(var def in cfg.defaultModes)
+						foreach(var val in def.Value)
+							if(def.Key == name)
+								Instance.Config.Remove(val.Definition);
+
+					cfg.defaults.Remove(name);
+					cfg.defaultModes.Remove(name);
+
+					Instance.Config.Save();
+
+					CharaMorpher_Core.Logger.LogDebug("remove Controls");
+					ctrl.controls.all.Remove(name);
+
+					CharaMorpher_Core.Logger.LogMessage($"removed {name}");
+
+					UpdateDrpodown(select);
+
+
+				});
+
+
+			((MakerButton)e.AddControl(new MakerButton("Save Default", category, Instance))
 				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)))).
 				OnClick.AddListener(() =>
 				{
@@ -616,43 +835,48 @@ namespace Character_Morpher
 					foreach(var slider in sliders)
 						slider.ApplyDefault();
 
+					var ctrl = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>().First();
 					int count = 0;
-					foreach(var def in cfg.defaults)
+					//cfg.defaults[ctrl.controls.currentSet] = new List<ConfigEntry<float>>();
+					foreach(var def in cfg.defaults[ctrl.controls.currentSet])
 						def.Value = sliders[count++].Value * 100f;
 
+					//cfg.defaultModes[ctrl.controls.currentSet] = new List<ConfigEntry<int>>();
 					count = 0;
-					foreach(var def in cfg.defaultModes)
+					foreach(var def in cfg.defaultModes[ctrl.controls.currentSet])
 						def.Value = modes[count++].Value;
 
-					CharaMorpher_Core.Logger.LogMessage("Saved as CharaMorpher default");
+					CharaMorpher_Core.Logger.LogMessage($"Saved as CharaMorpher {ctrl.controls.currentSet}");
 
 					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
 				});
 
-			((MakerButton)e.AddControl(new MakerButton("Load Default", category, CharaMorpher_Core.Instance))
+			((MakerButton)e.AddControl(new MakerButton("Load Default", category, Instance))
 				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)))).
 				OnClick.AddListener(() =>
 				{
-					foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+					var ctrl = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>().First();
+
+					for(int a = 0; a < ctrl.controls.all[ctrl.controls.currentSet].Count; ++a)
 					{
-						for(int a = 0; a < ctrl.controls.all.Count; ++a)
-						{
-							var cal = (MorphCalcType)cfg.defaultModes[a].Value;
-							ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create((float)cfg.defaults[a].Value * .01f, cal);
-						}
-
-						for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
-							ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
-
-
-						break;
+						var cal = (MorphCalcType)cfg.defaultModes[ctrl.controls.currentSet][a].Value;
+						ctrl.controls.all[ctrl.controls.currentSet]
+						[ctrl.controls.all[ctrl.controls.currentSet].
+						Keys.ElementAt(a)] = Tuple.Create((float)cfg.defaults[ctrl.controls.currentSet][a].Value * .01f, cal);
 					}
+
+					for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
+						ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
+
 					int count = 0;
 					foreach(var slider in sliders)
-						slider.Value = (float)cfg.defaults[count++].Value * .01f;
+						slider.Value = (float)cfg.defaults[ctrl.controls.currentSet][count++].Value * .01f;
 
+					count = 0;
+					foreach(var mode in modes)
+						mode.Value = cfg.defaultModes[ctrl.controls.currentSet][count++].Value;
 
-					CharaMorpher_Core.Logger.LogMessage("Loaded CharaMorpher default");
+					CharaMorpher_Core.Logger.LogMessage($"Loaded CharaMorpher {ctrl.controls.currentSet}");
 					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
 				});
 
@@ -729,17 +953,17 @@ namespace Character_Morpher
 					{
 						//	ctrl.StopAllCoroutines();
 						if(reset)
-							for(int a = 0; a < ctrl.controls.all.Count; ++a)
+							for(int a = 0; a < ctrl.controls.all[ctrl.controls.currentSet].Count; ++a)
 							{
-								var cal = ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)].Item2;
-								ctrl.controls.all[ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
+								var cal = ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all.Keys.ElementAt(a)].Item2;
+								ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
 							}
 
 						var tmp = swap ? ctrl.controls.overall : ctrl.controls.notOverall;
 						for(int a = 0; a < tmp.Count(); ++a)
 						{
-							var cal = ctrl.controls.all[tmp.ElementAt(a).Key].Item2;
-							ctrl.controls.all[tmp.ElementAt(a).Key] = Tuple.Create(percent * .01f, cal);
+							var cal = ctrl.controls.all[ctrl.controls.currentSet][tmp.ElementAt(a).Key].Item2;
+							ctrl.controls.all[ctrl.controls.currentSet][tmp.ElementAt(a).Key] = Tuple.Create(percent * .01f, cal);
 						}
 
 						for(int a = -1; a < cfg.multiUpdateEnableTest.Value;)

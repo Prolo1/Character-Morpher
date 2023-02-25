@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 //using System.Threading.Tasks;
 
@@ -82,6 +83,7 @@ namespace Character_Morpher
 		public const string GUID = "prolo.chararmorpher";//never change this
 		public const string Version = "1.0.0";
 
+		public const string DefaultStr = "(Default):";
 		internal static CharaMorpher_Core Instance;
 		internal static new ManualLogSource Logger;
 		internal static OnNewImage OnNewTargetImage = new OnNewImage();
@@ -166,6 +168,8 @@ namespace Character_Morpher
 			//Logger.LogDebug($"Body bones amount: {bodyBoneAmount}");
 			//Logger.LogDebug($"Face bones amount: {faceBoneAmount}");
 
+			Instance.Config.Reload();//get controls from disk
+
 			int index = 0, defaultIndex = -1;//easier to input index order values
 			cfg = new MorphConfig
 			{
@@ -191,105 +195,106 @@ namespace Character_Morpher
 				resetOnLaunch = Config.Bind("_Testing_", "Reset On Launch", true, new ConfigDescription("will reset advanced values to defaults after launch", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true })),
 
 				//you don't need to see this in game
-				defaults =   new Dictionary<string, List<ConfigEntry<float>>>() ,
+				defaults = new Dictionary<string, List<ConfigEntry<float>>>(),
 				defaultModes = new Dictionary<string, List<ConfigEntry<int>>>(),
 			};
-			
-			controlCategories["(Default)"] = new List<KeyValuePair<int, string>> { };//init list
-			cfg.defaults["(Default)"] = new List<ConfigEntry<float>>{
-					Config.Bind("Defaults", "Vioce Default", (00f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Voice")).Key, Browsable = false })),
 
-					Config.Bind("Defaults", "Skin Default", (100f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Skin Colour")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Base Skin Default", (00f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Base Skin Colour")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Sunburn Default", (00f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Sunburn Colour")).Key, Browsable = false })),
+			//populate defaults
+			controlCategories[DefaultStr] = new List<KeyValuePair<int, string>> { };//init list
+			cfg.defaults[DefaultStr] = new List<ConfigEntry<float>>{
+					Config.Bind("Defaults", $"{DefaultStr} "+"Vioce Default", (00f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Voice")).Key, Browsable = false })),
 
-					Config.Bind("Defaults", "Body  Default", (100f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Body")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Head  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Head")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Boobs Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Boobs")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Boob Phys. Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Boob Phys.")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Torso Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Torso")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Arms  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Arms")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Butt  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Butt")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Legs  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Legs")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Body Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Body Other")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Skin Default", (100f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Skin Colour")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+ "Base Skin Default", (00f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Base Skin Colour")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Sunburn Default", (00f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Sunburn Colour")).Key, Browsable = false })),
 
-					Config.Bind("Defaults", "Face  Default", (100f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Face")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Ears  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Ears")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Eyes  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Eyes")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Nose  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Nose")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Mouth Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Mouth")).Key, Browsable = false })),
-					Config.Bind("Defaults", "Face Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Face Other")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Body  Default", (100f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Body")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Head  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Head")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Boobs Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Boobs")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Boob Phys. Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Boob Phys.")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Torso Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Torso")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Arms  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Arms")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Butt  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Butt")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Legs  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Legs")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Body Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Body Other")).Key, Browsable = false })),
 
-
-					Config.Bind("Defaults", "ABMX  Body Default", (100f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Overall Body")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Boobs Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Boobs")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Torso Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Torso")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Arms Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Arms")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Hands Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Hands")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Butt Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Butt")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Legs Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Legs")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Feet Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Feet")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Genitals Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Genitals")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Body Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Body Other")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Face  Default", (100f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Overall Face")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Ears  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Ears")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+ "Eyes  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Eyes")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Nose  Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Nose")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Mouth Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Mouth")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"Face Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "Face Other")).Key, Browsable = false })),
 
 
-					Config.Bind("Defaults", "ABMX  Head Default", (100f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Overall Head ")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Ears Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Ears")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Eyes Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Eyes")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Nose Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Nose ")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Mouth Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Mouth")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Hair Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Hair")).Key, Browsable = false })),
-					Config.Bind("Defaults", "ABMX  Head Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -controlCategories["(Default)"].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Head Other")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Body Default", (100f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Overall Body")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Boobs Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Boobs")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Torso Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Torso")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Arms Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Arms")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Hands Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Hands")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Butt Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Butt")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Legs Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Legs")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Feet Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Feet")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Genitals Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Genitals")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Body Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Body Other")).Key, Browsable = false })),
+
+
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Head Default", (100f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Overall Head ")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Ears Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Ears")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Eyes Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Eyes")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Nose Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Nose ")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Mouth Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Mouth")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Hair Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Hair")).Key, Browsable = false })),
+					Config.Bind("Defaults", $"{DefaultStr} "+"ABMX  Head Other Default", (50f), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -controlCategories[DefaultStr].AddNReturn(new KeyValuePair<int, string>(++defaultIndex, "ABMX Head Other")).Key, Browsable = false })),
 
 				};
 
+			cfg.defaultModes[DefaultStr] = new List<ConfigEntry<int>>();//will link up with the defaults
 
-			cfg.defaultModes["(Default)"] = new List<ConfigEntry<int>>();//will link up with the defaults
-
-
-			int count = 1;
-			foreach(var mode in cfg.defaults["(Default)"])
-				cfg.defaultModes["(Default)"].Add
+			//int count = 1;
+			foreach(var mode in cfg.defaults[DefaultStr])
+				cfg.defaultModes[DefaultStr].Add
 				(
-					Config.Bind("Defaults", $"{mode.Definition.Key} Mode", (int)MorphCalcType.LINEAR, new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -(controlCategories.Count + count), Browsable = false }))
+					Config.Bind("Mode Defaults", $"{mode.Definition.Key} Mode", (int)MorphCalcType.LINEAR, new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = ((ConfigurationManagerAttributes)mode.Description.Tags[0]).Order, Browsable = false }))
 				);
+
+			MorphUtil.UpdateDefaultsList();
 
 			//Advanced
 			{
@@ -662,6 +667,7 @@ namespace Character_Morpher
 	{
 		public static ManualLogSource Logger { get => CharaMorpher_Core.Logger; }
 
+
 		/// <summary>
 		/// Adds a value to the end of a list and returns it
 		/// </summary>
@@ -673,6 +679,91 @@ namespace Character_Morpher
 		{
 			list.Add(val);
 			return list.Last();
+		}
+
+		class StringComparer : IEqualityComparer<string>
+		{
+			public bool Equals(string x, string y) => x == y;
+
+			public int GetHashCode(string obj) => GetHashCode();
+
+		}
+
+		public static Dictionary<ConfigDefinition, string> GetOrphanedEntries<T>(this ConfigFile file, string sec)
+		{
+			Dictionary<ConfigDefinition, string> OrphanedEntries = new Dictionary<ConfigDefinition, string>();
+			string section = string.Empty;
+			string[] array = File.ReadAllLines(file.ConfigFilePath);
+			for(int i = 0; i < array.Length; i++)
+			{
+				string text = array[i].Trim();
+				if(text.StartsWith("#"))
+				{
+					continue;
+				}
+
+				if(text.StartsWith("[") && text.EndsWith("]"))
+				{
+					section = text.Substring(1, text.Length - 2);
+					continue;
+				}
+
+				string[] array2 = text.Split(new char[1] { '=' }, 2);
+				if(sec == section)
+					if(array2.Length == 2)
+					{
+						string key = array2[0].Trim();
+						string text2 = array2[1].Trim();
+						ConfigDefinition key2 = new ConfigDefinition(section, key);
+
+
+						if(!file.TryGetEntry<T>(key2, out var value))
+						{
+							OrphanedEntries[key2] = text2;
+						}
+					}
+
+			}
+
+			return OrphanedEntries;
+		}
+
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public static void UpdateDefaultsList()
+		{
+
+			var orphaned = Instance.Config.GetOrphanedEntries<float>("Defaults");
+
+			var defList = orphaned.Keys.AsEnumerable();
+			orphaned = Instance.Config.GetOrphanedEntries<int>("Mode Defaults");
+			var modeDefList = orphaned.Keys.AsEnumerable();
+
+			foreach(var val in defList)
+			{
+				var name = val.Key.Substring(0, val.Key.LastIndexOf(':') + 1);
+				if(name.IsNullOrEmpty()) continue;
+
+				if(!cfg.defaults.TryGetValue(name, out var tmp))
+					cfg.defaults[name] = new List<ConfigEntry<float>>();
+
+				if((!cfg.defaults[name].Any((k) => k.Definition.Key == val.Key)))
+					cfg.defaults[name].Add(Instance.Config.Bind(val, 0f));
+			}
+
+			foreach(var val in modeDefList)
+			{
+				var name = val.Key.Substring(0, val.Key.LastIndexOf(':') + 1);
+				if(name.IsNullOrEmpty()) continue;
+
+				if(!cfg.defaultModes.TryGetValue(name, out var tmp))
+					cfg.defaultModes[name] = new List<ConfigEntry<int>>();
+
+				if((!cfg.defaultModes[name].Any((k) => k.Definition.Key == val.Key)))
+					cfg.defaultModes[name].Add(Instance.Config.Bind(val, 0));
+			}
 		}
 
 		/// <summary>
@@ -763,6 +854,7 @@ namespace Character_Morpher
 		/// Crates Image Texture based on path
 		/// </summary>
 		/// <param name="path">directory path to image (i.e. C:/path/to/image.png)</param>
+		/// <param name="data">raw image data that will be read instead of path if not null or empty</param>
 		/// <returns>An Texture2D created from path if passed, else a black texture</returns>
 		public static Texture2D CreateTexture(this string path, byte[] data = null) =>
 			(!data.IsNullOrEmpty() || !File.Exists(path)) ?
@@ -786,10 +878,11 @@ namespace Character_Morpher
 		public static PluginData SaveExtData(this CharaCustomFunctionController ctrl) => saveLoad.Save(ctrl);
 		public static PluginData LoadExtData(this CharaCustomFunctionController ctrl, PluginData data = null)
 		{
-
+			//if(cfg.debug.Value)
+			Logger.LogDebug("loading extended data...");
 			var tmp = CharaMorpherGUI.MorphLoadToggle ? saveLoad.Load(ctrl, data) : null;
-			if(cfg.debug.Value)
-				Logger.LogDebug("extended data loaded");
+			//if(cfg.debug.Value)
+			Logger.LogDebug("extended data loaded");
 
 			string path = Path.Combine(
 				cfg.charDir.Value.MakeDirPath(),

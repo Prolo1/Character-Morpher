@@ -21,8 +21,10 @@ using UniRx;
 #if HONEY_API
 using CharaCustom;
 using AIChara;
+//using AIProject;
 #else
 using ChaCustom;
+//using StrayTech;
 #endif
 
 using UnityEngine;
@@ -751,9 +753,12 @@ namespace Character_Morpher
 
 			//var defaultName = "Default";//this is temporary!!!
 			foreach(var category in core.controlCategories)
+			{
+				if(!controls.all.TryGetValue(category.Key, out var tmp))
+					controls.all[category.Key] = new Dictionary<string, Tuple<float, MorphCalcType>>();
 				foreach(var ctrl in category.Value)
 					controls.all[category.Key][ctrl.Value] = Tuple.Create(cfg.defaults[category.Key][ctrl.Key].Value * .01f, (MorphCalcType)cfg.defaultModes[category.Key][ctrl.Key].Value);
-
+			}
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
 
 		}
@@ -946,7 +951,7 @@ namespace Character_Morpher
 			var tmp = controls.all[controls.currentSet].ToList();
 			if(fullVal)
 				tmp = controls.fullVal[controls.currentSet].ToList();
-			
+
 			return (abmx ?
 				tmp.Find(m => m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)) :
 				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)))
@@ -2094,7 +2099,7 @@ namespace Character_Morpher
 	{
 		Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> _all, _lastAll;
 
-		public string currentSet { get; internal set; } = "";
+		public string currentSet { get; internal set; } = DefaultStr;
 		Coroutine post;
 		public Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> all
 		{
@@ -2106,20 +2111,40 @@ namespace Character_Morpher
 					_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
 				}
 
+				if(!_all.TryGetValue(currentSet, out var tmp1))
+				{
+					_all[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+					_lastAll[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+				}
+
 				IEnumerator CoPost()
 				{
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						yield return null;
 
+					if(_all == null)
+					{
+						_all = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
+						_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
+					}
+					if(!_all.TryGetValue(currentSet, out tmp1))
+					{
+						_all[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+						_lastAll[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+					}
 
 					bool Check()
 					{
-						//if(_all.Count != _lastAll.Count)
+						CharaMorpher_Core.Logger.LogDebug("Is check getting here?");
+						if(_all.Count != _lastAll.Count)
+							return false;
 						if(_all[currentSet].Count != _lastAll[currentSet].Count)
 							return false;
 
-						for(int a = 0; a < _all.Count; ++a)
-							if(_all[currentSet][_all[currentSet].Keys.ElementAt(a)].Item1 != _lastAll[currentSet][_lastAll[currentSet].Keys.ElementAt(a)].Item1)
+						CharaMorpher_Core.Logger.LogDebug("Is check getting here aswell?");
+						for(int a = 0; a < _all[currentSet].Count; ++a)
+							if(_all[currentSet][_all[currentSet].Keys.ElementAt(a)].Item1 !=
+								_lastAll[currentSet][_lastAll[currentSet].Keys.ElementAt(a)].Item1)
 								return true;
 
 
@@ -2148,8 +2173,8 @@ namespace Character_Morpher
 		{
 			get
 			{
-				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
-				for(int a = 0; a < tmp.Count; ++a)
+				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);//copy
+				for(int a = 0; a < tmp[currentSet].Count; ++a)
 					tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)] = Tuple.Create(1f, tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)].Item2);
 				return tmp;
 			}
@@ -2163,7 +2188,7 @@ namespace Character_Morpher
 			get
 			{
 				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
-				for(int a = 0; a < tmp.Count; ++a)
+				for(int a = 0; a < tmp[currentSet].Count; ++a)
 					tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)] = Tuple.Create(0f, tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)].Item2);
 				return tmp;
 			}

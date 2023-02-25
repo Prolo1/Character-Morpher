@@ -60,7 +60,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionLibs.AIGirl.Assembly-CSharp.2020.5.29.4\lib\net46\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\packages\IllusionLibs.AIShoujo.Assembly-CSharp.2019.12.20.4\lib\net46\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -147,6 +147,7 @@
     <Error Condition="!Exists('..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\build\IllusionLibs.AIGirl.UnityExtensions.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\build\IllusionLibs.AIGirl.UnityExtensions.targets'))" />
     <Error Condition="!Exists('..\packages\IllusionLibs.AIGirl.Unity.TextMeshPro.2018.2.21.4\build\IllusionLibs.AIGirl.Unity.TextMeshPro.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.AIGirl.Unity.TextMeshPro.2018.2.21.4\build\IllusionLibs.AIGirl.Unity.TextMeshPro.targets'))" />
     <Error Condition="!Exists('..\packages\IllusionLibs.AIGirl.UnityEngine.TextRenderingModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.TextRenderingModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.AIGirl.UnityEngine.TextRenderingModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.TextRenderingModule.targets'))" />
+    <Error Condition="!Exists('..\packages\IllusionLibs.AIShoujo.Assembly-CSharp.2019.12.20.4\build\IllusionLibs.AIShoujo.Assembly-CSharp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IllusionLibs.AIShoujo.Assembly-CSharp.2019.12.20.4\build\IllusionLibs.AIShoujo.Assembly-CSharp.targets'))" />
   </Target>
   <Import Project="..\packages\IllusionLibs.AIGirl.Assembly-CSharp-firstpass.2020.5.29.4\build\IllusionLibs.AIGirl.Assembly-CSharp-firstpass.targets" Condition="Exists('..\packages\IllusionLibs.AIGirl.Assembly-CSharp-firstpass.2020.5.29.4\build\IllusionLibs.AIGirl.Assembly-CSharp-firstpass.targets')" />
   <Import Project="..\packages\IllusionLibs.AIGirl.Sirenix.Serialization.2020.5.29.4\build\IllusionLibs.AIGirl.Sirenix.Serialization.targets" Condition="Exists('..\packages\IllusionLibs.AIGirl.Sirenix.Serialization.2020.5.29.4\build\IllusionLibs.AIGirl.Sirenix.Serialization.targets')" />
@@ -164,4 +165,5 @@
     <PostBuildEvent>call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\..\[AI]_Character_Morpher.zip" "$(TargetDir)..\..\..\" "$(SolutionDir)Readme.md"</PostBuildEvent>
   </PropertyGroup>
   <Import Project="..\packages\IllusionLibs.AIGirl.UnityEngine.TextRenderingModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.TextRenderingModule.targets" Condition="Exists('..\packages\IllusionLibs.AIGirl.UnityEngine.TextRenderingModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.TextRenderingModule.targets')" />
+  <Import Project="..\packages\IllusionLibs.AIShoujo.Assembly-CSharp.2019.12.20.4\build\IllusionLibs.AIShoujo.Assembly-CSharp.targets" Condition="Exists('..\packages\IllusionLibs.AIShoujo.Assembly-CSharp.2019.12.20.4\build\IllusionLibs.AIShoujo.Assembly-CSharp.targets')" />
 </Project>

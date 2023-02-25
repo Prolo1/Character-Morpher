@@ -16,6 +16,7 @@ using System.Collections;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
+
 namespace Character_Morpher
 {
 	public abstract class SaveLoadController
@@ -46,7 +47,7 @@ namespace Character_Morpher
 
 
 		public abstract int Version { get; }
-		public abstract string DataKey { get; }
+		public abstract string[] DataKeys { get; }
 
 		public abstract PluginData Save(CharaCustomFunctionController ctrler);
 		public abstract PluginData Load(CharaCustomFunctionController ctrler, PluginData data);
@@ -59,9 +60,9 @@ namespace Character_Morpher
 	/// </summary>
 	internal class CurrentSaveLoadController : SaveLoadControllerV1
 	{
-		public override int Version => base.Version + 1;
+		public new int Version => base.Version + 1;
 
-		public override string DataKey => "MorphData";
+		public new string[] DataKeys => new[] { "MorphData_values", "MorphData_targetCard", "MorphData_targetPng", };
 
 
 		/*
@@ -82,27 +83,31 @@ namespace Character_Morpher
 		/// </summary>
 		/// <param name="data"></param>
 		/// <returns></returns>
-		protected override PluginData UpdateVersionFromPrev(CharaCustomFunctionController ctrler, PluginData data)
+		protected new PluginData UpdateVersionFromPrev(CharaCustomFunctionController ctrler, PluginData data)
 		{
 			var ctrl = (CharaMorpherController)ctrler;
 
-			
-			if(data?.version != Version)
+
+			if(data?.version != Version || data == null)
 			{
-				data = base.Load(ctrler, data).Copy();
+
+				data = base.Load(ctrler, data)?.Copy();
 
 
-				//last version
-				var values = LZ4MessagePackSerializer.Deserialize<Dictionary<string, Tuple<float, MorphCalcType>>>((byte[])data.data[DataKey + "_values"], CompositeResolver.Instance);
-				//var target = LZ4MessagePackSerializer.Deserialize<MorphData>((byte[])data.data[DataKey + "_targetCard"], CompositeResolver.Instance);
-				//var png = ObjectToByteArray(data.data[DataKey + "_targetPng"]);
+				if(data != null)
+				{
+					//last version
+					var values = LZ4MessagePackSerializer.Deserialize<Dictionary<string, Tuple<float, MorphCalcType>>>((byte[])data.data[DataKeys[0]], CompositeResolver.Instance);
+					//var target = LZ4MessagePackSerializer.Deserialize<MorphData>((byte[])data.data[DataKey + "_targetCard"], CompositeResolver.Instance);
+					//var png = ObjectToByteArray(data.data[DataKey + "_targetPng"]);
 
 
-				var newValues = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>() { { "(Default)", values } };
-				data.data.Add(DataKey + "_values", LZ4MessagePackSerializer.Serialize(newValues, CompositeResolver.Instance));
-				//			ctrl.m_data2.Copy(target);
+					var newValues = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>() { { CharaMorpher_Core.DefaultStr, values } };
+					data.data[DataKeys[0]] = LZ4MessagePackSerializer.Serialize(newValues, CompositeResolver.Instance);
+					//			ctrl.m_data2.Copy(target);
 
-				data.version= Version;
+					data.version = Version;
+				}
 			}
 
 			if(data == null)
@@ -111,7 +116,7 @@ namespace Character_Morpher
 			return data;
 		}
 
-		public override PluginData Load(CharaCustomFunctionController ctrler, PluginData data)
+		public new PluginData Load(CharaCustomFunctionController ctrler, PluginData data)
 		{
 			var ctrl = (CharaMorpherController)ctrler;
 
@@ -121,22 +126,28 @@ namespace Character_Morpher
 
 			try
 			{
-				if(data.version != Version) throw new Exception($"Target card data was incorrect version: expected [V{Version}] instead of [V{data.version}]");
 
+				if(data.version != Version) throw new Exception($"Target card data was incorrect version: expected [V{Version}] instead of [V{data.version}]");
 
 				var values = LZ4MessagePackSerializer.Deserialize
 					<Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>>
-					((byte[])data.data[DataKey + "_values"], CompositeResolver.Instance);
+					((byte[])data.data[DataKeys[0]], CompositeResolver.Instance);
 				var target = LZ4MessagePackSerializer.Deserialize<MorphData>
-					((byte[])data.data[DataKey + "_targetCard"], CompositeResolver.Instance);
-				var png = ObjectToByteArray(data.data[DataKey + "_targetPng"]);
+					((byte[])data.data[DataKeys[1]], CompositeResolver.Instance);
+				var png = ObjectToByteArray(data.data[DataKeys[2]]);
 
 				if(png == null) throw new Exception("png data does not exist...");
+
+
 
 				target.abmx.ForceSplitStatus();//needed since split is not saved 😥
 
 				ctrl.controls.all = values;
+
+
 				ctrl.m_data2.Copy(target);
+
+				CharaMorpher_Core.Logger.LogDebug("what about here?");
 
 			}
 			catch(Exception e)
@@ -148,7 +159,7 @@ namespace Character_Morpher
 			return data;
 		}
 
-		public override PluginData Save(CharaCustomFunctionController ctrler)
+		public new PluginData Save(CharaCustomFunctionController ctrler)
 		{
 			if(!CharaMorpher_Core.cfg.saveAsMorphData.Value) return null;
 			PluginData data = new PluginData() { version = Version, };
@@ -157,12 +168,12 @@ namespace Character_Morpher
 				var ctrl = (CharaMorpherController)ctrler;
 				if(!ctrl.m_data2.abmx.isSplit) throw new Exception("Target card data was not fully initialized");
 
-				data.data.Add(DataKey + "_values", LZ4MessagePackSerializer.Serialize(ctrl.controls.all, CompositeResolver.Instance));
-				data.data.Add(DataKey + "_targetCard", LZ4MessagePackSerializer.Serialize(ctrl.m_data2, CompositeResolver.Instance));
+				data.data.Add(DataKeys[0], LZ4MessagePackSerializer.Serialize(ctrl.controls.all, CompositeResolver.Instance));
+				data.data.Add(DataKeys[1], LZ4MessagePackSerializer.Serialize(ctrl.m_data2, CompositeResolver.Instance));
 
 
 				if(ctrl.m_data2.main.pngData.IsNullOrEmpty()) throw new Exception("png data does not exist...");
-				data.data.Add(DataKey + "_targetPng", ctrl.m_data2.main.pngData);
+				data.data.Add(DataKeys[2], ctrl.m_data2.main.pngData);
 			}
 			catch(Exception e)
 			{
@@ -176,12 +187,11 @@ namespace Character_Morpher
 
 	}
 
-
 	internal class SaveLoadControllerV1 : SaveLoadController
 	{
-		public override int Version =>/*base.Version + */1;
+		public override int Version => 1;
 
-		public override string DataKey => "MorphData";
+		public override string[] DataKeys => new[] { "MorphData_values", "MorphData_targetCard", "MorphData_targetPng", };
 
 		internal class OldMorphControls
 		{
@@ -265,13 +275,14 @@ namespace Character_Morpher
 		 */
 
 		/// <summary>
-		/// creates an updated version 
+		/// creates an updated version (can NOT be called on base version)
 		/// </summary>
 		/// <param name="data"></param>
 		/// <returns></returns>
 		protected override PluginData UpdateVersionFromPrev(CharaCustomFunctionController ctrler, PluginData data)
 		{
 			var ctrl = (CharaMorpherController)ctrler;
+			CharaMorpher_Core.Logger.LogDebug("is V1 update getting called data here?");
 
 			if(data == null)
 				data = ctrler?.GetExtendedData(ctrl.reloading);
@@ -283,18 +294,20 @@ namespace Character_Morpher
 		{
 			var ctrl = (CharaMorpherController)ctrler;
 
-			data = UpdateVersionFromPrev(ctrler, data);// use if version goes up (i.e. 1->2)
+
+			data = UpdateVersionFromPrev(ctrler, data);
 
 			if(data == null) return null;
+
 
 			try
 			{
 				if(data.version != Version) throw new Exception($"Target card data was incorrect version: expected [V{Version}] instead of [V{data.version}]");
 
 
-				var values = LZ4MessagePackSerializer.Deserialize<Dictionary<string, Tuple<float, MorphCalcType>>>((byte[])data.data[DataKey + "_values"], CompositeResolver.Instance);
-				var target = LZ4MessagePackSerializer.Deserialize<MorphData>((byte[])data.data[DataKey + "_targetCard"], CompositeResolver.Instance);
-				var png = ObjectToByteArray(data.data[DataKey + "_targetPng"]);
+				var values = LZ4MessagePackSerializer.Deserialize<Dictionary<string, Tuple<float, MorphCalcType>>>((byte[])data.data[DataKeys[0]], CompositeResolver.Instance);
+				var target = LZ4MessagePackSerializer.Deserialize<MorphData>((byte[])data.data[DataKeys[1]], CompositeResolver.Instance);
+				var png = ObjectToByteArray(data.data[DataKeys[2]]);
 
 				if(png == null) throw new Exception("png data does not exist...");
 
@@ -306,8 +319,8 @@ namespace Character_Morpher
 			}
 			catch(Exception e)
 			{
-				//CharaMorpher_Core.Logger.Log(Error | Message, $"Could not load PluginData: \n {e} ");
-				return null;
+				CharaMorpher_Core.Logger.Log(Error | Message, $"Could not load PluginData: \n {e} ");
+				return data;
 			}
 
 			return data;
@@ -322,12 +335,12 @@ namespace Character_Morpher
 				var ctrl = (CharaMorpherController)ctrler;
 				if(!ctrl.m_data2.abmx.isSplit) throw new Exception("Target card data was not fully initialized");
 
-				data.data.Add(DataKey + "_values", LZ4MessagePackSerializer.Serialize(ctrl.controls.all, CompositeResolver.Instance));
-				data.data.Add(DataKey + "_targetCard", LZ4MessagePackSerializer.Serialize(ctrl.m_data2, CompositeResolver.Instance));
+				data.data.Add(DataKeys[0], LZ4MessagePackSerializer.Serialize(ctrl.controls.all, CompositeResolver.Instance));
+				data.data.Add(DataKeys[1], LZ4MessagePackSerializer.Serialize(ctrl.m_data2, CompositeResolver.Instance));
 
 
 				if(ctrl.m_data2.main.pngData.IsNullOrEmpty()) throw new Exception("png data does not exist...");
-				data.data.Add(DataKey + "_targetPng", ctrl.m_data2.main.pngData);
+				data.data.Add(DataKeys[2], ctrl.m_data2.main.pngData);
 			}
 			catch(Exception e)
 			{
@@ -340,6 +353,5 @@ namespace Character_Morpher
 		}
 
 	}
-
 
 }
