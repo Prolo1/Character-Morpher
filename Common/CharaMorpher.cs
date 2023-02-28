@@ -87,7 +87,7 @@ namespace Character_Morpher
 		internal static CharaMorpher_Core Instance;
 		internal static new ManualLogSource Logger;
 		internal static OnNewImage OnNewTargetImage = new OnNewImage();
-		internal static OnValueChange OnSliderValueChange = new OnValueChange();
+		internal static OnValueChange OnInternalSliderValueChange = new OnValueChange();
 
 		public Dictionary<string, List<KeyValuePair<int, string>>> controlCategories = new Dictionary<string, List<KeyValuePair<int, string>>>();
 		public static MorphConfig cfg;
@@ -168,7 +168,7 @@ namespace Character_Morpher
 			//Logger.LogDebug($"Body bones amount: {bodyBoneAmount}");
 			//Logger.LogDebug($"Face bones amount: {faceBoneAmount}");
 
-			Instance.Config.Reload();//get controls from disk
+			//	Instance.Config.Reload();//get controls from disk
 
 			int index = 0, defaultIndex = -1;//easier to input index order values
 			cfg = new MorphConfig
@@ -878,11 +878,11 @@ namespace Character_Morpher
 		public static PluginData SaveExtData(this CharaCustomFunctionController ctrl) => saveLoad.Save(ctrl);
 		public static PluginData LoadExtData(this CharaCustomFunctionController ctrl, PluginData data = null)
 		{
-			//if(cfg.debug.Value)
-			Logger.LogDebug("loading extended data...");
+			if(cfg.debug.Value)
+				Logger.LogDebug("loading extended data...");
 			var tmp = CharaMorpherGUI.MorphLoadToggle ? saveLoad.Load(ctrl, data) : null;
-			//if(cfg.debug.Value)
-			Logger.LogDebug("extended data loaded");
+			if(cfg.debug.Value)
+				Logger.LogDebug("extended data loaded");
 
 			string path = Path.Combine(
 				cfg.charDir.Value.MakeDirPath(),

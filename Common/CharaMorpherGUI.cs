@@ -32,11 +32,8 @@ using UnityEngine.UI;
 using UnityEngine.UI.Collections;
 using UnityEngine.Events;
 
-
-
 using static Character_Morpher.CharaMorpher_Core;
 using KKABMX.Core;
-
 
 namespace Character_Morpher
 {
@@ -63,7 +60,7 @@ namespace Character_Morpher
 
 				e.AddSubCategory(category);
 			};
-			MakerAPI.MakerBaseLoaded += (s, e) => { OnSliderValueChange.RemoveAllListeners(); AddCharaMorpherMenu(e); };
+			MakerAPI.MakerBaseLoaded += (s, e) => { OnInternalSliderValueChange.RemoveAllListeners(); AddCharaMorpherMenu(e); };
 			MakerAPI.MakerFinishedLoading += (s, e) =>
 			{
 
@@ -318,30 +315,36 @@ namespace Character_Morpher
 
 
 				//make sure values can be changed internally
-				OnSliderValueChange.AddListener(() =>
+				OnInternalSliderValueChange.AddListener(() =>
 				{
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("controls updating");
 
-					foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())//first one only
+
+					CharaMorpherController ctrl=null;
+					try
 					{
-						if(ctrl == null) continue;
-
-						if(currSlider.Value != ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1)
-							if(currSlider.ControlObject)
-							{
-								currSlider.StoreDefault = currSlider.Value = ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1;
-								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Slider control changed: {currSlider.Value}");
-							}
-
-						if(currMode.Value != (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2)
-							if(currMode.ControlObject)
-							{
-								currMode.Value = (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2;
-								if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Calc control changed: {currMode.Value}");
-							}
-
-						break;
+						ctrl = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>().FirstOrDefault(k => k != null);//first one only
 					}
+					catch { }
+
+					if(ctrl == null) return;
+
+					if(currSlider.Value != ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1)
+						if(currSlider.ControlObject)
+						{
+							currSlider.StoreDefault = currSlider.Value = ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1;
+							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Slider control changed: {currSlider.Value}");
+						}
+
+					if(currMode.Value != (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2)
+						if(currMode.ControlObject)
+						{
+							currMode.Value = (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2;
+							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Calc control changed: {currMode.Value}");
+						}
+
+
+
 				});
 
 				//add separator after overall control
@@ -620,35 +623,40 @@ namespace Character_Morpher
 			var sep = e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance))
 				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)));
 
-			int SwitchControlSet(MakerDropdown selection, int val)
+			int SwitchControlSet(MorphMakerDropdown selection, int val)
 			{
 				var ctrl = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>().First();
 				if(selection.Options.Length <= 0) return -1;
 
+
+				CharaMorpher_Core.Logger.LogDebug($"current slot [{ctrl.controls.currentSet}]");
+
 				var name = selection.Options[val = Mathf.Clamp(val, 0, selection.Options.Length - 1)] + ':';
 				//Replace the new set with the last settings before changing the setting name (loading will call the actual settings)
-				ctrl.controls.all[name] =
-				new Dictionary<string, Tuple<float, MorphCalcType>>(ctrl.controls.all[ctrl.controls.currentSet]);
+				if(ctrl.controls.all.TryGetValue(ctrl.controls.currentSet, out var tmp))
+					ctrl.controls.all[name] =
+					new Dictionary<string, Tuple<float, MorphCalcType>>(tmp);
 				ctrl.controls.currentSet = name;
 
+				CharaMorpher_Core.Logger.LogDebug($"new slot [{ctrl.controls.currentSet}]");
 				return val;
 			}
 
-			void UpdateDrpodown(MakerDropdown selecter)
+			Component GetDropdown(MorphMakerDropdown selecter)
 			{
-				//set new dropdown list 
-				Component dropdown;
-				if(dropdown = selecter.ControlObject.GetComponentInChildren<TMP_Dropdown>())
-				{
-					((TMP_Dropdown)dropdown).options = cfg.defaults.Keys.Attempt((k) =>
-					new TMP_Dropdown.OptionData(k.LastIndexOf(':') >= 0 ? k.Substring(0, k.LastIndexOf(':')) : k)).ToList();
-				}
-				else
-				{
-					dropdown = selecter.ControlObject.GetComponentInChildren<Dropdown>();
-					((Dropdown)dropdown).options = cfg.defaults.Keys.Attempt((k) =>
-					new Dropdown.OptionData(k.LastIndexOf(':') >= 0 ? k.Substring(0, k.LastIndexOf(':')) : k)).ToList();
-				}
+				Component dropdown = selecter?.ControlObject?.GetComponentInChildren<TMP_Dropdown>();
+				if(!dropdown) dropdown = selecter?.ControlObject?.GetComponentInChildren<Dropdown>();
+
+				return dropdown;
+			}
+
+			void UpdateDrpodown(MorphMakerDropdown selecter)
+			{
+
+				selecter.Options = cfg.defaults.Keys.ToArray();
+
+				CharaMorpher_Core.Logger.LogDebug($"current List [{string.Join(", ", selecter.Options)}]");
+
 
 				if(selecter.Value >= selecter.Options.Length)
 					selecter.Value = selecter.Options.Length - 1;
@@ -657,14 +665,12 @@ namespace Character_Morpher
 
 			}
 
-			var select = ((MakerDropdown)e.AddControl(
-				new MakerDropdown("Select", cfg.defaults.Keys
-				.Attempt((k) => k.LastIndexOf(':') >= 0 ? k.Substring(0, k.LastIndexOf(':')) : k).ToArray(), category, 0, Instance))
+			var select = ((MorphMakerDropdown)e.AddControl(
+				new MorphMakerDropdown("Select", cfg.defaults.Keys
+				.Attempt((k) => k.LastIndexOf(':') >= 0 ? k.Substring(0, k.LastIndexOf(':')) : throw new Exception())
+				.ToArray(), category, 0, Instance))
 				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui))));
-			select.ValueChanged.Subscribe((val) =>
-			{
-				SwitchControlSet(select, val);
-			});
+			select.ValueChanged.Subscribe((val) => select.Value = SwitchControlSet(select, val));
 
 			((MakerButton)e.AddControl(new MakerButton("Add New Slot", category, Instance))
 				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)))).
@@ -673,10 +679,11 @@ namespace Character_Morpher
 					int count = 1;
 					var ctrl1 = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>().First();
 
-					string name = "Error";
+					string name = "Error:";
 					var defList = Instance.Config.Where((k) => k.Key.Section == "Defaults");
 					var modeDefList = Instance.Config.Where((k) => k.Key.Section == "Mode Defaults");
 
+					//find new empty slot name
 					while(defList?.Any((k) =>
 					k.Key.Key.Contains(name = $"Slot {count}:")) ?? false) ++count;
 					inst.controlCategories[name] = new List<KeyValuePair<int, string>> { };//init list
@@ -786,6 +793,7 @@ namespace Character_Morpher
 						ctrl1.controls.all[name][ctrl.Value] = Tuple.Create(cfg.defaults[name][ctrl.Key].Value * .01f, (MorphCalcType)cfg.defaultModes[name][ctrl.Key].Value);
 
 					//	MorphUtil.UpdateDefaultsList();
+					CharaMorpher_Core.Logger.LogMessage($"Created {name}");
 
 
 					//update dropdown list 
@@ -798,9 +806,15 @@ namespace Character_Morpher
 				OnClick.AddListener(() =>
 				{
 					var ctrl = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>().First();
-					var name = select.Options[select.Value] + ':';
+
+					string name = /*select.Options[select.Value] + ':'*/ ctrl.controls.currentSet;
+
 					if(name == DefaultStr) return;
 					CharaMorpher_Core.Logger.LogDebug("remove Defaults");
+
+					//switch control before deletion
+					if(select.Value >= select.Options.Length - 1)
+						select.Value = SwitchControlSet(select, select.Options.Length - 2);
 
 					foreach(var def in cfg.defaults)
 						foreach(var val in def.Value)
@@ -814,7 +828,7 @@ namespace Character_Morpher
 					cfg.defaults.Remove(name);
 					cfg.defaultModes.Remove(name);
 
-					Instance.Config.Save();
+					Instance.Config.Save();//save to disk
 
 					CharaMorpher_Core.Logger.LogDebug("remove Controls");
 					ctrl.controls.all.Remove(name);
@@ -822,8 +836,6 @@ namespace Character_Morpher
 					CharaMorpher_Core.Logger.LogMessage($"removed {name}");
 
 					UpdateDrpodown(select);
-
-
 				});
 
 
@@ -1063,6 +1075,41 @@ namespace Character_Morpher
 			}
 
 			public void ApplyDefault() => DefaultValue = StoreDefault;
+		}
+
+		public class MorphMakerDropdown : MakerDropdown
+		{
+			public new string[] Options
+			{
+				get => ControlObject?.GetComponentInChildren<TMP_Dropdown>()?.options?.Select((k) => k.text)?.ToArray() ??
+					ControlObject?.GetComponentInChildren<Dropdown>()?.options?.Select((k) => k.text)?.ToArray() ?? base.Options;
+
+				set
+				{
+					Component dropdown = ControlObject?.GetComponentInChildren<TMP_Dropdown>();
+					if(!dropdown) dropdown = ControlObject?.GetComponentInChildren<Dropdown>();
+
+					if(dropdown is TMP_Dropdown)
+						((TMP_Dropdown)dropdown).options = value.Attempt((k) =>
+						new TMP_Dropdown.OptionData(k.LastIndexOf(':') >= 0 ? k.Substring(0, k.LastIndexOf(':')) : throw new Exception())).ToList();
+
+					else if(dropdown is Dropdown)
+						((Dropdown)dropdown).options = value.Attempt((k) =>
+						new Dropdown.OptionData(k.LastIndexOf(':') >= 0 ? k.Substring(0, k.LastIndexOf(':')) : throw new Exception())).ToList();
+				}
+			}
+
+			public new int Value
+			{
+				get => ControlObject?.GetComponentInChildren<TMP_Dropdown>()?.value ??
+					ControlObject?.GetComponentInChildren<Dropdown>()?.value ?? base.Value;
+				set => base.Value = value;
+			}
+			public MorphMakerDropdown(string settingName, string[] options, MakerCategory category, int initialValue, BaseUnityPlugin owner)
+				: base(settingName, options, category, initialValue, owner)
+			{
+
+			}
 		}
 
 	}

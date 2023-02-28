@@ -62,7 +62,7 @@ namespace Character_Morpher
 	{
 		public new int Version => base.Version + 1;
 
-		public new string[] DataKeys => new[] { "MorphData_values", "MorphData_targetCard", "MorphData_targetPng", };
+		//public new string[] DataKeys => new[] { "MorphData_values", "MorphData_targetCard", "MorphData_targetPng", };
 
 
 		/*
@@ -88,7 +88,7 @@ namespace Character_Morpher
 			var ctrl = (CharaMorpherController)ctrler;
 
 
-			if(data?.version != Version || data == null)
+			if(data == null || data.version != Version)
 			{
 
 				data = base.Load(ctrler, data)?.Copy();
@@ -98,13 +98,9 @@ namespace Character_Morpher
 				{
 					//last version
 					var values = LZ4MessagePackSerializer.Deserialize<Dictionary<string, Tuple<float, MorphCalcType>>>((byte[])data.data[DataKeys[0]], CompositeResolver.Instance);
-					//var target = LZ4MessagePackSerializer.Deserialize<MorphData>((byte[])data.data[DataKey + "_targetCard"], CompositeResolver.Instance);
-					//var png = ObjectToByteArray(data.data[DataKey + "_targetPng"]);
-
 
 					var newValues = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>() { { CharaMorpher_Core.DefaultStr, values } };
 					data.data[DataKeys[0]] = LZ4MessagePackSerializer.Serialize(newValues, CompositeResolver.Instance);
-					//			ctrl.m_data2.Copy(target);
 
 					data.version = Version;
 				}
@@ -142,17 +138,16 @@ namespace Character_Morpher
 
 				target.abmx.ForceSplitStatus();//needed since split is not saved 😥
 
-				ctrl.controls.all = values;
-
+				foreach(var val in values)
+					ctrl.controls.all[val.Key] = val.Value;
 
 				ctrl.m_data2.Copy(target);
 
-				CharaMorpher_Core.Logger.LogDebug("what about here?");
 
 			}
 			catch(Exception e)
 			{
-				CharaMorpher_Core.Logger.Log(Error | Message, $"Could not load PluginData: \n {e} ");
+				CharaMorpher_Core.Logger.Log(Error | Message, $"Could not load PluginData:\n{e}");
 				return null;
 			}
 
@@ -282,7 +277,6 @@ namespace Character_Morpher
 		protected override PluginData UpdateVersionFromPrev(CharaCustomFunctionController ctrler, PluginData data)
 		{
 			var ctrl = (CharaMorpherController)ctrler;
-			CharaMorpher_Core.Logger.LogDebug("is V1 update getting called data here?");
 
 			if(data == null)
 				data = ctrler?.GetExtendedData(ctrl.reloading);
@@ -311,16 +305,12 @@ namespace Character_Morpher
 
 				if(png == null) throw new Exception("png data does not exist...");
 
-				//	target.abmx.ForceSplitStatus();//needed since split is not saved 😥
-				//
-				//	ctrl.controls.all = values;
-				//	ctrl.m_data2.Copy(target);
 
 			}
 			catch(Exception e)
 			{
-				CharaMorpher_Core.Logger.Log(Error | Message, $"Could not load PluginData: \n {e} ");
-				return data;
+				//CharaMorpher_Core.Logger.Log(Error | Message, $"Could not load PluginData:\n{e} ");
+				return null;
 			}
 
 			return data;

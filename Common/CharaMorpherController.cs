@@ -2121,40 +2121,53 @@ namespace Character_Morpher
 				{
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						yield return null;
+					try
+					{
+						if(_all == null)
+						{
+							_all = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
+							_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
+						}
 
-					if(_all == null)
-					{
-						_all = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
-						_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
-					}
-					if(!_all.TryGetValue(currentSet, out tmp1))
-					{
-						_all[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
-						_lastAll[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
-					}
+						if(!_all.TryGetValue(currentSet, out tmp1))
+						{
+							_all[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+							_lastAll[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+						}
 
-					bool Check()
-					{
-						CharaMorpher_Core.Logger.LogDebug("Is check getting here?");
-						if(_all.Count != _lastAll.Count)
+						bool Check()
+						{
+
+							if(_all.Count != _lastAll.Count)
+								return false;
+
+							if(!_all.TryGetValue(currentSet, out tmp1)) return true;
+
+							if(_all[currentSet].Count != _lastAll[currentSet].Count)
+								return false;
+
+
+							for(int a = 0; a < _all[currentSet].Count; ++a)
+								if(_all[currentSet].TryGetValue(_all[currentSet].Keys.ElementAt(a), out var tmp2))
+									if(_all[currentSet][_all[currentSet].Keys.ElementAt(a)].Item1 !=
+										_lastAll[currentSet][_lastAll[currentSet].Keys.ElementAt(a)].Item1)
+										return true;
+
+
 							return false;
-						if(_all[currentSet].Count != _lastAll[currentSet].Count)
-							return false;
+						}
 
-						CharaMorpher_Core.Logger.LogDebug("Is check getting here aswell?");
-						for(int a = 0; a < _all[currentSet].Count; ++a)
-							if(_all[currentSet][_all[currentSet].Keys.ElementAt(a)].Item1 !=
-								_lastAll[currentSet][_lastAll[currentSet].Keys.ElementAt(a)].Item1)
-								return true;
+						if(Check())
+							OnInternalSliderValueChange.Invoke();
 
-
-						return false;
+						_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(_all);
+					}
+					catch(Exception e)
+					{
+						CharaMorpher_Core.Logger.LogError($"CoPost failed:\n{e}");
 					}
 
-					if(Check())
-						OnSliderValueChange.Invoke();
-
-					_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(_all);
+					yield break;
 				}
 
 				if(post != null)
@@ -2173,7 +2186,7 @@ namespace Character_Morpher
 		{
 			get
 			{
-				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);//copy
+				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value.ToDictionary(curr2 => curr2.Key, curr2 => curr2.Value));
 				for(int a = 0; a < tmp[currentSet].Count; ++a)
 					tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)] = Tuple.Create(1f, tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)].Item2);
 				return tmp;
@@ -2187,7 +2200,7 @@ namespace Character_Morpher
 		{
 			get
 			{
-				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
+				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value.ToDictionary(curr2 => curr2.Key, curr2 => curr2.Value));
 				for(int a = 0; a < tmp[currentSet].Count; ++a)
 					tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)] = Tuple.Create(0f, tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)].Item2);
 				return tmp;
