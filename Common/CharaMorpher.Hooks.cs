@@ -192,8 +192,6 @@ namespace Character_Morpher
 			[HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
 			static void OnPreButtonClick(Button __instance)
 			{
-
-
 				if(!__instance.interactable) return;
 
 				if(!MakerAPI.InsideMaker) return;

@@ -37,11 +37,13 @@ namespace Character_Morpher
 	public class CharaMorpherController : CharaCustomFunctionController
 	{
 		private PluginData m_extData = null;
-		private static MorphData morphCharData = null;
 		private static string lastCharDir = "";
 		private static DateTime lastDT = new DateTime();
 
-		internal MorphControls controls = new MorphControls();
+		internal static MorphData morphCharData = null;
+		internal MorphControls
+			controls = new MorphControls(),
+			ctrls1 = null, ctrls2 = null;
 		//internal static readonly MorphTarget morphTarget = new MorphTarget();
 		private static bool m_faceBonemodTgl = true, m_bodyBonemodTgl = true;
 		internal static bool faceBonemodTgl
@@ -757,8 +759,16 @@ namespace Character_Morpher
 				if(!controls.all.TryGetValue(category.Key, out var tmp))
 					controls.all[category.Key] = new Dictionary<string, Tuple<float, MorphCalcType>>();
 				foreach(var ctrl in category.Value)
+				{
 					controls.all[category.Key][ctrl.Value] = Tuple.Create(cfg.defaults[category.Key][ctrl.Key].Value * .01f, (MorphCalcType)cfg.defaultModes[category.Key][ctrl.Key].Value);
+					//		CharaMorpher_Core.Logger.LogDebug($"\ncontrol set: {category.Key}\ncontrol name: {ctrl.Value}");
+
+				}
 			}
+			//controls.all.
+			//if(!initLoadFinished)
+			ctrls1 = controls.Clone();
+			//controls.currentSet = cfg.currentControlName.Value;
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
 
 		}
@@ -791,6 +801,8 @@ namespace Character_Morpher
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("clear data");
 				m_data1.Clear();
 				m_data2.Clear();
+				//ctrls1 = null;
+				ctrls2 = null;
 				m_extData = null;
 			}
 
@@ -803,6 +815,8 @@ namespace Character_Morpher
 
 
 				m_data1.Copy(this); //get all character data!!!
+
+
 
 				//store png data
 				m_data1.main.pngData = ChaFileControl.pngData;
@@ -893,6 +907,8 @@ namespace Character_Morpher
 			}
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("replace data 2");
+
+			ctrls2 = null;
 			m_extData = this.LoadExtData(m_extData);
 			bool check = !(MakerAPI.InsideMaker ?
 				cfg.useCardMorphDataMaker.Value :
@@ -1037,7 +1053,6 @@ namespace Character_Morpher
 
 			if(cfg.debug.Value)
 			{
-
 				CharaMorpher_Core.Logger.LogDebug($"data 1 body bones: {m_data1.abmx.body.Count}");
 				CharaMorpher_Core.Logger.LogDebug($"data 2 body bones: {m_data2.abmx.body.Count}");
 				CharaMorpher_Core.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
@@ -1051,6 +1066,8 @@ namespace Character_Morpher
 			var charaCtrl = ChaControl;
 			float enable = (reset ? (initReset ? cfg.initialMorphBodyTest.Value : 0) : 1);
 
+			if(cfg.debug.Value)
+				CharaMorpher_Core.Logger.LogDebug($"setting obscure values: {controls.currentSet} {controls.all[controls.currentSet].Count}");
 
 			//update obscure values//
 			{
@@ -1065,6 +1082,8 @@ namespace Character_Morpher
 				charaCtrl.fileBody.bustWeight = Mathf.LerpUnclamped(m_data1.main.custom.body.bustWeight, m_data2.main.custom.body.bustWeight,
 				(reset ? enable : GetControlValue("body").Value.Item1 * GetControlValue("Boob Phys.").Value.Item1));
 
+				if(cfg.debug.Value)
+					CharaMorpher_Core.Logger.LogDebug($"gets here");
 				//Skin Colour
 				bool newcol = false;
 				var col1 = Color.LerpUnclamped(
@@ -1076,6 +1095,8 @@ namespace Character_Morpher
 									(reset ? enable : GetControlValue("skin").Value.Item1 * GetControlValue("base skin").Value.Item1));
 
 
+				if(cfg.debug.Value)
+					CharaMorpher_Core.Logger.LogDebug($"gets here");
 #if KOI_API
 				newcol |= charaCtrl.fileBody.skinMainColor != col1;
 				charaCtrl.fileBody.skinMainColor = col1;
@@ -1090,6 +1111,8 @@ namespace Character_Morpher
 				newcol |= charaCtrl.fileBody.sunburnColor != col2;
 				charaCtrl.fileBody.sunburnColor = col2;
 
+				if(cfg.debug.Value)
+					CharaMorpher_Core.Logger.LogDebug($"gets here");
 				//colour update
 				if(initLoadFinished && newcol)
 				{
@@ -1160,9 +1183,13 @@ namespace Character_Morpher
 			}
 
 			//value update loops//
+			if(cfg.debug.Value)
+				CharaMorpher_Core.Logger.LogDebug($"setting Main values");
 			//Main
 			MainUpdateValues(reset, initReset);
 
+			if(cfg.debug.Value)
+				CharaMorpher_Core.Logger.LogDebug($"setting ABMX values");
 			//ABMX
 			if(abmx)
 				AbmxUpdateValues(reset, initReset);
@@ -1933,10 +1960,10 @@ namespace Character_Morpher
 			public bool isSplit { get => m_isSplit; private set => m_isSplit = value; }
 
 
-			public void Populate(CharaMorpherController morphControl, bool morph = false)
+			public void Populate(CharaMorpherController morphControl, bool useTargetData = false)
 			{
 
-				var boneCtrl = morph ? MorphTarget.extraCharacter?.GetComponent<BoneController>() : morphControl?.GetComponent<BoneController>();
+				var boneCtrl = useTargetData ? MorphTarget.extraCharacter?.GetComponent<BoneController>() : morphControl?.GetComponent<BoneController>();
 				var charaCtrl = morphControl?.ChaControl;
 
 				if(isLoaded) return;
@@ -1948,14 +1975,14 @@ namespace Character_Morpher
 
 					//This is the second dumbest fix
 					//(I was changing the player character's bones when this was true ¯\_(ツ)_/¯)
-					var data = boneCtrl?.GetExtendedData(!morph);
+					var data = boneCtrl?.GetExtendedData(!useTargetData);
 
 					var newModifiers = data.ReadBoneModifiers();
 					//body bonemods on
-					if(morph || bodyBonemodTgl)
+					if(useTargetData || bodyBonemodTgl)
 						body = new List<BoneModifier>(newModifiers);
 					//face bonemods on
-					if(morph || faceBonemodTgl)
+					if(useTargetData || faceBonemodTgl)
 						face = new List<BoneModifier>(newModifiers);
 
 					isLoaded = !!boneCtrl;//it can be shortened to just "boneCtrl" if I want
@@ -1963,16 +1990,16 @@ namespace Character_Morpher
 
 				if(cfg.debug.Value)
 				{
-					if(morph) CharaMorpher_Core.Logger.LogDebug("Character 2:");
+					if(useTargetData) CharaMorpher_Core.Logger.LogDebug("Character 2:");
 					else CharaMorpher_Core.Logger.LogDebug("Character 1:");
 					foreach(var part in body) CharaMorpher_Core.Logger.LogDebug("Bone: " + part.BoneName);
 				}
 
-				BoneSplit(morphControl, charaCtrl, morph);
+				BoneSplit(morphControl, charaCtrl, useTargetData);
 			}
 
 			//split up body & head bones
-			public void BoneSplit(CharaMorpherController charaControl, ChaControl bodyCharaCtrl, bool morph = false)
+			public void BoneSplit(CharaMorpherController charaControl, ChaControl bodyCharaCtrl, bool useTargetData = false)
 			{
 				var ChaControl = charaControl?.GetComponent<ChaControl>();
 				var ChaFileControl = ChaControl?.chaFile;
@@ -1988,11 +2015,11 @@ namespace Character_Morpher
 				var headBones = new HashSet<string>(headRoot.GetComponentsInChildren<Transform>().Select(x => x.name)) { /*Additional*/headRoot.name };
 
 				//Load Body
-				if(morph || bodyBonemodTgl)
+				if(useTargetData || bodyBonemodTgl)
 					body.RemoveAll(x => headBones.Contains(x.BoneName));
 
 				//Load face
-				if(morph || faceBonemodTgl)
+				if(useTargetData || faceBonemodTgl)
 				{
 					var bodyBones = new HashSet<string>(bodyCharaCtrl.objTop.transform.
 						GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
@@ -2035,7 +2062,6 @@ namespace Character_Morpher
 		public ChaFileControl main = new ChaFileControl();
 		public AMBXSections abmx = new AMBXSections();
 
-
 		public void Clear()
 		{
 			main = new ChaFileControl();
@@ -2054,6 +2080,7 @@ namespace Character_Morpher
 #endif
 			}
 			catch(Exception e) { CharaMorpher_Core.Logger.LogError("Could not copy character data:\n" + e); }
+
 #if HONEY_API
 			//CopyAll will not copy this data in hs2
 			tmp.dataID = main.dataID;
@@ -2062,60 +2089,69 @@ namespace Character_Morpher
 			return new MorphData() { main = tmp, abmx = abmx.Copy() };
 		}
 
-		public void Copy(MorphData data)
+		public bool Copy(MorphData data)
 		{
-			if(data == null) return;
+			if(data == null) return false;
 
 			var tmp = data.Clone();
 			this.main = tmp.main;
 			this.abmx = tmp.abmx;
+
+			return true;
 		}
 
-		public void Copy(CharaMorpherController data, bool morph = false)
+		public bool Copy(CharaMorpherController data, bool useTargetData = false)
 		{
-
-#if HONEY_API
-			//CopyAll will not copy this data in hs2/AI
-			main.dataID = morph ? MorphTarget.chaFile.dataID : data.ChaControl.chaFile.dataID;
-#endif
-
 			try
 			{
-				main.CopyAll(morph ? MorphTarget.chaFile : data.ChaFileControl);
-				main.pngData = (morph ? MorphTarget.chaFile.pngData :
+
+#if HONEY_API
+				//CopyAll will not copy this data in hs2/AI
+				main.dataID = useTargetData ? MorphTarget.chaFile.dataID : data.ChaControl.chaFile.dataID;
+#endif
+
+				main.CopyAll(useTargetData ? MorphTarget.chaFile : data.ChaFileControl);
+				main.pngData = (useTargetData ? MorphTarget.chaFile.pngData :
 					data.ChaFileControl.pngData)?.ToArray();
 #if KOI_API
-				main.facePngData = (morph ? MorphTarget.chaFile.facePngData :
+				main.facePngData = (useTargetData ? MorphTarget.chaFile.facePngData :
 					data.ChaFileControl.facePngData)?.ToArray();
 #endif
 			}
-			catch(Exception e) { CharaMorpher_Core.Logger.LogError("Could not copy character data:\n" + e); }
+			catch(Exception e) { CharaMorpher_Core.Logger.LogError("Could not copy character data:\n" + e); return false; }
 
-			abmx.Populate(data, morph);
+			abmx.Populate(data, useTargetData);
+
+
+			return true;
 		}
 	}
 
-	internal class MorphControls
+	[Serializable]
+	public class MorphControls
 	{
 		Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> _all, _lastAll;
 
-		public string currentSet { get; internal set; } = DefaultStr;
+		public string currentSet { get; internal set; } = cfg.currentControlName.Value;
 		Coroutine post;
 		public Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> all
 		{
 			get
 			{
+				bool existed = true;
 				if(_all == null)
 				{
 					_all = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
 					_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
+					existed = false;
 				}
 
-				if(!_all.TryGetValue(currentSet, out var tmp1))
-				{
-					_all[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
-					_lastAll[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
-				}
+			//	if(existed && !_all.TryGetValue(currentSet, out var tmp1))
+			//	{
+			//		_all[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+			//		_lastAll[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+			//		OnInternalControlSetAdded.Invoke(currentSet);
+			//	}
 
 				IEnumerator CoPost()
 				{
@@ -2123,25 +2159,13 @@ namespace Character_Morpher
 						yield return null;
 					try
 					{
-						if(_all == null)
-						{
-							_all = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
-							_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
-						}
-
-						if(!_all.TryGetValue(currentSet, out tmp1))
-						{
-							_all[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
-							_lastAll[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
-						}
-
 						bool Check()
 						{
 
 							if(_all.Count != _lastAll.Count)
 								return false;
 
-							if(!_all.TryGetValue(currentSet, out tmp1)) return true;
+							if(!_all.TryGetValue(currentSet, out var tmp1)) return true;
 
 							if(_all[currentSet].Count != _lastAll[currentSet].Count)
 								return false;
@@ -2157,10 +2181,20 @@ namespace Character_Morpher
 							return false;
 						}
 
+						if(_all == null) yield break;
+
+
+						//if(!_all.TryGetValue(currentSet, out tmp1))
+						//{
+						//	_all[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+						//	_lastAll[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+						//}
+
 						if(Check())
 							OnInternalSliderValueChange.Invoke();
 
-						_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(_all);
+						_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(_all ??
+							new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>());
 					}
 					catch(Exception e)
 					{
@@ -2172,7 +2206,7 @@ namespace Character_Morpher
 
 				if(post != null)
 					Instance.StopCoroutine(post);
-
+				
 				post = Instance.StartCoroutine(CoPost());
 				return _all;
 			}
@@ -2224,6 +2258,22 @@ namespace Character_Morpher
 			get
 			=> all[currentSet].Where((p) => !Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
 		}
+
+		public void Clear()
+		{
+			foreach(var item in _all)
+				item.Value.Clear();
+			_all.Clear();
+			if(post != null)
+				Instance.StopCoroutine(post);
+		}
+
+		public MorphControls Clone() =>
+		 new MorphControls
+		 {
+			 _all = _all.ToDictionary((x) => x.Key, (y) => y.Value.ToDictionary(x => x.Key, v => v.Value)),
+			 _lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(),
+		 };
 
 	}
 
