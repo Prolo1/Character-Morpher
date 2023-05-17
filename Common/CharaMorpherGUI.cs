@@ -35,8 +35,6 @@ using UnityEngine.Events;
 using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.MorphUtil;
 using KKABMX.Core;
-using ADV.Commands.Base;
-using static Studio.TreeNodeCtrl;
 
 namespace Character_Morpher
 {
@@ -146,6 +144,7 @@ namespace Character_Morpher
 			get => !MakerAPI.InsideMaker || m_morphLoadToggle;
 			private set => m_morphLoadToggle = value;
 		}
+		public static MorphMakerDropdown select = null;
 
 		private static void Cleanup()
 		{
@@ -216,87 +215,68 @@ namespace Character_Morpher
 					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableCalcTypes.Value)
 				);
 
-			void SoftSave(bool ucmd)
-			{
-				var ctrl = GetFuncCtrlOfType<CharaMorpherController>().First();
 
-				int count = 0;
 
-				var list = ((!ucmd ? ctrl.ctrls1 : ctrl.ctrls2 ?? ctrl.ctrls1)?.all);
-				//var listCpy = list.ToDictionary((k) => k.Key, (e1) => e1.Value.ToDictionary(k => k.Key, e2 => e2.Value));
-
-				foreach(var def in list.Keys)
-					foreach(var def2 in list[def].Keys)
-						list[def][def2] = Tuple.Create(sliders[count].Value * 100f, (MorphCalcType)modes[count++].Value);
-			}
-
-			bool lastUCMD = cfg.useCardMorphDataMaker.Value;//this is needed
 			e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.useCardMorphDataMaker.Value, CharaMorpher_Core.Instance))
 				.OnGUIExists((gui) =>
 				{
 					var toggle = (MakerToggle)gui;
 					toggle?.ValueChanged?.Subscribe((_1) =>
-					{
-						if(cfg.useCardMorphDataMaker.Value != _1)
-							cfg.useCardMorphDataMaker.Value = _1;
-					});
+						cfg.useCardMorphDataMaker.Value = _1);
 
-					cfg.useCardMorphDataMaker.SettingChanged += (s, o) =>
+					Coroutine tmp = null;
+					bool lastUCMD = cfg.useCardMorphDataMaker.Value;//this is needed
+					void ChangeMorphData(object s, EventArgs o)
 					{
+
 						var ctrl = GetFuncCtrlOfType<CharaMorpherController>()?.First();
 
-						string name =
-						!cfg.useCardMorphDataMaker.Value ?
-						ctrl?.ctrls1?.currentSet : (ctrl?.ctrls2 ?? ctrl?.ctrls1).currentSet;
-						name = name.Substring(0, name.LastIndexOf(strDivider));
-
-						if(lastUCMD)
+						IEnumerator CoUCMD()
 						{
-							SoftSave(lastUCMD);
-							ctrl.controls = (!cfg.useCardMorphDataMaker.Value ?
-							ctrl?.ctrls1 : ctrl?.ctrls2 ?? ctrl?.ctrls1)?.Clone();
 
-							lastUCMD = cfg.useCardMorphDataMaker.Value;
+							string name =
+							(!cfg.useCardMorphDataMaker.Value ?
+							ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1))?.currentSet;
+							name = name.Substring(0, Mathf.Clamp(name.LastIndexOf(strDivider), 0, name.Length));
+
+
+							{
+								yield return new WaitWhile(() => ctrl.reloading);
+
+								SoftSave(lastUCMD);
+								ctrl.controls.Copy(!cfg.useCardMorphDataMaker.Value ?
+								ctrl?.ctrls1 : ctrl?.ctrls2 ?? ctrl?.ctrls1);
+
+								lastUCMD = cfg.useCardMorphDataMaker.Value;//this is needed
+							}
+
+							if(!name.IsNullOrEmpty())
+								SwitchControlSet(ControlsList, name);
+							select.Options = ControlsList;
+							toggle?.SetValue(cfg.useCardMorphDataMaker.Value);
+
+							yield break;
 						}
 
-						//if(!ctrl.reloading)
-						//	if(!cfg.useCardMorphDataMaker.Value)
-						//		ctrl.ctrls2 = ctrl.controls.Clone();
-						//	else
-						//		ctrl.ctrls1 = ctrl.controls.Clone();
+						if(tmp != null)
+							ctrl.StopCoroutine(tmp);
+						tmp = ctrl.StartCoroutine(CoUCMD());
+					}
 
-						//if(!name.IsNullOrEmpty())
-						//	ctrl.controls = !cfg.useCardMorphDataMaker.Value ? ctrl.ctrls1.Clone() : ctrl.ctrls2.Clone();
-
-
-						//if(!name.IsNullOrEmpty())
-						//{
-						//	foreach(var val in Instance.controlCategories)
-						//		if(val.Key != defaultStr)
-						//			Instance.controlCategories.Remove(val.Key);
-						//
-						//	foreach(var val in ctrl.controls.all)
-						//		if(val.Key != defaultStr)
-						//			Instance.controlCategories[val.Key] = Instance.controlCategories[defaultStr].ToList();
-						//
-						//	//	Instance.controlCategories[name] = new List<KeyValuePair<int, string>> { };//init list
-						//}
-
-						if(!name.IsNullOrEmpty())
-							SwitchControlSet(ControlsList, name);
-
-						toggle?.SetValue(cfg.useCardMorphDataMaker.Value);
-					};
+					cfg.useCardMorphDataMaker.SettingChanged -= ChangeMorphData;
+					cfg.useCardMorphDataMaker.SettingChanged += ChangeMorphData;
 
 				});
 
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			#endregion
 
+			#region Easy Morph Stuff
 			//e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 			ImageControls(e, inst);
 
 			ButtonDefaults(e, inst);
+			#endregion
 
 			#region Sliders
 			//creates a slider that controls the bodies' shape
@@ -355,11 +335,9 @@ namespace Character_Morpher
 
 
 						});
-				currSlider.ModSettingName = settingName;
 
 
 				//mode dropdown 
-
 				var ting = Enum.GetNames(typeof(MorphCalcType));
 				var currMode = modes.AddNReturn(e.AddControl(new MorphMakerDropdown("", ting, category, cfg.defaultModes[defaultStr][index].Value, Instance)));
 				currMode.BindToFunctionController<CharaMorpherController, int>(
@@ -377,6 +355,7 @@ namespace Character_Morpher
 								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
 						});
 
+				currSlider.ModSettingName = currMode.ModSettingName = settingName;
 
 				//make sure values can be changed internally
 				OnInternalSliderValueChange.AddListener(() =>
@@ -692,25 +671,29 @@ namespace Character_Morpher
 				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)));
 
 
-			var select = ((MorphMakerDropdown)e.AddControl(
-				new MorphMakerDropdown("Select", ControlsList, category, 0, Instance))
-				.OnGUIExists(
-				(gui) =>
-				{
-					MorphMakerDropdown mmd = (MorphMakerDropdown)gui;
-					cfg.currentControlName.SettingChanged += (s, o) =>
-					{
-						//UpdateDrpodown(select.Options);
-						mmd.Options = ControlsList.ToArray();
-						var name = cfg.currentControlName.Value;
-						mmd.Value = SwitchControlSet(mmd.Options,
-							Array.IndexOf(mmd.Options, name.Substring(0, name.LastIndexOf(strDivider))));
-					};
+			select = ((MorphMakerDropdown)e.AddControl(
+			   new MorphMakerDropdown("Select", ControlsList, category, 0, Instance))
+			   .OnGUIExists(
+			   (gui) =>
+			   {
+				   MorphMakerDropdown mmd = (MorphMakerDropdown)gui;
+				   //  cfg.currentControlName = null;
+				   void TmpThing(object s, EventArgs o)
+				   {
+					   //UpdateDrpodown(select.Options);
+					   mmd.Options = ControlsList.ToArray();
+					   var name = cfg.currentControlName.Value;
+					   mmd.Value = SwitchControlSet(mmd.Options,
+						   Array.IndexOf(mmd.Options, name.Substring(0, name.LastIndexOf(strDivider))));
+				   };
 
-					Instance.StartCoroutine(ChangeGUILayout(gui));
-					mmd.ValueChanged?.Subscribe((val) => { mmd.Value = SwitchControlSet(mmd.Options, val); });
-					mmd.Value = SwitchControlSet(mmd.Options, cfg.currentControlName.Value);
-				}));
+				   cfg.currentControlName.SettingChanged -= TmpThing;
+				   cfg.currentControlName.SettingChanged += TmpThing;
+
+				   Instance.StartCoroutine(ChangeGUILayout(gui));
+				   mmd.ValueChanged?.Subscribe((val) => { mmd.Value = SwitchControlSet(mmd.Options, val); });
+				   mmd.Value = SwitchControlSet(mmd.Options, cfg.currentControlName.Value);
+			   }));
 
 
 			((MakerButton)e.AddControl(new MakerButton("Add New Slot", category, Instance))
@@ -749,20 +732,25 @@ namespace Character_Morpher
 				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)))).
 				OnClick.AddListener(() =>
 				{
-
 					foreach(var slider in sliders)
 						slider.ApplyDefault();
 
 					var ctrl = GetFuncCtrlOfType<CharaMorpherController>().First();
 					int count = 0;
 					//cfg.defaults[ctrl.controls.currentSet] = new List<ConfigEntry<float>>();
-					if(!cfg.useCardMorphDataMaker.Value)
+					if(!cfg.useCardMorphDataMaker.Value || ctrl.ctrls2 == null)
 						foreach(var def in cfg.defaults[ctrl.controls.currentSet])
-							def.Value = sliders[count++].Value * 100f;
+						{
+							////this is a redundancy that can protect against out of order settings
+							//var index = sliders.FindIndex(k => k.ModSettingName ==
+							//Instance.controlCategories[ctrl.controls.currentSet][count].Value);
 
+							def.Value = sliders[count].Value * 100f;
+							count++;
+						}
 					//cfg.defaultModes[ctrl.controls.currentSet] = new List<ConfigEntry<int>>();
 					count = 0;
-					if(!cfg.useCardMorphDataMaker.Value)
+					if(!cfg.useCardMorphDataMaker.Value || ctrl.ctrls2 == null)
 						foreach(var def in cfg.defaultModes[ctrl.controls.currentSet])
 							def.Value = modes[count++].Value;
 
@@ -778,15 +766,32 @@ namespace Character_Morpher
 				{
 					var ctrl = GetFuncCtrlOfType<CharaMorpherController>().First();
 
-					var list = ctrl.controls.all;
+					MorphControls tmpCtrls = new MorphControls();
+					foreach(var category in Instance.controlCategories)
+					{
+						if(!tmpCtrls.all.TryGetValue(category.Key, out var tmp))
+							tmpCtrls.all[category.Key] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+
+						foreach(var ctrl1 in category.Value)
+							tmpCtrls.all[category.Key][ctrl1.Value] = Tuple.Create(cfg.defaults[category.Key][ctrl1.Key].Value * .01f, (MorphCalcType)cfg.defaultModes[category.Key][ctrl1.Key].Value);
+					}
+
+					var data = (!cfg.useCardMorphDataMaker.Value ? tmpCtrls : ctrl.ctrls2 ?? tmpCtrls)?.all;
+					var listCtrls = ctrl?.controls;
+					var list = listCtrls?.all;
+
 
 					int a = 0;
-					if(list?.ContainsKey(ctrl.controls.currentSet)??false)
-						foreach(var def2 in list[ctrl.controls.currentSet].Keys)
+					if(list?.ContainsKey(listCtrls.currentSet) ?? false)
+						foreach(var def2 in list[listCtrls.currentSet].Keys.ToList())
 						{
-							var cal = (MorphCalcType)cfg.defaultModes[ctrl.controls.currentSet][a].Value;
-							list[ctrl.controls.currentSet][def2] = Tuple.Create((float)cfg.
-								defaults[ctrl.controls.currentSet][a].Value * .01f, cal);
+							CharaMorpher_Core.Logger.LogDebug($"Data Expected: data[{listCtrls.currentSet}][{def2}]");
+							CharaMorpher_Core.Logger.LogDebug($"Data Key1: data[{string.Join(", ", data?.Keys.ToArray())}]");
+							CharaMorpher_Core.Logger.LogDebug($"Data Key2: data[{string.Join(", ", data?[data.Keys.ElementAt(0)].Keys.ToArray())}]");
+
+							var val = data[listCtrls.currentSet][def2].Item1;
+							var cal = data[listCtrls.currentSet][def2].Item2;
+							list[listCtrls.currentSet][def2] = Tuple.Create(val, cal);
 							++a;
 						}
 
@@ -799,31 +804,31 @@ namespace Character_Morpher
 					//	Keys.ElementAt(a)] = Tuple.Create((float)cfg.defaults[ctrl.controls.currentSet][a].Value * .01f, cal);
 					//}
 
-					for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
-						ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
+					//for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
+					//	ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
 
 					int count = 0;
-					if(!cfg.useCardMorphDataMaker.Value || ctrl.ctrls2 == null)
+					//if(!cfg.useCardMorphDataMaker.Value || ctrl.ctrls2 == null)
 					{
 						foreach(var slider in sliders)
-							slider.Value = (float)cfg.defaults[ctrl.controls.currentSet][count++].Value * .01f;
+							slider.Value = data[listCtrls.currentSet][slider.ModSettingName].Item1;
 
 						count = 0;
 						foreach(var mode in modes)
-							mode.Value = cfg.defaultModes[ctrl.controls.currentSet][count++].Value;
+							mode.Value = (int)data[listCtrls.currentSet][mode.ModSettingName].Item2;
 					}
-					else
-					{
-						foreach(var slider in sliders)
-							slider.Value = (float)(ctrl.ctrls2 ?? ctrl.ctrls1)?.all[ctrl.controls.currentSet].ElementAt(count++).Value.Item1;
+					//else
+					//{
+					//	foreach(var slider in sliders)
+					//		slider.Value = (float)(ctrl.ctrls2 ?? ctrl.ctrls1)?.all[ctrl.controls.currentSet].ElementAt(count++).Value.Item1;
+					//
+					//	count = 0;
+					//	foreach(var mode in modes)
+					//		mode.Value = (int)(ctrl.ctrls2 ?? ctrl.ctrls1)?.all[ctrl.controls.currentSet].ElementAt(count++).Value.Item2;
+					//
+					//}
 
-						count = 0;
-						foreach(var mode in modes)
-							mode.Value = (int)(ctrl.ctrls2 ?? ctrl.ctrls1)?.all[ctrl.controls.currentSet].ElementAt(count++).Value.Item2;
-
-					}
-
-					CharaMorpher_Core.Logger.LogMessage($"Loaded CharaMorpher {ctrl.controls.currentSet}");
+					CharaMorpher_Core.Logger.LogMessage($"Loaded CharaMorpher {listCtrls?.currentSet}");
 					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
 				});
 
@@ -969,7 +974,7 @@ namespace Character_Morpher
 		}
 
 		public const string FileExt = ".png";
-		public const string FileFilter = "Character Images (*.png)|*.png|All files|*.*";
+		public const string FileFilter = "Character Images (*.png)|*.png";
 
 		private static readonly string _defaultOverlayDirectory = Path.Combine(BepInEx.Paths.GameRootPath, "UserData/chara/");
 		public static string TargetDirectory { get => MakeDirPath(Path.GetDirectoryName(TargetPath)); }
@@ -1016,6 +1021,7 @@ namespace Character_Morpher
 		{
 			int m_storedDefault;
 			public int StoreDefault { get => m_storedDefault; internal set { m_storedDefault = value; } }
+			public string ModSettingName { internal set; get; } = null;
 
 
 			public new string[] Options

@@ -198,7 +198,6 @@ namespace Character_Morpher
 
 				OnSaveLoadClick(__instance);
 				OnExitSaveClick(__instance);
-
 				OnCoordLoadClick(__instance);
 			}
 

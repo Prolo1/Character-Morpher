@@ -753,7 +753,7 @@ namespace Character_Morpher
 
 			var core = Instance;
 
-			//var defaultName = "Default";//this is temporary!!!
+
 			foreach(var category in core.controlCategories)
 			{
 				if(!controls.all.TryGetValue(category.Key, out var tmp))
@@ -765,10 +765,9 @@ namespace Character_Morpher
 
 				}
 			}
-			//controls.all.
-			//if(!initLoadFinished)
+
 			ctrls1 = controls.Clone();
-			//controls.currentSet = cfg.currentControlName.Value;
+
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
 
 		}
@@ -806,6 +805,22 @@ namespace Character_Morpher
 				m_extData = null;
 			}
 
+			void MorphLoadCorrection()
+			{
+
+				CharaMorpher_Core.Logger.LogMessage("MorphLoadCorrection Started");
+				if(ctrls2 != null)
+				{
+					ChaControl.fileCustom.LoadBytes(m_data1.main.GetCustomBytes(), m_data1.main.loadVersion);
+					ChaControl.Load();
+					ChaControl.ChangeLookNeckPtn(ChaControl.GetLookNeckPtn(), ChaControl.neckLookCtrl.rate);
+					ChaControl.ChangeLookEyesPtn(ChaControl.GetLookEyesPtn());
+					//	for(int a = -1; a < delayFrames; ++a)
+					//		yield return null;  
+					CharaMorpher_Core.Logger.LogMessage("MorphLoadCorrection reloaded");
+				}
+				CharaMorpher_Core.Logger.LogMessage("MorphLoadCorrection finishing");
+			}
 
 			//get character info
 			{
@@ -827,13 +842,12 @@ namespace Character_Morpher
 				if((MakerAPI.InsideMaker && initLoadFinished) || !MakerAPI.InsideMaker)//for the initial character in maker
 				{
 					MorphTargetUpdate();
+					//MorphLoadCorrection();
 
 					//for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					MorphChangeUpdate(initReset: true, updateValues: true, abmx: true);
 					//	MorphChangeUpdate(initReset: false, updateValues: true, abmx: false);
 				}
-
-
 
 
 				//if(MakerAPI.InsideMaker && !initLoadFinished)//for the initial character in maker
@@ -844,15 +858,16 @@ namespace Character_Morpher
 
 			ResetHeight();
 
+
 			//post update 
 			IEnumerator CoReloadComplete(int delayFrames, BoneController _boneCtrl)
 			{
 				reloading = true;//just in case
-				for(int a = 0; a < delayFrames; ++a)
+				for(int a = -1; a < delayFrames; ++a)
 					yield return null;
 
-
 				MorphTargetUpdate();
+				//MorphLoadCorrection();
 
 
 				initLoadFinished = true;
@@ -860,7 +875,7 @@ namespace Character_Morpher
 				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					StartCoroutine(CoMorphChangeUpdate(a + 1));
 
-
+				//CharaMorpher_Core.Logger.LogMessage("CoReload completed");
 				yield break;
 			}
 			StartCoroutine(CoReloadComplete(val, boneCtrl));//I just need to do this stuff later
@@ -945,7 +960,7 @@ namespace Character_Morpher
 		{
 			if(cfg.saveAsMorphData.Value)
 			{
-				MorphChangeUpdate(forceReset: true);
+				//	MorphChangeUpdate(forceReset: true);
 				this.SaveExtData();
 			}
 
@@ -1063,7 +1078,7 @@ namespace Character_Morpher
 			}
 
 			reset = initReset || reset;
-			var charaCtrl = ChaControl;
+			var chaCtrl = ChaControl;
 			float enable = (reset ? (initReset ? cfg.initialMorphBodyTest.Value : 0) : 1);
 
 			if(cfg.debug.Value)
@@ -1073,13 +1088,13 @@ namespace Character_Morpher
 			{
 
 				//not sure how to update this :\ (well it works so don't question it)
-				charaCtrl.fileBody.areolaSize = Mathf.LerpUnclamped(m_data1.main.custom.body.areolaSize, m_data2.main.custom.body.areolaSize,
+				chaCtrl.fileBody.areolaSize = Mathf.LerpUnclamped(m_data1.main.custom.body.areolaSize, m_data2.main.custom.body.areolaSize,
 				(reset ? enable : GetControlValue("body").Value.Item1 * GetControlValue("Boobs").Value.Item1));
 
-				charaCtrl.fileBody.bustSoftness = Mathf.LerpUnclamped(m_data1.main.custom.body.bustSoftness, m_data2.main.custom.body.bustSoftness,
+				chaCtrl.fileBody.bustSoftness = Mathf.LerpUnclamped(m_data1.main.custom.body.bustSoftness, m_data2.main.custom.body.bustSoftness,
 				(reset ? enable : GetControlValue("body").Value.Item1 * GetControlValue("Boob Phys.").Value.Item1));
 
-				charaCtrl.fileBody.bustWeight = Mathf.LerpUnclamped(m_data1.main.custom.body.bustWeight, m_data2.main.custom.body.bustWeight,
+				chaCtrl.fileBody.bustWeight = Mathf.LerpUnclamped(m_data1.main.custom.body.bustWeight, m_data2.main.custom.body.bustWeight,
 				(reset ? enable : GetControlValue("body").Value.Item1 * GetControlValue("Boob Phys.").Value.Item1));
 
 				if(cfg.debug.Value)
@@ -1098,44 +1113,44 @@ namespace Character_Morpher
 				if(cfg.debug.Value)
 					CharaMorpher_Core.Logger.LogDebug($"gets here");
 #if KOI_API
-				newcol |= charaCtrl.fileBody.skinMainColor != col1;
-				charaCtrl.fileBody.skinMainColor = col1;
+				newcol |= chaCtrl.fileBody.skinMainColor != col1;
+				chaCtrl.fileBody.skinMainColor = col1;
 #elif HONEY_API
-				newcol |= charaCtrl.fileBody.skinColor != col1;
-				charaCtrl.fileBody.skinColor = col1;
+				newcol |= chaCtrl.fileBody.skinColor != col1;
+				chaCtrl.fileBody.skinColor = col1;
 #endif
 
 				var col2 = Color.LerpUnclamped(m_data1.main.custom.body.sunburnColor, m_data2.main.custom.body.sunburnColor,
 								(reset ? enable : GetControlValue("skin").Value.Item1 * GetControlValue("sunburn").Value.Item1));
 
-				newcol |= charaCtrl.fileBody.sunburnColor != col2;
-				charaCtrl.fileBody.sunburnColor = col2;
+				newcol |= chaCtrl.fileBody.sunburnColor != col2;
+				chaCtrl.fileBody.sunburnColor = col2;
 
 				if(cfg.debug.Value)
 					CharaMorpher_Core.Logger.LogDebug($"gets here");
 				//colour update
 				if(initLoadFinished && newcol)
 				{
-					charaCtrl.AddUpdateCMBodyColorFlags
+					chaCtrl.AddUpdateCMBodyColorFlags
 #if HONEY_API
 						(inpBase: true, inpSunburn: true, inpPaint01: false, inpPaint02: false);
 #elif KOI_API
 					(inpBase: true, inpSub: true, inpSunburn: true, inpNail: true, inpPaint01: false, inpPaint02: false);
 #endif
 
-					charaCtrl.AddUpdateCMFaceColorFlags
+					chaCtrl.AddUpdateCMFaceColorFlags
 						(true, false, false, false, false, false, false);
 
 					if(!MakerAPI.InsideMaker)
 					{
 
-						charaCtrl.AddUpdateCMBodyTexFlags
+						chaCtrl.AddUpdateCMBodyTexFlags
 #if HONEY_API
 							(true, true, true, true);
 #elif KOI_API
 						(true, true, true, true, true);
 #endif
-						charaCtrl.AddUpdateCMFaceTexFlags
+						chaCtrl.AddUpdateCMFaceTexFlags
 							(true, true, true, true, true, true, true);
 					}
 
@@ -1146,8 +1161,8 @@ namespace Character_Morpher
 						for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 							yield return new WaitForEndOfFrame();
 
-						charaCtrl.CreateBodyTexture();
-						charaCtrl.CreateFaceTexture();
+						chaCtrl.CreateBodyTexture();
+						chaCtrl.CreateFaceTexture();
 
 						yield break;
 					}
@@ -1158,11 +1173,11 @@ namespace Character_Morpher
 
 				//Voice
 #if HS2
-				charaCtrl.fileParam2.voiceRate = Mathf.Lerp(m_data1.main.parameter2.voiceRate, m_data2.main.parameter2.voiceRate,
+				chaCtrl.fileParam2.voiceRate = Mathf.Lerp(m_data1.main.parameter2.voiceRate, m_data2.main.parameter2.voiceRate,
 					enable * GetControlValue("voice").Value.Item1);
 #endif
 
-				charaCtrl.fileParam.voiceRate = Mathf.Lerp(m_data1.main.parameter.voiceRate, m_data2.main.parameter.voiceRate,
+				chaCtrl.fileParam.voiceRate = Mathf.Lerp(m_data1.main.parameter.voiceRate, m_data2.main.parameter.voiceRate,
 					(reset ? enable : GetControlValue("voice").Value.Item1));
 
 				if(cfg.debug.Value)
@@ -1170,12 +1185,12 @@ namespace Character_Morpher
 
 					CharaMorpher_Core.Logger.LogDebug($"data1   voice rate: {m_data1.main.parameter.voiceRate}");
 					CharaMorpher_Core.Logger.LogDebug($"data2   voice rate: {m_data2.main.parameter.voiceRate}");
-					CharaMorpher_Core.Logger.LogDebug($"current voice rate: {charaCtrl.fileParam.voiceRate}");
+					CharaMorpher_Core.Logger.LogDebug($"current voice rate: {chaCtrl.fileParam.voiceRate}");
 
 #if HS2
 					CharaMorpher_Core.Logger.LogDebug($"data1   voice rate2: {m_data1.main.parameter2.voiceRate}");
 					CharaMorpher_Core.Logger.LogDebug($"data2   voice rate2: {m_data2.main.parameter2.voiceRate}");
-					CharaMorpher_Core.Logger.LogDebug($"current voice rate2: {charaCtrl.fileParam2.voiceRate}");
+					CharaMorpher_Core.Logger.LogDebug($"current voice rate2: {chaCtrl.fileParam2.voiceRate}");
 #endif
 				}
 
@@ -1194,7 +1209,7 @@ namespace Character_Morpher
 			if(abmx)
 				AbmxUpdateValues(reset, initReset);
 
-			charaCtrl.updateShape = true;//this should update the model better
+			chaCtrl.updateShape = true;//this should update the model better
 
 			//Slider Defaults set
 			if(MakerAPI.InsideMaker)
@@ -1586,6 +1601,7 @@ namespace Character_Morpher
 		{
 			//reset the height using shoes
 			if(resettingHeihgt) return;
+
 			resettingHeihgt = true;
 #if KOI_API
 			var tmpstate1 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_inner];
@@ -1839,12 +1855,13 @@ namespace Character_Morpher
 				var boneCtrl = GetComponent<BoneController>();
 				if(check)
 				{
+
 #if HS2
 					current.Apply(boneCtrl.CurrentCoordinate.Value, null);
 #else
 					current.Apply(boneCtrl.CurrentCoordinate.Value, null);
 #endif
-					boneCtrl.NeedsBaselineUpdate = true;//may be needed to update abmx sliders
+					boneCtrl.NeedsBaselineUpdate = true;//may be needed to update abmx sliders (unsure)
 				}
 
 			}
@@ -2046,7 +2063,7 @@ namespace Character_Morpher
 				isSplit = false;
 			}
 
-			public AMBXSections Copy()
+			public AMBXSections Clone()
 			{
 				return new AMBXSections()
 				{
@@ -2074,9 +2091,9 @@ namespace Character_Morpher
 			try
 			{
 				tmp.CopyAll(main);
-				tmp.pngData = main.pngData.ToArray();//copy
+				tmp.pngData = main?.pngData?.ToArray();//copy
 #if KOI_API
-				tmp.facePngData = main.facePngData.ToArray();//copy
+				tmp.facePngData = main?.facePngData?.ToArray();//copy
 #endif
 			}
 			catch(Exception e) { CharaMorpher_Core.Logger.LogError("Could not copy character data:\n" + e); }
@@ -2086,7 +2103,7 @@ namespace Character_Morpher
 			tmp.dataID = main.dataID;
 #endif
 
-			return new MorphData() { main = tmp, abmx = abmx.Copy() };
+			return new MorphData() { main = tmp, abmx = abmx.Clone() };
 		}
 
 		public bool Copy(MorphData data)
@@ -2094,6 +2111,8 @@ namespace Character_Morpher
 			if(data == null) return false;
 
 			var tmp = data.Clone();
+			//CharaMorpher_Core.Logger.LogDebug($"Face Bones: \n[{string.Join(",\n ", tmp.abmx.face.Attempt((k) => k.BoneName + " : " + k.CoordinateModifiers[0].ScaleModifier.ToString()).ToArray())}]");
+			//CharaMorpher_Core.Logger.LogDebug($"Body Bones: \n[{string.Join(",\n ", tmp.abmx.body.Attempt((k) => k.BoneName + " : " + k.CoordinateModifiers[0].ScaleModifier.ToString()).ToArray())}]");
 			this.main = tmp.main;
 			this.abmx = tmp.abmx;
 
@@ -2131,27 +2150,26 @@ namespace Character_Morpher
 	public class MorphControls
 	{
 		Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> _all, _lastAll;
-
 		public string currentSet { get; internal set; } = cfg.currentControlName.Value;
+
 		Coroutine post;
 		public Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> all
 		{
 			get
 			{
-				bool existed = true;
+				//bool existed = true;
 				if(_all == null)
 				{
 					_all = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
 					_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
-					existed = false;
 				}
 
-			//	if(existed && !_all.TryGetValue(currentSet, out var tmp1))
-			//	{
-			//		_all[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
-			//		_lastAll[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
-			//		OnInternalControlSetAdded.Invoke(currentSet);
-			//	}
+				//	if(existed && !_all.TryGetValue(currentSet, out var tmp1))
+				//	{
+				//		_all[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+				//		_lastAll[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+				//		OnInternalControlSetAdded.Invoke(currentSet);
+				//	}
 
 				IEnumerator CoPost()
 				{
@@ -2206,11 +2224,16 @@ namespace Character_Morpher
 
 				if(post != null)
 					Instance.StopCoroutine(post);
-				
+
 				post = Instance.StartCoroutine(CoPost());
 				return _all;
 			}
-			set { _all = value; }
+			set
+			{
+				_all = value;
+				if(_lastAll == null)
+					_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
+			}
 		}
 
 		/// <summary>
@@ -2271,10 +2294,26 @@ namespace Character_Morpher
 		public MorphControls Clone() =>
 		 new MorphControls
 		 {
-			 _all = _all.ToDictionary((x) => x.Key, (y) => y.Value.ToDictionary(x => x.Key, v => v.Value)),
-			 _lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(),
+			 _all = _all?.ToDictionary((x) => x.Key, (y) => y.Value.ToDictionary(x => x.Key, v => v.Value))
+			 ?? new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(),
+			 _lastAll = _lastAll?.ToDictionary((x) => x.Key, (y) => y.Value.ToDictionary(x => x.Key, v => v.Value))
+			 ?? new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(),
 		 };
 
+
+		public bool Copy(MorphControls cpy)
+		{
+			if(cpy == null) return false;
+			var tmp = cpy.Clone();
+			_all = tmp._all;
+			_lastAll = tmp._lastAll;
+
+			CharaMorpher_Core.Logger.LogDebug($"Current Save: {currentSet}");
+			CharaMorpher_Core.Logger.LogDebug($"List Names: [{string.Join(", ", all.Keys.ToArray())}]");
+			CharaMorpher_Core.Logger.LogDebug($"List Counts: [{string.Join(", ", all.Values.Attempt((k) => k.Count.ToString()).ToArray())}]");
+
+			return true;
+		}
 	}
 
 	internal static class ABMXUtils
