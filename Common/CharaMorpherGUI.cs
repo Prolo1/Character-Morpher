@@ -713,7 +713,7 @@ namespace Character_Morpher
 
 
 			select = ((MorphMakerDropdown)e.AddControl(
-			   new MorphMakerDropdown("Select", ControlsList, category, 0, Instance))
+			   new MorphMakerDropdown("Selected", ControlsList, category, 0, Instance))
 			   .OnGUIExists(
 			   (gui) =>
 			   {

@@ -943,18 +943,18 @@ namespace Character_Morpher
 		/// <inheritdoc/>
 		protected override void OnCardBeingSaved(GameMode currentGameMode)
 		{
-			if(cfg.saveAsMorphData.Value)
+			if(cfg.enable.Value && cfg.saveAsMorphData.Value)
 			{
 				//	MorphChangeUpdate(forceReset: true);
 				this.SaveExtData();
 			}
 
-			//reset values to normal after saving
-			if(cfg.enable.Value && cfg.saveAsMorphData.Value)
-				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-					StartCoroutine(CoMorphChangeUpdate(delay: (int)cfg.multiUpdateEnableTest.Value + a + 1));//turn the card back after(do not change)
+			////reset values to normal after saving
+			//if(cfg.enable.Value && cfg.saveAsMorphData.Value)
+			//	for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+			//		StartCoroutine(CoMorphChangeUpdate(delay: (int)cfg.multiUpdateEnableTest.Value + a + 1));//turn the card back after(do not change)
 		}
-
+		
 
 		/// <summary>
 		/// 
