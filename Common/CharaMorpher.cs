@@ -39,7 +39,6 @@ using AIChara;
 using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpherController;
 using static Character_Morpher.CharaMorpherGUI;
-using static Illusion.Component.UI.MouseButtonCheck;
 
 /***********************************************
   Features:
@@ -462,53 +461,54 @@ namespace Character_Morpher
 
 			cfg.charDir.SettingChanged += (m, n) =>
 			{
-				bool check = !(MakerAPI.InsideMaker ?
-				cfg.useCardMorphDataMaker.Value :
-				cfg.useCardMorphDataGame.Value);
 
 				string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
 				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
 					if(File.Exists(path))
-						if(ctrl.initLoadFinished)
+						if(ctrl.isInitLoadFinished)
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 				}
 			};
 
 			cfg.imageName.SettingChanged += (m, n) =>
 			{
-				bool check = !(MakerAPI.InsideMaker ?
-				cfg.useCardMorphDataMaker.Value :
-				cfg.useCardMorphDataGame.Value);
 
 				string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
 				foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 				{
 					if(File.Exists(path))
-						if(ctrl.initLoadFinished)
+						if(ctrl.isInitLoadFinished)
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 				}
+			};
+
+			cfg.currentControlName.SettingChanged += (m, n) =>
+			{
+				//	OnInternalSliderValueChange.Invoke();
+				//	foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				//	{
+				//		for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+				//			StartCoroutine(ctrl?.CoMorphChangeUpdate(delay: a + 1, forceReset: !cfg.enable.Value));
+				//	}
 			};
 
 			cfg.useCardMorphDataMaker.SettingChanged += (m, n) =>
 			{
 				if(MakerAPI.InsideMaker)
 					foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
-					{
-						if(ctrl.initLoadFinished)
+						if(ctrl.isInitLoadFinished)
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
-					}
+
 			};
 
 			cfg.useCardMorphDataGame.SettingChanged += (m, n) =>
 			{
 				if(!MakerAPI.InsideMaker)
 					foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
-					{
-						if(ctrl.initLoadFinished)
+						if(ctrl.isInitLoadFinished)
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 
-					}
 			};
 
 			cfg.enable.SettingChanged += (m, n) =>
@@ -564,7 +564,7 @@ namespace Character_Morpher
 	public class OnNewImage : UnityEvent<string, byte[]> { }
 
 	/// <summary>
-	/// utility to bring process to foreground (mainly the game after file select)
+	/// utility to bring process to foreground (used for the file select)
 	/// </summary>
 	public class ForeGrounder
 	{
@@ -637,9 +637,10 @@ namespace Character_Morpher
 
 		public static T FirstOrNull<T>(this IEnumerable<T> enu) => enu.Count() > 0 ? enu.First() : (T)(object)null;     //I love loopholes 🤣
 
-		public static Dictionary<ConfigDefinition, string> GetOrphanedEntries(this ConfigFile file, string sec = "")
+		public static List<KeyValuePair<ConfigDefinition, string>> GetOrderedOrphanedEntries(this ConfigFile file, string sec = "")
 		{
 			Dictionary<ConfigDefinition, string> OrphanedEntries = new Dictionary<ConfigDefinition, string>();
+			List<KeyValuePair<ConfigDefinition, string>> orderedOrphanedEntries = new List<KeyValuePair<ConfigDefinition, string>>();
 			string section = string.Empty;
 			string[] array = File.ReadAllLines(file.ConfigFilePath);
 			for(int i = 0; i < array.Length; i++)
@@ -668,12 +669,13 @@ namespace Character_Morpher
 						if(!((IDictionary<ConfigDefinition, ConfigEntryBase>)file).TryGetValue(key2, out var value))
 						{
 							OrphanedEntries[key2] = text2;
+							orderedOrphanedEntries.Add(new KeyValuePair<ConfigDefinition, string>(key2, text2));
 						}
 					}
 
 			}
 
-			return OrphanedEntries;
+			return orderedOrphanedEntries;
 		}
 
 
@@ -683,12 +685,12 @@ namespace Character_Morpher
 		public static void UpdateDefaultsList()
 		{
 
-			var orphaned = Instance.Config.GetOrphanedEntries("Defaults");
-			var defList = orphaned.Keys.ToList();
-
-			orphaned = Instance.Config.GetOrphanedEntries("Mode Defaults");
-			var modeDefList = orphaned.Keys.ToList();
-
+			var orphaned = Instance.Config.GetOrderedOrphanedEntries("Defaults");
+			var defList = orphaned.Attempt((k) => k.Key).ToList();
+			
+			orphaned = Instance.Config.GetOrderedOrphanedEntries("Mode Defaults");
+			var modeDefList = orphaned.Attempt((k)=>k.Key);
+		
 
 			foreach(var val in defList)
 			{
@@ -913,7 +915,7 @@ namespace Character_Morpher
 			var ctrl1 = MorphUtil.GetFuncCtrlOfType<CharaMorpherController>()?.FirstOrNull();
 
 			string name = "Error" + strDivider;
-			var defList = !MakerAPI.InsideMaker || !cfg.useCardMorphDataMaker.Value ?
+			var defList = !MakerAPI.InsideMaker || !cfg.useCardMorphDataMaker.Value || ctrl1?.ctrls2 == null ?
 				Instance.controlCategories.Keys.ToList() :
 				ctrl1?.controls?.all?.Keys?.ToList() ?? Instance.controlCategories.Keys.ToList();
 			//var modeDefList = Instance.Config.Where((k) => k.Key.Section == "Mode Defaults");
@@ -943,7 +945,7 @@ namespace Character_Morpher
 			{
 				ctrl2.controls.all[name] = new Dictionary<string, Tuple<float, MorphCalcType>>();
 
-				var data = (!MakerAPI.InsideMaker || !cfg.useCardMorphDataMaker.Value ? ctrl2.ctrls1 : ctrl2.ctrls2 ?? ctrl2.ctrls1)?.all;
+				var data = (!MakerAPI.InsideMaker || !cfg.useCardMorphDataMaker.Value ? ctrl2.ctrls1 : (ctrl2.ctrls2 ?? ctrl2.ctrls1))?.all;
 				if(!data.ContainsKey(name))
 					data[name] = new Dictionary<string, Tuple<float, MorphCalcType>>();
 			}
@@ -953,7 +955,7 @@ namespace Character_Morpher
 					ctrl2.controls.all[name][ctrl.Value] = Tuple.Create(cfg.defaults[defaultStr][ctrl.Key].Value * .01f,
 						(MorphCalcType)cfg.defaultModes[defaultStr][ctrl.Key].Value);
 
-					var data = (!MakerAPI.InsideMaker || !cfg.useCardMorphDataMaker.Value ? ctrl2.ctrls1 : ctrl2.ctrls2 ?? ctrl2.ctrls1)?.all;
+					var data = (!MakerAPI.InsideMaker || !cfg.useCardMorphDataMaker.Value ? ctrl2.ctrls1 : (ctrl2.ctrls2 ?? ctrl2.ctrls1))?.all;
 					if(data[name].Count <= ctrl2.controls.all[name].Count)
 						data[name][ctrl.Value] = Tuple.Create(cfg.defaults[defaultStr][ctrl.Key].Value * .01f,
 							(MorphCalcType)cfg.defaultModes[defaultStr][ctrl.Key].Value);
@@ -995,13 +997,13 @@ namespace Character_Morpher
 					obj[name].Clear();
 				obj.Remove(name);
 
-				var data = (!MakerAPI.InsideMaker || !cfg.useCardMorphDataMaker.Value ? ctrl1.ctrls1 : ctrl1.ctrls2 ?? ctrl1.ctrls1)?.all;
+				var data = (!MakerAPI.InsideMaker || !cfg.useCardMorphDataMaker.Value ? ctrl1.ctrls1 : (ctrl1.ctrls2 ?? ctrl1.ctrls1))?.all;
 				if(data.ContainsKey(name))
 					data[name].Clear();
 				data.Remove(name);
 
 				//(!MakerAPI.InsideMaker||!cfg.useCardMorphDataMaker.Value ? ctrl1.ctrls1 : ctrl1.ctrls2 ?? ctrl1.ctrls1)?.all?.Remove(name);
-				CharaMorpher_Core.Logger.LogDebug($"Controls List: [{string.Join(", ", ctrl1.controls.all.Keys.ToArray())}]");
+				CharaMorpher_Core.Logger.LogDebug($"Controls List: [{string.Join(", ", obj.Keys.ToArray())}]");
 			}
 
 			if(!MakerAPI.InsideMaker || !cfg.useCardMorphDataMaker.Value || ctrl?.ctrls2 == null)
@@ -1225,8 +1227,12 @@ namespace Character_Morpher
 		{
 			IEnumerator func(BaseGuiEntry gui1, UnityAction<BaseGuiEntry> act1)
 			{
-				yield return new WaitUntil(() => gui1.Exists);//the thing neeeds to exist first
+				if(!gui1.Exists)
+					yield return new WaitUntil(() => gui1.Exists);//the thing neeeds to exist first
+
 				act1(gui);
+
+				yield break;
 			}
 			Instance.StartCoroutine(func(gui, act));
 
@@ -1234,8 +1240,8 @@ namespace Character_Morpher
 		}
 
 		static CurrentSaveLoadController saveLoad = new CurrentSaveLoadController();
-		public static PluginData SaveExtData(this CharaCustomFunctionController ctrl) => saveLoad.Save(ctrl);
-		public static PluginData LoadExtData(this CharaCustomFunctionController ctrl, PluginData data = null)
+		public static PluginData SaveExtData(this CharaMorpherController ctrl) => saveLoad.Save(ctrl);
+		public static PluginData LoadExtData(this CharaMorpherController ctrl, PluginData data = null)
 		{
 			//ImageConversion.LoadImage
 			if(cfg.debug.Value)
@@ -1248,19 +1254,15 @@ namespace Character_Morpher
 				cfg.charDir.Value.MakeDirPath(),
 				cfg.imageName.Value.MakeDirPath());
 
-			bool check = !(!(MakerAPI.InsideMaker ?
-				cfg.useCardMorphDataMaker.Value :
-				cfg.useCardMorphDataGame.Value) ||
-				tmp == null);
 
 			//if(!check)
 			//	tmp = null;
 
 			if(cfg.debug.Value)
-				Logger.LogDebug($"Load check status: {check}");
+				Logger.LogDebug($"Load check status: {ctrl.isUsingExtMorphData}");
 
 			var ctrler = (CharaMorpherController)ctrl;
-			OnNewTargetImage.Invoke(path, check ? ctrler?.m_data2?.main?.pngData : null);
+			OnNewTargetImage.Invoke(path, ctrl.isUsingExtMorphData ? ctrler?.m_data2?.main?.pngData : null);
 
 			return tmp;
 		}
@@ -1281,10 +1283,10 @@ namespace Character_Morpher
 
 			if(!ctrl) return;//return if ctrl is null
 
-			if(ucmd && ctrl.reloading)
-				ctrl.ctrls2 = ctrl?.controls?.Clone();
+			if(ucmd && ctrl.isReloading)
+				ctrl.ctrls2 = ctrl?.controls.Clone();//needs to be done this way
 
-			var listCtrl = ((!ucmd ? ctrl.ctrls1 : ctrl.ctrls2 ?? ctrl.ctrls1));
+			var listCtrl = !ucmd ? ctrl.ctrls1 : (ctrl.ctrls2 ?? ctrl.ctrls1);
 
 			//var list = ((!ucmd ? ctrl.ctrls1 : ctrl.ctrls2 ?? ctrl.ctrls1)?.all);
 			//var listCpy = list.ToDictionary((k) => k.Key, (e1) => e1.Value.ToDictionary(k => k.Key, e2 => e2.Value));
@@ -1294,9 +1296,8 @@ namespace Character_Morpher
 				CharaMorpher_Core.Logger.LogDebug("SoftSave Failed successfully");
 
 
-
-			CharaMorpher_Core.Logger.LogDebug($"ctrls1 Saved: [{string.Join(", ", ctrl.ctrls1?.all?.Keys?.ToArray() ?? new string[] { })}]");
-			CharaMorpher_Core.Logger.LogDebug($"ctrls2 Saved: [{string.Join(", ", ctrl.ctrls2?.all?.Keys?.ToArray() ?? new string[] { })}]");
+			CharaMorpher_Core.Logger.LogDebug($"ctrls1 Saved:\n [{string.Join(",\n ", ctrl.ctrls1?.all?.Keys?.ToArray() ?? new string[] { })}]");
+			CharaMorpher_Core.Logger.LogDebug($"ctrls2 Saved:\n [{string.Join(",\n ", ctrl.ctrls2?.all?.Keys?.ToArray() ?? new string[] { })}]");
 
 			//foreach(var def in list.Keys.ToList())
 			//	if(spec == null || def == spec)

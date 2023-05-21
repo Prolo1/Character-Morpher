@@ -58,28 +58,35 @@ namespace Character_Morpher
 		}
 
 		public readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
+		public bool isUsingExtMorphData
+		{
+			get => (MakerAPI.InsideMaker ?
+				cfg.useCardMorphDataMaker.Value :
+				cfg.useCardMorphDataGame.Value) &&
+				m_extData != null;
+		}
 
 
 		/// <summary>
 		/// Called after the model has finished being loaded for the first time
 		/// </summary>
-		public bool initLoadFinished { get; private set; } = false;
+		public bool isInitLoadFinished { get; private set; } = false;
 
 		/// <summary>
 		/// In the process of reloading. set to false after complete
 		/// </summary>
-		public bool reloading { get; internal set; } = true;
+		public bool isReloading { get; internal set; } = true;
 
 		/// <summary>
 		/// makes sure most main functins don't run when creating template character
 		/// </summary>
-		public bool dummy { get; internal set; } = false;
+		public bool isDummy { get; internal set; } = false;
 
 		internal bool ResetCheck
 		{
 			get
 			{
-				bool reset = !cfg.enable.Value && !reloading;
+				bool reset = !cfg.enable.Value && !isReloading;
 				return KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame ?
 						(reset || !cfg.enableInGame.Value) : reset;
 			}
@@ -665,7 +672,7 @@ namespace Character_Morpher
 
 			yield return null;
 
-			if(reloading) yield break;
+			if(isReloading) yield break;
 
 			for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 				MorphChangeUpdate(updateValues: updateValues, initReset: initReset);
@@ -679,13 +686,13 @@ namespace Character_Morpher
 			for(int a = 0; a < delay; ++a)
 				yield return null;
 
-			if(!reloading || forceChange)
+			if(!isReloading || forceChange)
 			{
 				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
 			}
 			else
 			{
-				yield return new WaitWhile(() => reloading);
+				yield return new WaitWhile(() => isReloading);
 
 				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
 			}
@@ -749,7 +756,7 @@ namespace Character_Morpher
 		{
 			base.Awake();
 
-			if(dummy) return;
+			if(isDummy) return;
 
 			var core = Instance;
 
@@ -767,6 +774,7 @@ namespace Character_Morpher
 			}
 
 			ctrls1 = controls.Clone();
+			controls.setIsMainControls = true;
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("dictionary has default values");
 
@@ -774,10 +782,10 @@ namespace Character_Morpher
 
 		public void LateUpdate()
 		{
-			if(dummy) return;
+			if(isDummy) return;
 
 			if((!m_data1.abmx.isSplit || !m_data2.abmx.isSplit)
-				&& initLoadFinished && BoneSplitCheck())
+				&& isInitLoadFinished && BoneSplitCheck())
 				MorphChangeUpdate();
 		}
 
@@ -789,9 +797,9 @@ namespace Character_Morpher
 		/// <param name="abmxOnly">Only change ABMX data for current character (base character data is not changed)</param>
 		public void OnCharaReload(GameMode currentGameMode)
 		{
-			if(reloading || dummy) return;
+			if(isReloading || isDummy) return;
 
-			reloading = true;
+			isReloading = true;
 			var boneCtrl = GetComponent<BoneController>();
 			int val = (int)cfg.reloadTest.Value;
 
@@ -805,22 +813,6 @@ namespace Character_Morpher
 				m_extData = null;
 			}
 
-			void MorphLoadCorrection()
-			{
-
-				CharaMorpher_Core.Logger.LogMessage("MorphLoadCorrection Started");
-				if(ctrls2 != null)
-				{
-					ChaControl.fileCustom.LoadBytes(m_data1.main.GetCustomBytes(), m_data1.main.loadVersion);
-					ChaControl.Load();
-					ChaControl.ChangeLookNeckPtn(ChaControl.GetLookNeckPtn(), ChaControl.neckLookCtrl.rate);
-					ChaControl.ChangeLookEyesPtn(ChaControl.GetLookEyesPtn());
-					//	for(int a = -1; a < delayFrames; ++a)
-					//		yield return null;  
-					CharaMorpher_Core.Logger.LogMessage("MorphLoadCorrection reloaded");
-				}
-				CharaMorpher_Core.Logger.LogMessage("MorphLoadCorrection finishing");
-			}
 
 			//get character info
 			{
@@ -839,10 +831,9 @@ namespace Character_Morpher
 				m_data1.main.facePngData = ChaFileControl.facePngData;
 #endif
 
-				if((MakerAPI.InsideMaker && initLoadFinished) || !MakerAPI.InsideMaker)//for the initial character in maker
+				if((MakerAPI.InsideMaker && isInitLoadFinished) || !MakerAPI.InsideMaker)//for the initial character in maker
 				{
 					MorphTargetUpdate();
-					//MorphLoadCorrection();
 
 					//for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					MorphChangeUpdate(initReset: true, updateValues: true, abmx: true);
@@ -862,16 +853,14 @@ namespace Character_Morpher
 			//post update 
 			IEnumerator CoReloadComplete(int delayFrames, BoneController _boneCtrl)
 			{
-				reloading = true;//just in case
+				isReloading = true;//just in case
 				for(int a = -1; a < delayFrames; ++a)
 					yield return null;
 
 				MorphTargetUpdate();
-				//MorphLoadCorrection();
 
-
-				initLoadFinished = true;
-				reloading = false;
+				isInitLoadFinished = true;
+				isReloading = false;
 				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					StartCoroutine(CoMorphChangeUpdate(a + 1));
 
@@ -887,7 +876,7 @@ namespace Character_Morpher
 		/// <param name="ctrl"></param>
 		public void MorphTargetUpdate()
 		{
-			if(dummy) return;
+			if(isDummy) return;
 
 			//create path to morph target
 			string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
@@ -925,14 +914,10 @@ namespace Character_Morpher
 
 			ctrls2 = null;
 			m_extData = this.LoadExtData(m_extData);
-			bool check = !(MakerAPI.InsideMaker ?
-				cfg.useCardMorphDataMaker.Value :
-				cfg.useCardMorphDataGame.Value) ||
-				m_extData == null;
 
 
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Morph check status: {check}");
-			if(check)
+			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Morph check status: {isUsingExtMorphData}");
+			if(!isUsingExtMorphData)
 				m_data2.Copy(morphCharData);
 			//	this.LoadExtData();
 
@@ -944,11 +929,11 @@ namespace Character_Morpher
 		{
 			if(keepState) return;
 
-			if(initReset && !initLoadFinished)
-				initReset = reloading = false;
+			if(initReset && !isInitLoadFinished)
+				initReset = isReloading = false;
 
 			//for in game load correction
-			if(!MakerAPI.InsideMaker && initLoadFinished)
+			if(!MakerAPI.InsideMaker && isInitLoadFinished)
 				MorphChangeUpdate(forceReset: true);
 
 			//if(MakerAPI.InsideMaker || !initLoadFinished)
@@ -995,7 +980,7 @@ namespace Character_Morpher
 		/// <param name="forceReset: ">reset regardless of other perimeters</param>
 		public void MorphChangeUpdate(bool forceReset = false, bool initReset = false, bool updateValues = true, bool abmx = true)
 		{
-			if(dummy) return;
+			if(isDummy) return;
 
 			var currGameMode = KoikatuAPI.GetCurrentGameMode();
 
@@ -1129,7 +1114,7 @@ namespace Character_Morpher
 				if(cfg.debug.Value)
 					CharaMorpher_Core.Logger.LogDebug($"gets here");
 				//colour update
-				if(initLoadFinished && newcol)
+				if(isInitLoadFinished && newcol)
 				{
 					chaCtrl.AddUpdateCMBodyColorFlags
 #if HONEY_API
@@ -1166,7 +1151,8 @@ namespace Character_Morpher
 
 						yield break;
 					}
-					if(coTexUpdate != null) StopCoroutine(coTexUpdate);
+					if(coTexUpdate != null)
+						StopCoroutine(coTexUpdate);
 					coTexUpdate = StartCoroutine(UpdateTextures());
 				}
 
@@ -1216,7 +1202,7 @@ namespace Character_Morpher
 				SetDefaultSliders();
 
 			//This may be needed (it is for keeping the character on the ground)
-			if(!reloading) ResetHeight();
+			if(!isReloading) ResetHeight();
 		}
 
 		/// <summary>
@@ -1574,7 +1560,7 @@ namespace Character_Morpher
 			var facecustum = CharaMorpherGUI.faceCustom;
 			var boobcustum = CharaMorpherGUI.boobCustom;
 
-			if(mkBase && !reloading)
+			if(mkBase && !isReloading)
 			{
 
 
@@ -1638,7 +1624,7 @@ namespace Character_Morpher
 			IEnumerator CoAfterReset(byte state)
 #endif
 			{
-				if(reloading)
+				if(isReloading)
 					for(int a = -1; a < (int)cfg.reloadTest.Value; ++a)
 						yield return new WaitForEndOfFrame();
 #if KOI_API
@@ -1936,7 +1922,7 @@ namespace Character_Morpher
 						{
 
 							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Destroying dummy chara controller");
-							ctrler.dummy = true;
+							ctrler.isDummy = true;
 							ctrler.enabled = false;
 							GameObject.Destroy(ctrler);//change back to Destroy if issues arise
 						}
@@ -2151,8 +2137,9 @@ namespace Character_Morpher
 	{
 		Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> _all, _lastAll;
 		public string currentSet { get; internal set; } = cfg.currentControlName.Value;
+		public bool setIsMainControls { get; set; } = false;
 
-		Coroutine post;
+		Coroutine post = null;
 		public Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> all
 		{
 			get
@@ -2173,8 +2160,10 @@ namespace Character_Morpher
 
 				IEnumerator CoPost()
 				{
-					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+					for(int a = -1; a < cfg.multiUpdateEnableTest.Value + 10; ++a)
 						yield return null;
+
+
 					try
 					{
 						bool Check()
@@ -2190,29 +2179,29 @@ namespace Character_Morpher
 
 
 							for(int a = 0; a < _all[currentSet].Count; ++a)
-								if(_all[currentSet].TryGetValue(_all[currentSet].Keys.ElementAt(a), out var tmp2))
-									if(_all[currentSet][_all[currentSet].Keys.ElementAt(a)].Item1 !=
-										_lastAll[currentSet][_lastAll[currentSet].Keys.ElementAt(a)].Item1)
-										return true;
-
-
+							{
+								var name = _all[currentSet].Keys.ElementAt(a);
+								if(_lastAll.ContainsKey(currentSet) && _lastAll[currentSet].ContainsKey(name))
+								{
+									if(_all[currentSet].TryGetValue(_all[currentSet].Keys.ElementAt(a), out var tmp2))
+										if(_all[currentSet][_all[currentSet].Keys.ElementAt(a)].Item1 !=
+											_lastAll[currentSet][_lastAll[currentSet].Keys.ElementAt(a)].Item1)
+											return true;
+								}
+								else return false;
+							}
 							return false;
-						}
+						};
 
 						if(_all == null) yield break;
 
-
-						//if(!_all.TryGetValue(currentSet, out tmp1))
-						//{
-						//	_all[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
-						//	_lastAll[currentSet] = new Dictionary<string, Tuple<float, MorphCalcType>>();
-						//}
-
-						if(Check())
-							OnInternalSliderValueChange.Invoke();
-
+						bool check = Check();
 						_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(_all ??
 							new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>());
+
+						if(check)
+							OnInternalSliderValueChange.Invoke();
+
 					}
 					catch(Exception e)
 					{
@@ -2224,8 +2213,11 @@ namespace Character_Morpher
 
 				if(post != null)
 					Instance.StopCoroutine(post);
+				if(setIsMainControls)
+					post = Instance.StartCoroutine(CoPost());
 
-				post = Instance.StartCoroutine(CoPost());
+				//	CharaMorpher_Core.Logger.LogDebug($"Post Co value: {post.ToString()}");
+
 				return _all;
 			}
 			set
@@ -2298,6 +2290,8 @@ namespace Character_Morpher
 			 ?? new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(),
 			 _lastAll = _lastAll?.ToDictionary((x) => x.Key, (y) => y.Value.ToDictionary(x => x.Key, v => v.Value))
 			 ?? new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(),
+
+			 currentSet = currentSet + "",
 		 };
 
 
@@ -2307,6 +2301,7 @@ namespace Character_Morpher
 			var tmp = cpy.Clone();
 			_all = tmp._all;
 			_lastAll = tmp._lastAll;
+			currentSet = tmp.currentSet;
 
 			CharaMorpher_Core.Logger.LogDebug($"Current Save: {currentSet}");
 			CharaMorpher_Core.Logger.LogDebug($"List Names: [{string.Join(", ", all.Keys.ToArray())}]");

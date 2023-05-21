@@ -121,7 +121,7 @@ namespace Character_Morpher
 			}
 
 			if(data == null)
-				data = ctrler?.GetExtendedData(ctrl.reloading);
+				data = ctrler?.GetExtendedData(ctrl.isReloading);
 
 			return data;
 		}
@@ -166,11 +166,12 @@ namespace Character_Morpher
 				//		newValues[name] = val.Value;
 				//	}
 
-				SoftSave(cfg.useCardMorphDataMaker.Value);//keep this here
+				if(ctrl.isReloading)//can only be done when reloading 
+					SoftSave(cfg.useCardMorphDataMaker.Value);//keep this here
 
-			//	CharaMorpher_Core.Logger.LogDebug("DATA 2");
+				//	CharaMorpher_Core.Logger.LogDebug("DATA 2");
 				ctrl.m_data2.Copy(data2);
-				if(ctrl.reloading)
+				if(ctrl.isReloading)
 					morphCharData.Copy(data2);
 
 				ctrl.ctrls2 = new MorphControls { all = newValues };
@@ -188,7 +189,7 @@ namespace Character_Morpher
 
 				//get original 
 				data1.abmx.ForceSplitStatus();
-			//	CharaMorpher_Core.Logger.LogDebug("DATA 1");
+				//	CharaMorpher_Core.Logger.LogDebug("DATA 1");
 				ctrl.m_data1.Copy(data1);
 			}
 			catch(Exception e)
@@ -502,7 +503,7 @@ namespace Character_Morpher
 			var ctrl = (CharaMorpherController)ctrler;
 
 			if(data == null)
-				data = ctrler?.GetExtendedData(ctrl.reloading);
+				data = ctrler?.GetExtendedData(ctrl.isReloading);
 
 			return data;
 		}

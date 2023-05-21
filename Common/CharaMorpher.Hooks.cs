@@ -46,7 +46,7 @@ namespace Character_Morpher
 					foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 					{
 						if(!ctrl) continue;
-						if(ctrl.initLoadFinished && !ctrl.reloading)
+						if(ctrl.isInitLoadFinished && !ctrl.isReloading)
 							ctrl.MorphChangeUpdate(forceReset: forcereset);
 					}
 			}
@@ -196,9 +196,9 @@ namespace Character_Morpher
 
 				if(!MakerAPI.InsideMaker) return;
 
-				OnSaveLoadClick(__instance);
-				OnExitSaveClick(__instance);
-				OnCoordLoadClick(__instance);
+			//	OnSaveLoadClick(__instance);
+			//	OnExitSaveClick(__instance);
+			//	OnCoordLoadClick(__instance);
 			}
 
 			/// <summary>
