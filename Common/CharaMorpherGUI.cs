@@ -162,7 +162,7 @@ namespace Character_Morpher
 			sliders.Clear();
 			modes.Clear();
 			if(lastUCMDEvent != null)
-				cfg.useCardMorphDataMaker.SettingChanged -= lastUCMDEvent;
+				cfg.canUseCardMorphDataMaker.SettingChanged -= lastUCMDEvent;
 			if(saveAsMorphDataEvent != null)
 				cfg.saveAsMorphData.SettingChanged -= saveAsMorphDataEvent;
 			if(enableCalcTypesEvent != null)
@@ -241,19 +241,19 @@ namespace Character_Morpher
 
 
 
-			e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.useCardMorphDataMaker.Value, CharaMorpher_Core.Instance))
+			e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.canUseCardMorphDataMaker.Value, CharaMorpher_Core.Instance))
 				.OnGUIExists((gui) =>
 				{
 					var toggle = (MakerToggle)gui;
 					toggle?.ValueChanged?.Subscribe((_1) =>
 					{
-						if(cfg.useCardMorphDataMaker.Value != _1)
-							cfg.useCardMorphDataMaker.Value = _1;
+						if(cfg.canUseCardMorphDataMaker.Value != _1)
+							cfg.canUseCardMorphDataMaker.Value = _1;
 					});
 
 					Coroutine tmp = null;
-					bool lastUCMD = cfg.useCardMorphDataMaker.Value;//this is needed
-					cfg.useCardMorphDataMaker.SettingChanged +=
+					bool lastUCMD = cfg.canUseCardMorphDataMaker.Value;//this is needed
+					cfg.canUseCardMorphDataMaker.SettingChanged +=
 					lastUCMDEvent = (s, o) =>
 					{
 						var ctrl = GetFuncCtrlOfType<CharaMorpherController>()?.First();
@@ -262,7 +262,7 @@ namespace Character_Morpher
 						{
 
 							string name =
-							(!cfg.useCardMorphDataMaker.Value ?
+							(!cfg.canUseCardMorphDataMaker.Value ?
 							ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1))?.currentSet;
 							name = name.Substring(0, Mathf.Clamp(name.LastIndexOf(strDivider), 0, name.Length));
 
@@ -270,22 +270,26 @@ namespace Character_Morpher
 							{
 								CharaMorpher_Core.Logger.LogDebug($"lastUCMD: {lastUCMD}");
 								yield return new WaitWhile(() => ctrl.isReloading);
-								var tmpCtrls = ctrl.controls.Clone();
+
+								var tmpCtrls =
+								!cfg.canUseCardMorphDataMaker.Value ?
+								ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1);
+								tmpCtrls.currentSet = ctrl.controls.currentSet;
 
 								ctrl.controls.Copy(!lastUCMD ? ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1));
 
 								SoftSave(lastUCMD);
-								ctrl.controls.Copy(!cfg.useCardMorphDataMaker.Value ?
+								ctrl.controls.Copy(!cfg.canUseCardMorphDataMaker.Value ?
 								ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1));
 
-								lastUCMD = cfg.useCardMorphDataMaker.Value;//this is needed
+								lastUCMD = cfg.canUseCardMorphDataMaker.Value;//this is needed
 								CharaMorpher_Core.Logger.LogDebug($"Next lastUCMD: {lastUCMD}");
 							}
 
 							if(!name.IsNullOrEmpty())
 								SwitchControlSet(ControlsList, name);
 							select.Options = ControlsList;
-							toggle?.SetValue(cfg.useCardMorphDataMaker.Value);
+							toggle?.SetValue(cfg.canUseCardMorphDataMaker.Value);
 
 							yield break;
 						}
@@ -308,7 +312,7 @@ namespace Character_Morpher
 
 			#region Sliders
 			//creates a slider that controls the bodies' shape
-			MorphMakerSlider CreatSlider(string settingName, int index,
+			MorphMakerSlider CreatSlider(string settingName,
 				float min = 0, float max = 1)
 			{
 				string[] searchHits = new string[] { "overall", "abmx" };
@@ -329,7 +333,7 @@ namespace Character_Morpher
 				//find section index
 				if(Regex.IsMatch(settingName, searchHits[1], RegexOptions.IgnoreCase))
 				{
-					abmxIndex = abmxIndex >= 0 ? abmxIndex : index;
+					abmxIndex = abmxIndex >= 0 ? abmxIndex : sliders.Count + 1;
 
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"ABMX index: {abmxIndex}");
 				}
@@ -344,20 +348,20 @@ namespace Character_Morpher
 
 
 				//setup slider
-				var currSlider = sliders.AddNReturn(e.AddControl(new MorphMakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[defaultStr][index].Value * .01f, CharaMorpher_Core.Instance)));
+				var currSlider = sliders.AddNReturn(e.AddControl(new MorphMakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[defaultStr][settingName].Value.data, CharaMorpher_Core.Instance)));
 				currSlider.BindToFunctionController<CharaMorpherController, float>(
-						(ctrl) => ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1,
+						(ctrl) => ctrl.controls.all[ctrl.controls.currentSet][settingName].data,
 						(ctrl, val) =>
 						{
 							CharaMorpher_Core.Logger.LogDebug($"called slider");
 							if(!ctrl) return;
 							if(!ctrl.isInitLoadFinished || ctrl.isReloading) return;
-							if(ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1 == (float)Math.Round(val, 2)) return;
+							if(ctrl.controls.all[ctrl.controls.currentSet][settingName].data == (float)Math.Round(val, 2)) return;
 
 							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"ctrl.controls.all[{ctrl.controls.currentSet}][{settingName}]");
 							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {(float)Math.Round(val, 2)}");
-							ctrl.controls.all[ctrl.controls.currentSet][settingName] = Tuple.Create(currSlider.StoreDefault =
-								(float)Math.Round(val, 2), ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2);
+							ctrl.controls.all[ctrl.controls.currentSet][settingName].
+							SetData(currSlider.StoreDefault = (float)Math.Round(val, 2));
 
 							CharaMorpher_Core.Logger.LogDebug($"edited slider");
 
@@ -368,17 +372,17 @@ namespace Character_Morpher
 
 				//mode dropdown 
 				var ting = Enum.GetNames(typeof(MorphCalcType));
-				var currMode = modes.AddNReturn(e.AddControl(new MorphMakerDropdown("", ting, category, cfg.defaultModes[defaultStr][index].Value, Instance)));
+				var currMode = modes.AddNReturn(e.AddControl(new MorphMakerDropdown("", ting, category, (int)cfg.defaults[defaultStr][settingName].Value.calcType, Instance)));
 				currMode.BindToFunctionController<CharaMorpherController, int>(
-						(ctrl) => (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2,
+						(ctrl) => (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].calcType,
 						(ctrl, val) =>
 						{
 							if(!ctrl) return;
 							if(!ctrl.isInitLoadFinished || ctrl.isReloading) return;
-							if((int)ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2 == val) return;
+							if((int)ctrl.controls.all[ctrl.controls.currentSet][settingName].calcType == val) return;
 
 							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {val}");
-							ctrl.controls.all[ctrl.controls.currentSet][settingName] = Tuple.Create(ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1, (MorphCalcType)val);
+							ctrl.controls.all[ctrl.controls.currentSet][settingName].SetCalcType((MorphCalcType)val);
 
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
@@ -404,10 +408,10 @@ namespace Character_Morpher
 					currSlider.OnGUIExists((gui) =>
 					{
 						MorphMakerSlider slider = (MorphMakerSlider)gui;
-						if(slider.Value != ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1)
+						if(slider.Value != ctrl.controls.all[ctrl.controls.currentSet][settingName].data)
 						//if(currSlider.ControlObject)
 						{
-							slider.Value = slider.StoreDefault = ctrl.controls.all[ctrl.controls.currentSet][settingName].Item1;
+							slider.Value = slider.StoreDefault = ctrl.controls.all[ctrl.controls.currentSet][settingName].data;
 							//	if(cfg.debug.Value) 
 							CharaMorpher_Core.Logger.LogDebug($"Slider control changed: {slider.Value}");
 							change = true;
@@ -417,10 +421,10 @@ namespace Character_Morpher
 					currMode.OnGUIExists((gui) =>
 					{
 						MorphMakerDropdown dropdown = (MorphMakerDropdown)gui;
-						if(dropdown.Value != (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2)
+						if(dropdown.Value != (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].calcType)
 						//	if(currMode.ControlObject)
 						{
-							dropdown.Value = dropdown.StoreDefault = (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].Item2;
+							dropdown.Value = dropdown.StoreDefault = (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].calcType;
 							//	if(cfg.debug.Value) 
 							CharaMorpher_Core.Logger.LogDebug($"Calc control changed: {dropdown.Value}");
 							change = true;
@@ -456,9 +460,9 @@ namespace Character_Morpher
 				btn?.onClick.AddListener(act);
 			}
 
-			void CreateShapeSlider(string settingName, int index)
+			void CreateShapeSlider(string settingName)
 			{
-				CreatSlider(settingName, index, -cfg.sliderExtents.Value * .01f, 1 + cfg.sliderExtents.Value * .01f).
+				CreatSlider(settingName, -cfg.sliderExtents.Value * .01f, 1 + cfg.sliderExtents.Value * .01f).
 					OnGUIExists((gui) =>
 					{
 						var slid = gui.ControlObject.
@@ -486,10 +490,10 @@ namespace Character_Morpher
 					});
 
 			}
-			void CreateVoiceSlider(string settingName, int index)
+			void CreateVoiceSlider(string settingName)
 			{
 
-				var mySlider = CreatSlider(settingName, index);
+				var mySlider = CreatSlider(settingName);
 
 				IEnumerator CoVoiceAfterFullRefresh()
 				{
@@ -521,11 +525,11 @@ namespace Character_Morpher
 				});
 			}
 
-			foreach(var ctrl in CharaMorpher_Core.Instance.controlCategories[defaultStr])
-				if(Regex.IsMatch(ctrl.Value, "voice", RegexOptions.IgnoreCase))
-					CreateVoiceSlider(ctrl.Value, ctrl.Key);
+			foreach(var ctrl in inst.controlCategories[defaultStr])
+				if(Regex.IsMatch(ctrl.dataName, "voice", RegexOptions.IgnoreCase))
+					CreateVoiceSlider(ctrl.dataName);
 				else
-					CreateShapeSlider(ctrl.Value, ctrl.Key);
+					CreateShapeSlider(ctrl.dataName);
 
 
 			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
@@ -731,14 +735,14 @@ namespace Character_Morpher
 
 					   // OnInternalSliderValueChange.Invoke();
 
-					   var ctrl = GetFuncCtrlOfType<CharaMorpherController>()?.First();
-					   var val = (!ctrl.isUsingExtMorphData ? ctrl.ctrls1 : ctrl.ctrls2 ?? ctrl.ctrls1).all;
-					   foreach(var slider in sliders)
-					   {
-						   slider.StoreDefault = val[name][slider.ModSettingName].Item1;
-						   slider.ApplyDefault();
-					   }
-					   
+					   //   var ctrl = GetFuncCtrlOfType<CharaMorpherController>()?.First();
+					   //   var val = (!ctrl.isUsingExtMorphData ? ctrl.ctrls1 : ctrl.ctrls2 ?? ctrl.ctrls1).all;
+					   //   foreach(var slider in sliders)
+					   //   {
+					   //	   slider.StoreDefault = val[name][slider.ModSettingName].Item1;
+					   //	   slider.ApplyDefault();
+					   //   }
+
 				   };
 
 				   Instance.StartCoroutine(ChangeGUILayout(gui));
@@ -789,25 +793,28 @@ namespace Character_Morpher
 						mode.ApplyStoredSetting();
 
 					var ctrl = GetFuncCtrlOfType<CharaMorpherController>().First();
-					int count = 0;
+					//int count = 0;
 					//cfg.defaults[ctrl.controls.currentSet] = new List<ConfigEntry<float>>();
-					if(!cfg.useCardMorphDataMaker.Value || ctrl.ctrls2 == null)
-						foreach(var def in cfg.defaults[ctrl.controls.currentSet])
+					if(!cfg.canUseCardMorphDataMaker.Value || ctrl.ctrls2 == null)
+
+						foreach(var def in inst.controlCategories[ctrl.controls.currentSet])
 						{
 							////this is a redundancy that can protect against out of order settings
 							//var index = sliders.FindIndex(k => k.ModSettingName ==
 							//Instance.controlCategories[ctrl.controls.currentSet][count].Value);
 
-							def.Value = sliders[count].Value * 100f;
-							count++;
+							cfg.defaults[ctrl.controls.currentSet][def.dataName].Value.data =
+							ctrl.controls.all[ctrl.controls.currentSet][def.dataName].data * 100f;//this should work
+																								  //count++;
 						}
 					//cfg.defaultModes[ctrl.controls.currentSet] = new List<ConfigEntry<int>>();
-					count = 0;
-					if(!cfg.useCardMorphDataMaker.Value || ctrl.ctrls2 == null)
-						foreach(var def in cfg.defaultModes[ctrl.controls.currentSet])
-							def.Value = modes[count++].Value;
+					//count = 0;
+					if(!cfg.canUseCardMorphDataMaker.Value || ctrl.ctrls2 == null)
+						foreach(var def in inst.controlCategories[ctrl.controls.currentSet])
+							cfg.defaults[ctrl.controls.currentSet][def.dataName].Value.calcType =
+							ctrl.controls.all[ctrl.controls.currentSet][def.dataName].calcType;
 
-					SoftSave(cfg.useCardMorphDataMaker.Value);
+					SoftSave(cfg.canUseCardMorphDataMaker.Value);
 					CharaMorpher_Core.Logger.LogMessage($"Saved as CharaMorpher {ctrl.controls.currentSet}");
 
 					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
@@ -827,19 +834,18 @@ namespace Character_Morpher
 					if(list?.ContainsKey(name) ?? false)
 						foreach(var def2 in list[name].Keys.ToList())
 						{
-							//CharaMorpher_Core.Logger.LogDebug($"Data Expected: data[{name}][{def2}]");
-							//CharaMorpher_Core.Logger.LogDebug($"Data Key1:\n data[{string.Join(",\n ", data?.Keys.ToArray())}]");
-							//CharaMorpher_Core.Logger.LogDebug($"Data Key2:\n data[{string.Join(",\n ", data?[data.Keys.ElementAt(0)].Keys.ToArray())}]");
+							CharaMorpher_Core.Logger.LogDebug($"Data Expected: data[{name}][{def2}]");
+							CharaMorpher_Core.Logger.LogDebug($"Data Key1:\n data[{string.Join(",\n ", data?.Keys.ToArray())}]");
+							CharaMorpher_Core.Logger.LogDebug($"Data Key2:\n data[{string.Join(",\n ", data?[data.Keys.ElementAt(0)].Keys.ToArray())}]");
 
-							var val = data[name][def2].Item1;
-							var cal = data[name][def2].Item2;
+							var val = data[name][def2].data;
+							var cal = data[name][def2].calcType;
 
-							list[name][def2] = Tuple.Create(val, cal);
-						
+							list[name][def2] = data[name][def2].Clone();
 						}
 
 					OnInternalSliderValueChange.Invoke();
-				
+
 					for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
 						ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
 
@@ -923,15 +929,15 @@ namespace Character_Morpher
 						if(reset)
 							for(int a = 0; a < ctrl.controls.all[ctrl.controls.currentSet].Count; ++a)
 							{
-								var cal = ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all.Keys.ElementAt(a)].Item2;
-								ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all.Keys.ElementAt(a)] = Tuple.Create(1f, cal);
+								//	var cal = ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all.Keys.ElementAt(a)].calcType;
+								ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all.Keys.ElementAt(a)].SetData(1f);
 							}
 
 						var tmp = swap ? ctrl.controls.overall : ctrl.controls.notOverall;
 						for(int a = 0; a < tmp.Count(); ++a)
 						{
-							var cal = ctrl.controls.all[ctrl.controls.currentSet][tmp.ElementAt(a).Key].Item2;
-							ctrl.controls.all[ctrl.controls.currentSet][tmp.ElementAt(a).Key] = Tuple.Create(percent * .01f, cal);
+							//var cal = ctrl.controls.all[ctrl.controls.currentSet][tmp.ElementAt(a).Key].calcType;
+							ctrl.controls.all[ctrl.controls.currentSet][tmp.ElementAt(a).Key].SetData(percent);
 						}
 
 						for(int a = -1; a < cfg.multiUpdateEnableTest.Value;)

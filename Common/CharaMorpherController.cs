@@ -15,8 +15,9 @@ using KKAPI.Maker;
 using KKABMX.Core;
 using ExtensibleSaveFormat;
 
+//using static System.Tuple;
 using Manager;
-using UniRx;
+//using UniRx;
 
 #if HONEY_API
 using CharaCustom;
@@ -61,8 +62,8 @@ namespace Character_Morpher
 		public bool isUsingExtMorphData
 		{
 			get => (MakerAPI.InsideMaker ?
-				cfg.useCardMorphDataMaker.Value :
-				cfg.useCardMorphDataGame.Value) &&
+				cfg.canUseCardMorphDataMaker.Value :
+				cfg.canUseCardMorphDataGame.Value) &&
 				m_extData != null;
 		}
 
@@ -761,15 +762,22 @@ namespace Character_Morpher
 			var core = Instance;
 
 
+			CharaMorpher_Core.Logger.LogDebug($"Control set: {controls.currentSet}");
 			foreach(var category in core.controlCategories)
 			{
+				CharaMorpher_Core.Logger.LogDebug($"In forloop 1 Awake");
 				if(!controls.all.TryGetValue(category.Key, out var tmp))
-					controls.all[category.Key] = new Dictionary<string, Tuple<float, MorphCalcType>>();
+					controls.all[category.Key] = new Dictionary<string, MorphSliderData>();
+
 				foreach(var ctrl in category.Value)
 				{
-					controls.all[category.Key][ctrl.Value] = Tuple.Create(cfg.defaults[category.Key][ctrl.Key].Value * .01f, (MorphCalcType)cfg.defaultModes[category.Key][ctrl.Key].Value);
-					//		CharaMorpher_Core.Logger.LogDebug($"\ncontrol set: {category.Key}\ncontrol name: {ctrl.Value}");
+					CharaMorpher_Core.Logger.LogDebug($"In forloop 2 Awake");
+					CharaMorpher_Core.Logger.LogDebug($"defaults: [{category.Key}][{ctrl.dataName}]");
+					CharaMorpher_Core.Logger.LogDebug($"data: {cfg.defaults[category.Key][ctrl.dataName].Value.data}");
 
+					controls.all[category.Key][ctrl.dataName] = cfg.defaults[category.Key][ctrl.dataName].Value.Clone();
+					//controls.all[category.Key][ctrl.dataName].data *= .01f;
+					//	CharaMorpher_Core.Logger.LogDebug($"\ncontrol set: {category.Key}\ncontrol name: {ctrl.Value}");
 				}
 			}
 
@@ -954,7 +962,7 @@ namespace Character_Morpher
 			//	for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 			//		StartCoroutine(CoMorphChangeUpdate(delay: (int)cfg.multiUpdateEnableTest.Value + a + 1));//turn the card back after(do not change)
 		}
-		
+
 
 		/// <summary>
 		/// 
@@ -962,7 +970,7 @@ namespace Character_Morpher
 		/// <param name="contain"></param>
 		/// <param name="abmx"></param>
 		/// <returns></returns>
-		private KeyValuePair<string, Tuple<float, MorphCalcType>> GetControlValue(string contain, bool abmx = false, bool overall = false, bool fullVal = false)
+		private MorphSliderData GetControlValue(string contain, bool abmx = false, bool overall = false, bool fullVal = false)
 		{
 			var tmp = controls.all[controls.currentSet].ToList();
 			if(fullVal)
@@ -970,7 +978,7 @@ namespace Character_Morpher
 
 			return (abmx ?
 				tmp.Find(m => m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)) :
-				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)))
+				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase))).Value
 				;
 		}
 
@@ -1074,13 +1082,13 @@ namespace Character_Morpher
 
 				//not sure how to update this :\ (well it works so don't question it)
 				chaCtrl.fileBody.areolaSize = Mathf.LerpUnclamped(m_data1.main.custom.body.areolaSize, m_data2.main.custom.body.areolaSize,
-				(reset ? enable : GetControlValue("body").Value.Item1 * GetControlValue("Boobs").Value.Item1));
+				(reset ? enable : GetControlValue("body").data * GetControlValue("Boobs").data));
 
 				chaCtrl.fileBody.bustSoftness = Mathf.LerpUnclamped(m_data1.main.custom.body.bustSoftness, m_data2.main.custom.body.bustSoftness,
-				(reset ? enable : GetControlValue("body").Value.Item1 * GetControlValue("Boob Phys.").Value.Item1));
+				(reset ? enable : GetControlValue("body").data * GetControlValue("Boob Phys.").data));
 
 				chaCtrl.fileBody.bustWeight = Mathf.LerpUnclamped(m_data1.main.custom.body.bustWeight, m_data2.main.custom.body.bustWeight,
-				(reset ? enable : GetControlValue("body").Value.Item1 * GetControlValue("Boob Phys.").Value.Item1));
+				(reset ? enable : GetControlValue("body").data * GetControlValue("Boob Phys.").data));
 
 				if(cfg.debug.Value)
 					CharaMorpher_Core.Logger.LogDebug($"gets here");
@@ -1092,7 +1100,7 @@ namespace Character_Morpher
 #elif HONEY_API
 					m_data1.main.custom.body.skinColor, m_data2.main.custom.body.skinColor,
 #endif
-									(reset ? enable : GetControlValue("skin").Value.Item1 * GetControlValue("base skin").Value.Item1));
+									(reset ? enable : GetControlValue("skin").data * GetControlValue("base skin").data));
 
 
 				if(cfg.debug.Value)
@@ -1106,7 +1114,7 @@ namespace Character_Morpher
 #endif
 
 				var col2 = Color.LerpUnclamped(m_data1.main.custom.body.sunburnColor, m_data2.main.custom.body.sunburnColor,
-								(reset ? enable : GetControlValue("skin").Value.Item1 * GetControlValue("sunburn").Value.Item1));
+								(reset ? enable : GetControlValue("skin").data * GetControlValue("sunburn").data));
 
 				newcol |= chaCtrl.fileBody.sunburnColor != col2;
 				chaCtrl.fileBody.sunburnColor = col2;
@@ -1160,11 +1168,11 @@ namespace Character_Morpher
 				//Voice
 #if HS2
 				chaCtrl.fileParam2.voiceRate = Mathf.Lerp(m_data1.main.parameter2.voiceRate, m_data2.main.parameter2.voiceRate,
-					enable * GetControlValue("voice").Value.Item1);
+					enable * GetControlValue("voice").data);
 #endif
 
 				chaCtrl.fileParam.voiceRate = Mathf.Lerp(m_data1.main.parameter.voiceRate, m_data2.main.parameter.voiceRate,
-					(reset ? enable : GetControlValue("voice").Value.Item1));
+					(reset ? enable : GetControlValue("voice").data));
 
 				if(cfg.debug.Value)
 				{
@@ -1237,56 +1245,56 @@ namespace Character_Morpher
 
 						if(cfg.headIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("head", fullVal: initReset).Value.Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("head", fullVal: initReset).data;
 							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("head", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC &&
+							(reset ? enable : (val * (GetControlValue("head", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
 							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
 						}
 						else
 						if(cfg.torsoIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("torso", fullVal: initReset).Value.Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("torso", fullVal: initReset).data;
 							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("torso", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC &&
+							(reset ? enable : (val * (GetControlValue("torso", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
 							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
 						}
 						else
 						if(cfg.buttIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("butt", fullVal: initReset).Value.Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("butt", fullVal: initReset).data;
 							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("butt", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC &&
+							(reset ? enable : (val * (GetControlValue("butt", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
 							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
 						}
 						else
 						if(cfg.legIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("legs", fullVal: initReset).Value.Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("legs", fullVal: initReset).data;
 							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("legs", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC &&
+							(reset ? enable : (val * (GetControlValue("legs", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
 							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
 						}
 						else
 						if(cfg.armIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("arms", fullVal: initReset).Value.Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("arms", fullVal: initReset).data;
 							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("arms", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC &&
+							(reset ? enable : (val * (GetControlValue("arms", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
 							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
 						}
 						else
 						if(cfg.brestIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("boobs", fullVal: initReset).Value.Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("boobs", fullVal: initReset).data;
 							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("boobs", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC &&
+							(reset ? enable : (val * (GetControlValue("boobs", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
 							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
 						}
 						else
 						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("body other", fullVal: initReset).Value.Item1;
+							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("body other", fullVal: initReset).data;
 							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("body other", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC &&
+							(reset ? enable : (val * (GetControlValue("body other", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
 							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
 						}
 					}
@@ -1309,40 +1317,40 @@ namespace Character_Morpher
 
 						if(cfg.eyeIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("face", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("eyes", fullVal: initReset).Value.Item1;
+							var val = GetControlValue("face", fullVal: initReset, overall: true).data * GetControlValue("eyes", fullVal: initReset).data;
 							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("eyes", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC &&
+							(reset ? enable : (val * (GetControlValue("eyes", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
 							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
 						}
 						else
 						 if(cfg.mouthIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("face", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("mouth", fullVal: initReset).Value.Item1;
+							var val = GetControlValue("face", fullVal: initReset, overall: true).data * GetControlValue("mouth", fullVal: initReset).data;
 							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("mouth", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC &&
+							(reset ? enable : (val * (GetControlValue("mouth", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
 							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
 						}
 						else
 						  if(cfg.earIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("face", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("ears", fullVal: initReset).Value.Item1;
+							var val = GetControlValue("face", fullVal: initReset, overall: true).data * GetControlValue("ears", fullVal: initReset).data;
 							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("ears", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC &&
+							(reset ? enable : (val * (GetControlValue("ears", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
 							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
 						}
 						else
 						 if(cfg.noseIndex.FindIndex(find => (find.Value == a)) >= 0)
 						{
-							var val = GetControlValue("face", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("nose", fullVal: initReset).Value.Item1;
+							var val = GetControlValue("face", fullVal: initReset, overall: true).data * GetControlValue("nose", fullVal: initReset).data;
 							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("nose", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC &&
+							(reset ? enable : (val * (GetControlValue("nose", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
 							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
 						}
 						else
 						{
-							var val = GetControlValue("face", fullVal: initReset, overall: true).Value.Item1 * GetControlValue("face other", fullVal: initReset).Value.Item1;
+							var val = GetControlValue("face", fullVal: initReset, overall: true).data * GetControlValue("face other", fullVal: initReset).data;
 							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("face other", fullVal: initReset).Value.Item2 == MorphCalcType.QUADRATIC &&
+							(reset ? enable : (val * (GetControlValue("face other", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
 							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
 						}
 					}
@@ -1384,7 +1392,7 @@ namespace Character_Morpher
 					var bone2 = m_data2.abmx.body[a];
 					var current = boneCtrl.GetAllModifiers().First((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
 
-					var modVal = Tuple.Create(0f, MorphCalcType.LINEAR);
+					var modVal = new MorphSliderData();
 
 					//remove L/R from bone name
 					string content = bone1.BoneName.Trim().ToLower();
@@ -1406,7 +1414,7 @@ namespace Character_Morpher
 						};
 
 					if(Array.FindIndex(fingerNames, (k) => content.Contains(k.Trim().ToLower())) >= 0)
-						modVal = GetControlValue("hands", true, fullVal: initReset).Value;
+						modVal = GetControlValue("hands", true, fullVal: initReset);
 					else
 					{
 
@@ -1434,32 +1442,32 @@ namespace Character_Morpher
 #endif
 						{
 						case "torso":
-							modVal = GetControlValue("Torso", true, fullVal: initReset).Value;
+							modVal = GetControlValue("Torso", true, fullVal: initReset);
 							break;
 						case "boobs":
-							modVal = GetControlValue("Boobs", true, fullVal: initReset).Value;
+							modVal = GetControlValue("Boobs", true, fullVal: initReset);
 							break;
 						case "butt":
-							modVal = GetControlValue("Butt", true, fullVal: initReset).Value;
+							modVal = GetControlValue("Butt", true, fullVal: initReset);
 							break;
 						case "arms":
-							modVal = GetControlValue("Arms", true, fullVal: initReset).Value;
+							modVal = GetControlValue("Arms", true, fullVal: initReset);
 							break;
 						case "hands":
-							modVal = GetControlValue("Hands", true, fullVal: initReset).Value;
+							modVal = GetControlValue("Hands", true, fullVal: initReset);
 							break;
 						case "genitals":
-							modVal = GetControlValue("Genitals", true, fullVal: initReset).Value;
+							modVal = GetControlValue("Genitals", true, fullVal: initReset);
 							break;
 						case "legs":
-							modVal = GetControlValue("Legs", true, fullVal: initReset).Value;
+							modVal = GetControlValue("Legs", true, fullVal: initReset);
 							break;
 						case "feet":
-							modVal = GetControlValue("Feet", true, fullVal: initReset).Value;
+							modVal = GetControlValue("Feet", true, fullVal: initReset);
 							break;
 
 						default:
-							modVal = GetControlValue("body other", true, fullVal: initReset).Value;
+							modVal = GetControlValue("body other", true, fullVal: initReset);
 							break;
 						}
 					}
@@ -1467,8 +1475,8 @@ namespace Character_Morpher
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
 					UpdateBoneModifier(ref current, bone1, bone2, modVal, index: a,
 						sectVal: (cfg.linkOverallABMXSliders.Value ?
-						GetControlValue("body", fullVal: initReset, overall: true).Value.Item1 : 1) *
-						GetControlValue("Body", abmx: true, fullVal: initReset).Value.Item1,
+						GetControlValue("body", fullVal: initReset, overall: true).data : 1) *
+						GetControlValue("Body", abmx: true, fullVal: initReset).data,
 						enable: enable, reset: reset);
 				}
 				#endregion
@@ -1483,7 +1491,7 @@ namespace Character_Morpher
 					var bone2 = m_data2.abmx.face[a];
 					var current = boneCtrl.GetAllModifiers().First((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
 
-					var modVal = Tuple.Create(0f, MorphCalcType.LINEAR);
+					var modVal = new MorphSliderData();
 
 					//remove L/R from bone name
 					string content = bone1.BoneName.Trim().ToLower();
@@ -1515,32 +1523,32 @@ namespace Character_Morpher
 					{
 
 					case "eyes":
-						modVal = GetControlValue("Eyes", true, fullVal: initReset).Value;
+						modVal = GetControlValue("Eyes", true, fullVal: initReset);
 						break;
 					case "nose":
-						modVal = GetControlValue("Nose", true, fullVal: initReset).Value;
+						modVal = GetControlValue("Nose", true, fullVal: initReset);
 						break;
 					case "mouth":
-						modVal = GetControlValue("Mouth", true, fullVal: initReset).Value;
+						modVal = GetControlValue("Mouth", true, fullVal: initReset);
 						break;
 					case "ears":
-						modVal = GetControlValue("Ears", true, fullVal: initReset).Value;
+						modVal = GetControlValue("Ears", true, fullVal: initReset);
 						break;
 					case "hair":
-						modVal = GetControlValue("Hair", true, fullVal: initReset).Value;
+						modVal = GetControlValue("Hair", true, fullVal: initReset);
 						break;
 
 
 					default:
-						modVal = GetControlValue("head other", true, fullVal: initReset).Value;
+						modVal = GetControlValue("head other", true, fullVal: initReset);
 						break;
 					}
 
 					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Morphing Bone...");
 					UpdateBoneModifier(ref current, bone1, bone2, modVal, index: a,
 						sectVal: (cfg.linkOverallABMXSliders.Value ?
-						GetControlValue("face", fullVal: initReset).Value.Item1 : 1) *
-						GetControlValue("head", true, fullVal: initReset).Value.Item1,
+						GetControlValue("face", fullVal: initReset).data : 1) *
+						GetControlValue("head", true, fullVal: initReset).data,
 						enable: enable, reset: reset);
 				}
 				#endregion
@@ -1665,15 +1673,15 @@ namespace Character_Morpher
 				//Use if prior don't work
 				var
 				tmp = GetControlValue("eyes");
-				controls.all[controls.currentSet][tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
 				tmp = GetControlValue("mouth");
-				controls.all[controls.currentSet][tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
 				tmp = GetControlValue("ears");
-				controls.all[controls.currentSet][tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
 				tmp = GetControlValue("nose");
-				controls.all[controls.currentSet][tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
 				tmp = GetControlValue("face other");
-				controls.all[controls.currentSet][tmp.Key] = Tuple.Create(tmp.Value.Item1 + valu, tmp.Value.Item2);
+				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
 
 
 
@@ -1775,13 +1783,13 @@ namespace Character_Morpher
 		/// <param name="modVal">target amount (0 -> 1)</param>
 		/// <param name="sectVal">control target amount (optional)</param>
 		/// <param name="enable"></param>
-		private void UpdateBoneModifier(ref BoneModifier current, BoneModifier bone1, BoneModifier bone2, Tuple<float, MorphCalcType> modVal, bool reset, float sectVal = 1, float enable = 1, int index = 0)
+		private void UpdateBoneModifier(ref BoneModifier current, BoneModifier bone1, BoneModifier bone2, MorphSliderData modVal, bool reset, float sectVal = 1, float enable = 1, int index = 0)
 		{
 			try
 			{
 				var lerpVal = (reset ? enable : (
-					sectVal * modVal.Item1 *
-					(modVal.Item2 == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(modVal.Item1) : 1f)));
+					sectVal * modVal.data *
+					(modVal.calcType == MorphCalcType.QUADRATIC && cfg.enableCalcTypes.Value ? Mathf.Abs(modVal.data) : 1f)));
 
 				int count = 0;//may use this in other mods
 				bool check = false;
@@ -1826,7 +1834,7 @@ namespace Character_Morpher
 						if(count == 0)
 						{
 							CharaMorpher_Core.Logger.LogDebug($"~updated values~");
-							CharaMorpher_Core.Logger.LogDebug($"lerp Value {index}: {enable * modVal.Item1}");
+							CharaMorpher_Core.Logger.LogDebug($"lerp Value {index}: {enable * modVal.data}");
 							CharaMorpher_Core.Logger.LogDebug($"{current.BoneName} modifiers!!");
 							CharaMorpher_Core.Logger.LogDebug($"Body Bone 1 scale {index}: {bone1.CoordinateModifiers[count].ScaleModifier}");
 							CharaMorpher_Core.Logger.LogDebug($"Body Bone 2 scale {index}: {bone2.CoordinateModifiers[count].ScaleModifier}");
@@ -2135,20 +2143,20 @@ namespace Character_Morpher
 	[Serializable]
 	public class MorphControls
 	{
-		Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> _all, _lastAll;
+		Dictionary<string, Dictionary<string, MorphSliderData>> _all, _lastAll;
 		public string currentSet { get; internal set; } = cfg.currentControlName.Value;
 		public bool setIsMainControls { get; set; } = false;
 
 		Coroutine post = null;
-		public Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> all
+		public Dictionary<string, Dictionary<string, MorphSliderData>> all
 		{
 			get
 			{
 				//bool existed = true;
 				if(_all == null)
 				{
-					_all = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
-					_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
+					_all = new Dictionary<string, Dictionary<string, MorphSliderData>>();
+					_lastAll = new Dictionary<string, Dictionary<string, MorphSliderData>>();
 				}
 
 				//	if(existed && !_all.TryGetValue(currentSet, out var tmp1))
@@ -2184,8 +2192,8 @@ namespace Character_Morpher
 								if(_lastAll.ContainsKey(currentSet) && _lastAll[currentSet].ContainsKey(name))
 								{
 									if(_all[currentSet].TryGetValue(_all[currentSet].Keys.ElementAt(a), out var tmp2))
-										if(_all[currentSet][_all[currentSet].Keys.ElementAt(a)].Item1 !=
-											_lastAll[currentSet][_lastAll[currentSet].Keys.ElementAt(a)].Item1)
+										if(_all[currentSet][_all[currentSet].Keys.ElementAt(a)].data !=
+											_lastAll[currentSet][_lastAll[currentSet].Keys.ElementAt(a)].data)
 											return true;
 								}
 								else return false;
@@ -2196,8 +2204,8 @@ namespace Character_Morpher
 						if(_all == null) yield break;
 
 						bool check = Check();
-						_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(_all ??
-							new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>());
+						_lastAll = new Dictionary<string, Dictionary<string, MorphSliderData>>(_all ??
+							new Dictionary<string, Dictionary<string, MorphSliderData>>());
 
 						if(check)
 							OnInternalSliderValueChange.Invoke();
@@ -2224,20 +2232,20 @@ namespace Character_Morpher
 			{
 				_all = value;
 				if(_lastAll == null)
-					_lastAll = new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>();
+					_lastAll = new Dictionary<string, Dictionary<string, MorphSliderData>>();
 			}
 		}
 
 		/// <summary>
 		/// each value is set to one
 		/// </summary>
-		public Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> fullVal
+		public Dictionary<string, Dictionary<string, MorphSliderData>> fullVal
 		{
 			get
 			{
-				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value.ToDictionary(curr2 => curr2.Key, curr2 => curr2.Value));
+				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value.ToDictionary(curr2 => curr2.Key, curr2 => curr2.Value.Clone()));
 				for(int a = 0; a < tmp[currentSet].Count; ++a)
-					tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)] = Tuple.Create(1f, tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)].Item2);
+					tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)].SetData(1f);
 				return tmp;
 			}
 		}
@@ -2245,13 +2253,13 @@ namespace Character_Morpher
 		/// <summary>
 		/// each value is set to zero
 		/// </summary>
-		public Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>> noVal
+		public Dictionary<string, Dictionary<string, MorphSliderData>> noVal
 		{
 			get
 			{
-				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value.ToDictionary(curr2 => curr2.Key, curr2 => curr2.Value));
+				var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value.ToDictionary(curr2 => curr2.Key, curr2 => curr2.Value.Clone()));
 				for(int a = 0; a < tmp[currentSet].Count; ++a)
-					tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)] = Tuple.Create(0f, tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)].Item2);
+					tmp[currentSet][tmp[currentSet].Keys.ElementAt(a)].SetData(0f);
 				return tmp;
 			}
 		}
@@ -2259,7 +2267,7 @@ namespace Character_Morpher
 		/// <summary>
 		/// list of every control with an "overall" in the name
 		/// </summary>
-		public IEnumerable<KeyValuePair<string, Tuple<float, MorphCalcType>>> overall
+		public IEnumerable<KeyValuePair<string, MorphSliderData>> overall
 		{
 			get
 			=> all[currentSet].Where((p) => Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
@@ -2268,7 +2276,7 @@ namespace Character_Morpher
 		/// <summary>
 		/// list of every control w/o an "overall" in the name
 		/// </summary>
-		public IEnumerable<KeyValuePair<string, Tuple<float, MorphCalcType>>> notOverall
+		public IEnumerable<KeyValuePair<string, MorphSliderData>> notOverall
 		{
 			get
 			=> all[currentSet].Where((p) => !Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
@@ -2286,10 +2294,10 @@ namespace Character_Morpher
 		public MorphControls Clone() =>
 		 new MorphControls
 		 {
-			 _all = _all?.ToDictionary((x) => x.Key, (y) => y.Value.ToDictionary(x => x.Key, v => v.Value))
-			 ?? new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(),
-			 _lastAll = _lastAll?.ToDictionary((x) => x.Key, (y) => y.Value.ToDictionary(x => x.Key, v => v.Value))
-			 ?? new Dictionary<string, Dictionary<string, Tuple<float, MorphCalcType>>>(),
+			 _all = _all?.ToDictionary((x) => x.Key, (y) => y.Value.ToDictionary(x => x.Key, v => v.Value.Clone()))
+			 ?? new Dictionary<string, Dictionary<string, MorphSliderData>>(),
+			 _lastAll = _lastAll?.ToDictionary((x) => x.Key, (y) => y.Value.ToDictionary(x => x.Key, v => v.Value.Clone()))
+			 ?? new Dictionary<string, Dictionary<string, MorphSliderData>>(),
 
 			 currentSet = currentSet + "",
 		 };

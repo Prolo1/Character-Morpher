@@ -7,7 +7,7 @@ using KKAPI.Utilities;
 using MessagePack;
 using MessagePack.Unity;
 using MessagePack.Resolvers;
-using UniRx;
+//using UniRx;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 
@@ -29,6 +29,19 @@ using ChaCustom;
 using static ChaFileDefine;
 //using StrayTech;
 #endif
+
+/*
+ Data that can (potentially) affect the save:
+* enum MorphCalcType
+* class MorphControls
+* class MorphData
+* class MorphData.AMBXSections
+* class MorphConfig 
+* var CharaMorpher_Core.cfg.defaults
+* var CharaMorpher_Core.cfg.controlCategories
+
+ all I can think of for now
+ */
 
 namespace Character_Morpher
 {
@@ -54,6 +67,17 @@ namespace Character_Morpher
 			{
 				bf.Serialize(ms, obj);
 				return ms.ToArray();
+			}
+		}
+
+		public static T ByteArrayToObject<T>(byte[] arr)
+		{
+			BinaryFormatter bf = new BinaryFormatter();
+			using(var ms = new MemoryStream())
+			{
+				ms.Write(arr, 0, arr.Length);
+				T obj = (T)bf.Deserialize(ms);
+				return obj;
 			}
 		}
 
@@ -111,7 +135,8 @@ namespace Character_Morpher
 					//last version
 					var values = LZ4MessagePackSerializer.Deserialize<Dictionary<string, Tuple<float, MorphCalcType>>>((byte[])data.data[DataKeys[0]], CompositeResolver.Instance);
 
-					var newValues = new MorphControls() { all = { { defaultStr, values } } };
+					var tmpVals = values.ToDictionary((k) => k.Key, (v) => new MorphSliderData(v.Key, data: v.Value.Item1, calc: v.Value.Item2));
+					var newValues = new MorphControls() { all = { { defaultStr, tmpVals } } };
 					data.data[DataKeys[0]] = LZ4MessagePackSerializer.Serialize(newValues, CompositeResolver.Instance);
 
 					data.version = Version;
@@ -154,7 +179,7 @@ namespace Character_Morpher
 
 				data2.abmx.ForceSplitStatus();//needed since split is not saved 😥
 
-				var newValues = values.all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value));
+				var newValues = values.all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value.Clone()));
 				////making sure new values are not taken up by other slots
 				//foreach(var val in values)
 				//	if(val.Key != defaultStr)
@@ -167,7 +192,7 @@ namespace Character_Morpher
 				//	}
 
 				if(ctrl.isReloading)//can only be done when reloading 
-					SoftSave(cfg.useCardMorphDataMaker.Value);//keep this here
+					SoftSave(cfg.canUseCardMorphDataMaker.Value);//keep this here
 
 				//	CharaMorpher_Core.Logger.LogDebug("DATA 2");
 				ctrl.m_data2.Copy(data2);
@@ -177,7 +202,7 @@ namespace Character_Morpher
 				ctrl.ctrls2 = new MorphControls { all = newValues };
 				if(MakerAPI.InsideMaker)
 				{
-					if(cfg.useCardMorphDataMaker.Value)
+					if(cfg.canUseCardMorphDataMaker.Value)
 						ctrl.controls.Copy(ctrl.ctrls2);
 
 					if(CharaMorpherGUI.select != null)
@@ -480,18 +505,6 @@ namespace Character_Morpher
 				abmx.Populate(data, morph);
 			}
 		}
-		/*
-		 Data that can (potentially) affect the save:
-		* enum MorphCalcType
-		* class MorphControls
-		* class MorphData
-		* class MorphData.AMBXSections
-		* class MorphConfig 
-		* var CharaMorpher_Core.cfg.defaults
-		* var CharaMorpher_Core.cfg.controlCategories
-		
-		 all I can think of for now
-		 */
 
 		/// <summary>
 		/// creates an updated version (can NOT be called on base version)
