@@ -35,7 +35,7 @@ using UnityEngine.Events;
 using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.MorphUtil;
 using KKABMX.Core;
-//using static Illusion.Utils;
+
 
 namespace Character_Morpher
 {
@@ -53,7 +53,7 @@ namespace Character_Morpher
 			{
 				//Create custom category 
 
-#if HS2 || AI
+#if HONEY_API
 				MakerCategory peram = MakerConstants.Parameter.Type;
 #else
 				MakerCategory peram = MakerConstants.Parameter.Character;
@@ -65,29 +65,34 @@ namespace Character_Morpher
 			MakerAPI.MakerBaseLoaded += (s, e) => { AddCharaMorpherMenu(e); };
 			MakerAPI.MakerFinishedLoading += (s, e) =>
 			{
-
+				var allCvs =
 
 #if HONEY_API
-				charaCustom = (CvsO_Type)Resources.FindObjectsOfTypeAll(typeof(CvsO_Type))[0];
-				boobCustom = (CvsB_ShapeBreast)Resources.FindObjectsOfTypeAll(typeof(CvsB_ShapeBreast))[0];
-				bodyCustom = (CvsB_ShapeWhole)Resources.FindObjectsOfTypeAll(typeof(CvsB_ShapeWhole))[0];
-				faceCustom = (CvsF_ShapeWhole)Resources.FindObjectsOfTypeAll(typeof(CvsF_ShapeWhole))[0];
+				((CvsSelectWindow[])Resources.FindObjectsOfTypeAll(typeof(CvsSelectWindow)))
+				.OrderBy((k) => k.transform.GetSiblingIndex())//I just want them in the right order
+				.Attempt(p => p.items)
+				.Aggregate((l, r) => l.Concat(r).ToArray());//should flaten array
+
+
+				//	bodyCustom = (CvsB_ShapeWhole)allCvs.FirstOrNull((p) => p.cvsBase is CvsB_ShapeWhole)?.cvsBase;
+				//	faceCustom = (CvsF_ShapeWhole)allCvs.FirstOrNull((p) => p.cvsBase is CvsF_ShapeWhole)?.cvsBase;
+				//	boobCustom = (CvsB_ShapeBreast)allCvs.FirstOrNull((p) => p.cvsBase is CvsB_ShapeBreast)?.cvsBase;
+				charaCustom = (CvsO_Type)allCvs.FirstOrNull((p) => p.cvsBase is CvsO_Type)?.cvsBase;
+
+
 #else
+				0;
+				//	bodyCustom = (CvsBodyShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsBodyShapeAll))[0];
+				//	faceCustom = (CvsFaceShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsFaceShapeAll))[0];
+				//	boobCustom = (CvsBreast)Resources.FindObjectsOfTypeAll(typeof(CvsBreast))[0];
 				charaCustom = (CvsChara)Resources.FindObjectsOfTypeAll(typeof(CvsChara))[0];
-				bodyCustom = (CvsBodyShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsBodyShapeAll))[0];
-				boobCustom = (CvsBreast)Resources.FindObjectsOfTypeAll(typeof(CvsBreast))[0];
-				faceCustom = (CvsFaceShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsFaceShapeAll))[0];
 #endif
 
 #if HONEY_API
+				//Force the floating settings window to show up
 
-				GameObject subcatagory =
-				//I hate this as much as you lol
-				GameObject.Find($"CharaCustom/CustomControl/CanvasMain/SubMenu/SubMenuOption/Scroll View/Viewport/Content/Category(Clone)/CategoryTop/{subCategoryName}");
-
-				subcatagory?
-				.GetComponent<UI_ButtonEx>()?
-				.onClick?.AddListener(() => charaCustom.customBase.drawMenu.ChangeMenuFunc());
+				var btn = allCvs?.FirstOrNull(p => p?.btnItem?.gameObject?.GetTextFromTextComponent() == displayName).btnItem;
+				btn?.onClick?.AddListener(() => MakerAPI.GetMakerBase().drawMenu.ChangeMenuFunc());
 #endif
 			};
 			MakerAPI.MakerExiting += (s, e) => { Cleanup(); };
@@ -127,14 +132,14 @@ namespace Character_Morpher
 
 #if HONEY_API
 		static private CvsO_Type charaCustom = null;
-		static public CvsB_ShapeBreast boobCustom = null;
-		static public CvsB_ShapeWhole bodyCustom = null;
-		static public CvsF_ShapeWhole faceCustom = null;
+		//	static public CvsB_ShapeBreast boobCustom = null;
+		//	static public CvsB_ShapeWhole bodyCustom = null;
+		//	static public CvsF_ShapeWhole faceCustom = null;
 #else
 		static private CvsChara charaCustom = null;
-		static public CvsBreast boobCustom = null;
-		static public CvsBodyShapeAll bodyCustom = null;
-		static public CvsFaceShapeAll faceCustom = null;
+		//	static public CvsBreast boobCustom = null;
+		//	static public CvsBodyShapeAll bodyCustom = null;
+		//	static public CvsFaceShapeAll faceCustom = null;
 #endif
 		private static int abmxIndex = -1;
 		private readonly static List<MorphMakerSlider> sliders = new List<MorphMakerSlider>();
@@ -153,16 +158,17 @@ namespace Character_Morpher
 			get => !MakerAPI.InsideMaker || m_morphLoadToggle;
 			private set => m_morphLoadToggle = value;
 		}
-		public static MorphMakerDropdown select = null;
+		internal static MorphMakerDropdown select = null;
 
 		private static void Cleanup()
 		{
 			abmxIndex = -1;
 			m_morphLoadToggle = true;
+			select = null;
 			sliders.Clear();
 			modes.Clear();
 			if(lastUCMDEvent != null)
-				cfg.canUseCardMorphDataMaker.SettingChanged -= lastUCMDEvent;
+				cfg.preferCardMorphDataMaker.SettingChanged -= lastUCMDEvent;
 			if(saveAsMorphDataEvent != null)
 				cfg.saveAsMorphData.SettingChanged -= saveAsMorphDataEvent;
 			if(enableCalcTypesEvent != null)
@@ -241,19 +247,19 @@ namespace Character_Morpher
 
 
 
-			e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.canUseCardMorphDataMaker.Value, CharaMorpher_Core.Instance))
+			e.AddControl(new MakerToggle(category, "Prefer Card Morph Data", cfg.preferCardMorphDataMaker.Value, CharaMorpher_Core.Instance))
 				.OnGUIExists((gui) =>
 				{
 					var toggle = (MakerToggle)gui;
 					toggle?.ValueChanged?.Subscribe((_1) =>
 					{
-						if(cfg.canUseCardMorphDataMaker.Value != _1)
-							cfg.canUseCardMorphDataMaker.Value = _1;
+						if(cfg.preferCardMorphDataMaker.Value != _1)
+							cfg.preferCardMorphDataMaker.Value = _1;
 					});
 
 					Coroutine tmp = null;
-					bool lastUCMD = cfg.canUseCardMorphDataMaker.Value;//this is needed
-					cfg.canUseCardMorphDataMaker.SettingChanged +=
+					bool lastUCMD = cfg.preferCardMorphDataMaker.Value;//this is needed
+					cfg.preferCardMorphDataMaker.SettingChanged +=
 					lastUCMDEvent = (s, o) =>
 					{
 						var ctrl = GetFuncCtrlOfType<CharaMorpherController>()?.First();
@@ -262,7 +268,7 @@ namespace Character_Morpher
 						{
 
 							string name =
-							(!cfg.canUseCardMorphDataMaker.Value ?
+							(!cfg.preferCardMorphDataMaker.Value ?
 							ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1))?.currentSet;
 							name = name.Substring(0, Mathf.Clamp(name.LastIndexOf(strDivider), 0, name.Length));
 
@@ -272,24 +278,24 @@ namespace Character_Morpher
 								yield return new WaitWhile(() => ctrl.isReloading);
 
 								var tmpCtrls =
-								!cfg.canUseCardMorphDataMaker.Value ?
+								!cfg.preferCardMorphDataMaker.Value ?
 								ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1);
 								tmpCtrls.currentSet = ctrl.controls.currentSet;
 
 								ctrl.controls.Copy(!lastUCMD ? ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1));
 
 								SoftSave(lastUCMD);
-								ctrl.controls.Copy(!cfg.canUseCardMorphDataMaker.Value ?
+								ctrl.controls.Copy(!cfg.preferCardMorphDataMaker.Value ?
 								ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1));
 
-								lastUCMD = cfg.canUseCardMorphDataMaker.Value;//this is needed
+								lastUCMD = cfg.preferCardMorphDataMaker.Value;//this is needed
 								CharaMorpher_Core.Logger.LogDebug($"Next lastUCMD: {lastUCMD}");
 							}
 
 							if(!name.IsNullOrEmpty())
 								SwitchControlSet(ControlsList, name);
 							select.Options = ControlsList;
-							toggle?.SetValue(cfg.canUseCardMorphDataMaker.Value);
+							toggle?.SetValue(cfg.preferCardMorphDataMaker.Value);
 
 							yield break;
 						}
@@ -386,6 +392,8 @@ namespace Character_Morpher
 
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
+
+							Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.sel);
 						});
 
 				currSlider.ModSettingName = currMode.ModSettingName = settingName;
@@ -499,6 +507,12 @@ namespace Character_Morpher
 				{
 					yield return new WaitWhile(
 						() => MakerAPI.GetCharacterControl().GetComponent<BoneController>().NeedsFullRefresh);
+					//	MakerAPI.GetMakerBase().playSampleVoice = true;
+					//					MakerAPI.GetMakerBase().
+					//#if HONEY_API
+					//					playVoiceBackup.
+					//#endif
+					//					playSampleVoice = true;
 					charaCustom.PlayVoice();
 				}
 
@@ -722,6 +736,9 @@ namespace Character_Morpher
 			   (gui) =>
 			   {
 				   MorphMakerDropdown mmd = (MorphMakerDropdown)gui;
+				   // var drop = mmd.ControlObject?.GetComponentInChildren<TMP_Dropdown>().ite ??
+				   //	   mmd.ControlObject?.GetComponentInChildren<Dropdown>().OnUpdateSelectedAsObservable();
+
 
 				   //  cfg.currentControlName = null;
 
@@ -746,7 +763,7 @@ namespace Character_Morpher
 				   };
 
 				   Instance.StartCoroutine(ChangeGUILayout(gui));
-				   mmd.ValueChanged?.Subscribe((val) => { mmd.Value = SwitchControlSet(mmd.Options, val); });//This loops back to TmpThing()
+				   mmd.ValueChanged?.Subscribe((val) => { mmd.Value = SwitchControlSet(mmd.Options, val); Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.sel); });//This loops back to TmpThing()
 				   mmd.Value = SwitchControlSet(mmd.Options, cfg.currentControlName.Value);
 			   }));
 
@@ -784,7 +801,7 @@ namespace Character_Morpher
 
 
 			((MakerButton)e.AddControl(new MakerButton("Save Default", category, Instance))
-				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)))).
+				.OnGUIExists((gui) => { Instance.StartCoroutine(ChangeGUILayout(gui)); })).
 				OnClick.AddListener(() =>
 				{
 					foreach(var slider in sliders)
@@ -795,26 +812,22 @@ namespace Character_Morpher
 					var ctrl = GetFuncCtrlOfType<CharaMorpherController>().First();
 					//int count = 0;
 					//cfg.defaults[ctrl.controls.currentSet] = new List<ConfigEntry<float>>();
-					if(!cfg.canUseCardMorphDataMaker.Value || ctrl.ctrls2 == null)
-
+					if(!cfg.preferCardMorphDataMaker.Value || ctrl.ctrls2 == null)
 						foreach(var def in inst.controlCategories[ctrl.controls.currentSet])
 						{
-							////this is a redundancy that can protect against out of order settings
-							//var index = sliders.FindIndex(k => k.ModSettingName ==
-							//Instance.controlCategories[ctrl.controls.currentSet][count].Value);
 
 							cfg.defaults[ctrl.controls.currentSet][def.dataName].Value.data =
-							ctrl.controls.all[ctrl.controls.currentSet][def.dataName].data * 100f;//this should work
-																								  //count++;
+							ctrl.controls.all[ctrl.controls.currentSet][def.dataName].data;//this should work
+																						   //count++;
 						}
-					//cfg.defaultModes[ctrl.controls.currentSet] = new List<ConfigEntry<int>>();
-					//count = 0;
-					if(!cfg.canUseCardMorphDataMaker.Value || ctrl.ctrls2 == null)
+
+
+					if(!cfg.preferCardMorphDataMaker.Value || ctrl.ctrls2 == null)
 						foreach(var def in inst.controlCategories[ctrl.controls.currentSet])
 							cfg.defaults[ctrl.controls.currentSet][def.dataName].Value.calcType =
 							ctrl.controls.all[ctrl.controls.currentSet][def.dataName].calcType;
 
-					SoftSave(cfg.canUseCardMorphDataMaker.Value);
+					SoftSave(cfg.preferCardMorphDataMaker.Value);
 					CharaMorpher_Core.Logger.LogMessage($"Saved as CharaMorpher {ctrl.controls.currentSet}");
 
 					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
@@ -842,9 +855,16 @@ namespace Character_Morpher
 							var cal = data[name][def2].calcType;
 
 							list[name][def2] = data[name][def2].Clone();
+
+
 						}
 
 					OnInternalSliderValueChange.Invoke();
+
+					foreach(var slider in sliders)
+						slider.ApplyDefault();
+					foreach(var mode in modes)
+						mode.ApplyStoredSetting();
 
 					for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
 						ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
@@ -898,7 +918,7 @@ namespace Character_Morpher
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 		}
 
-		private static void ButtonDefaults(RegisterCustomControlsEvent e, BepInEx.BaseUnityPlugin owner)
+		private static void ButtonDefaults(RegisterCustomControlsEvent e, BaseUnityPlugin owner)
 		{
 
 			//e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space

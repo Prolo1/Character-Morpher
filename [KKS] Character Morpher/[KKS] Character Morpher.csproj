@@ -216,6 +216,7 @@
   <Import Project="..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets" Condition="Exists('..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets')" />
   <Import Project="..\packages\IllusionLibs.BepInEx.MonoMod.22.1.29.1\build\IllusionLibs.BepInEx.MonoMod.targets" Condition="Exists('..\packages\IllusionLibs.BepInEx.MonoMod.22.1.29.1\build\IllusionLibs.BepInEx.MonoMod.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\..\[KKS]_Character_Morpher.zip" "$(TargetDir)..\..\..\" "$(SolutionDir)Readme.md"</PostBuildEvent>
+    <PostBuildEvent>powershell "&amp; '$(SolutionDir)Post-Builder.ps1' '$(TargetPath)' '$(SolutionDir)zipper.bat' '$(TargetDir)..\..\..\..\[KKS]_Character_Morpher.zip' '$(TargetDir)..\..\..\' '$(SolutionDir)Readme.md' "
+</PostBuildEvent>
   </PropertyGroup>
 </Project>

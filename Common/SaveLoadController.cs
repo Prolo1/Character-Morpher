@@ -20,6 +20,7 @@ using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpherController;
 using static Character_Morpher.MorphUtil;
 using KKAPI.Maker;
+using UniRx;
 #if HONEY_API
 using CharaCustom;
 using AIChara;
@@ -135,7 +136,7 @@ namespace Character_Morpher
 					//last version
 					var values = LZ4MessagePackSerializer.Deserialize<Dictionary<string, Tuple<float, MorphCalcType>>>((byte[])data.data[DataKeys[0]], CompositeResolver.Instance);
 
-					var tmpVals = values.ToDictionary((k) => k.Key, (v) => new MorphSliderData(v.Key, data: v.Value.Item1, calc: v.Value.Item2));
+					var tmpVals = values.ToDictionary((k) => k.Key.Trim(), (v) => new MorphSliderData(v.Key.Trim()/*just in case*/, data: v.Value.Item1, calc: v.Value.Item2));
 					var newValues = new MorphControls() { all = { { defaultStr, tmpVals } } };
 					data.data[DataKeys[0]] = LZ4MessagePackSerializer.Serialize(newValues, CompositeResolver.Instance);
 
@@ -192,7 +193,7 @@ namespace Character_Morpher
 				//	}
 
 				if(ctrl.isReloading)//can only be done when reloading 
-					SoftSave(cfg.canUseCardMorphDataMaker.Value);//keep this here
+					SoftSave(ctrl.canUseCardMorphData);//keep this here
 
 				//	CharaMorpher_Core.Logger.LogDebug("DATA 2");
 				ctrl.m_data2.Copy(data2);
@@ -200,16 +201,16 @@ namespace Character_Morpher
 					morphCharData.Copy(data2);
 
 				ctrl.ctrls2 = new MorphControls { all = newValues };
-				if(MakerAPI.InsideMaker)
-				{
-					if(cfg.canUseCardMorphDataMaker.Value)
-						ctrl.controls.Copy(ctrl.ctrls2);
 
-					if(CharaMorpherGUI.select != null)
-					{
-						CharaMorpherGUI.select.Options = ControlsList;
-						CharaMorpherGUI.select.Value = SwitchControlSet(ControlsList, cfg.currentControlName.Value);
-					}
+				if(ctrl.canUseCardMorphData)
+					ctrl.controls.Copy(ctrl.ctrls2);
+
+				if(MakerAPI.InsideMaker &&
+					CharaMorpherGUI.select != null)
+				{
+
+					CharaMorpherGUI.select.Options = ControlsList;
+					CharaMorpherGUI.select.Value = SwitchControlSet(ControlsList, cfg.currentControlName.Value);
 				}
 
 				//get original 

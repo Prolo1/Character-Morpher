@@ -87,16 +87,20 @@ namespace Character_Morpher
 			[HarmonyPrefix]
 			[HarmonyPatch(typeof(FadeCanvas), nameof(FadeCanvas.StartAysnc),
 				new Type[] { typeof(FadeCanvas.Fade), typeof(float), typeof(bool), typeof(bool), }),]
-			static void OnSceneLoad()
+			static void OnSceneLoad(FadeCanvas __instance)
 			{
+				if(!(__instance is SceneFadeCanvas)) return;
+
 				if(!MakerAPI.InsideMaker) UpdateCurrentCharacters(true);
 			}
 
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(FadeCanvas), nameof(FadeCanvas.StartAysnc),
 				new Type[] { typeof(FadeCanvas.Fade), typeof(float), typeof(bool), typeof(bool), }),]
-			static void OnSceneUnLoad(FadeCanvas.Fade __0)
+			static void OnSceneUnLoad(FadeCanvas __instance,FadeCanvas.Fade __0)
 			{
+				if(!(__instance is SceneFadeCanvas)) return;
+			
 				IEnumerator after()
 				{
 					for(int a = -1; a < cfg.reloadTest.Value; ++a)
@@ -147,7 +151,6 @@ namespace Character_Morpher
 			}
 #endif
 
-
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(Toggle), nameof(Toggle.OnPointerClick))]
 			static void OnPostToggleClick(Toggle __instance)
@@ -188,10 +191,13 @@ namespace Character_Morpher
 			}
 
 
+			//nothing below here is actually being used...
+
 			[HarmonyPrefix]
 			[HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
 			static void OnPreButtonClick(Button __instance)
 			{
+				return;
 				if(!__instance.interactable) return;
 
 				if(!MakerAPI.InsideMaker) return;

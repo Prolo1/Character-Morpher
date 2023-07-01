@@ -37,6 +37,7 @@ namespace Character_Morpher
 
 	public class CharaMorpherController : CharaCustomFunctionController
 	{
+		#region Data
 		private PluginData m_extData = null;
 		private static string lastCharDir = "";
 		private static DateTime lastDT = new DateTime();
@@ -59,11 +60,17 @@ namespace Character_Morpher
 		}
 
 		public readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData();
+		public bool canUseCardMorphData
+		{
+			get => (MakerAPI.InsideMaker ?
+				cfg.preferCardMorphDataMaker.Value :
+				cfg.preferCardMorphDataGame.Value);
+		}
 		public bool isUsingExtMorphData
 		{
 			get => (MakerAPI.InsideMaker ?
-				cfg.canUseCardMorphDataMaker.Value :
-				cfg.canUseCardMorphDataGame.Value) &&
+				cfg.preferCardMorphDataMaker.Value :
+				cfg.preferCardMorphDataGame.Value) &&
 				m_extData != null;
 		}
 
@@ -93,13 +100,17 @@ namespace Character_Morpher
 			}
 		}
 
+		#region I dont want to see this
 #if KOI_API
+
 		public static readonly List<KeyValuePair<string, string>> boneDatabaseCatagories = new List<KeyValuePair<string, string>>()
 #else
 		//this is a tuple list btw (of bones found in abmx mod and online... somewhere)
 		public static readonly List<(string, string)> boneDatabaseCatagories = new List<(string, string)>()
 #endif
-#if KOI_API		
+
+#if KOI_API
+		
 		#region KKBones
 		{
             //ABMX
@@ -277,6 +288,7 @@ namespace Character_Morpher
 		}
 		#endregion
 #elif HONEY_API
+		
 		#region AIBones
         {           
 				//Torso
@@ -643,115 +655,9 @@ namespace Character_Morpher
 		#endregion
 #endif
 ;
+		#endregion
 
-		public IEnumerator CoResetFace(int delayFrames, bool forceReset = false)
-		{
-			for(int a = 0; a < delayFrames; ++a)
-				yield return null;
-
-			ResetFace(forceReset);
-
-			yield break;
-		}
-
-		public IEnumerator CoReloadChara()
-		{
-			for(int a = 0; a < 7; ++a)
-				yield return null;
-
-			OnCharaReload(KoikatuAPI.GetCurrentGameMode());
-
-			yield break;
-		}
-
-		public IEnumerator CoMorphTargetUpdate(int delay = 10, bool updateValues = true, bool initReset = false)
-		{
-			for(int a = 0; a < delay; ++a)
-				yield return null;
-
-			MorphTargetUpdate();
-
-			yield return null;
-
-			if(isReloading) yield break;
-
-			for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-				MorphChangeUpdate(updateValues: updateValues, initReset: initReset);
-
-
-			yield break;
-		}
-
-		public IEnumerator CoMorphChangeUpdate(int delay = 6, bool forceReset = false, bool initReset = false, bool forceChange = false)
-		{
-			for(int a = 0; a < delay; ++a)
-				yield return null;
-
-			if(!isReloading || forceChange)
-			{
-				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
-			}
-			else
-			{
-				yield return new WaitWhile(() => isReloading);
-
-				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
-			}
-
-
-			yield break;
-		}
-
-		public IEnumerator CoMorphAfterABMX(int delay = 5, bool forceReset = false, bool forceChange = false)
-		{
-			var boneCtrl = GetComponent<BoneController>();
-
-			yield return new WaitWhile(() => boneCtrl.NeedsFullRefresh || boneCtrl.NeedsBaselineUpdate);
-
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Updating morph values after ABMX");
-
-			yield return StartCoroutine(CoMorphChangeUpdate(delay, forceReset, forceChange: forceChange));
-
-			yield break;
-		}
-
-		Coroutine coForceReload;
-		/// <summary>
-		/// This is jank and may not work
-		/// </summary>
-		internal void ForceCardReload()
-		{
-
-			MorphChangeUpdate(forceReset: true);
-			IEnumerator CoRestore(int delay)
-			{
-				//		forcedReload = true;
-				for(int count = 0; count < delay; ++count)
-					yield return null;
-				//copy the current status  
-				m_data1.main.CopyStatus(ChaControl.fileStatus);
-
-				//Reset original character data
-				ChaControl.chaFile.CopyAll(m_data1.main);
-
-				ChaControl.chaFile.SetCustomBytes(m_data1.main.GetCustomBytes(), ChaFileDefine.ChaFileCustomVersion);
-
-				//	ChaControl.Reload(noChangeClothes: false);
-				ChaControl.Reload();
-				//ChaControl.chaFile.CopyStatus(m_data1.main.status.);
-
-
-
-
-				//	forcedReload = false;
-				CharaMorpher_Core.Logger.LogDebug("restored backup");
-				yield break;
-			}
-
-			if(coForceReload != null)
-				StopCoroutine(coForceReload);
-			coForceReload = StartCoroutine(CoRestore(12));
-		}
+		#endregion
 
 		protected override void Awake()
 		{
@@ -771,9 +677,9 @@ namespace Character_Morpher
 
 				foreach(var ctrl in category.Value)
 				{
-					CharaMorpher_Core.Logger.LogDebug($"In forloop 2 Awake");
-					CharaMorpher_Core.Logger.LogDebug($"defaults: [{category.Key}][{ctrl.dataName}]");
-					CharaMorpher_Core.Logger.LogDebug($"data: {cfg.defaults[category.Key][ctrl.dataName].Value.data}");
+					//CharaMorpher_Core.Logger.LogDebug($"In forloop 2 Awake");
+					//CharaMorpher_Core.Logger.LogDebug($"defaults: [{category.Key}][{ctrl.dataName}]");
+					//CharaMorpher_Core.Logger.LogDebug($"data: {cfg.defaults[category.Key][ctrl.dataName].Value.data}");
 
 					controls.all[category.Key][ctrl.dataName] = cfg.defaults[category.Key][ctrl.dataName].Value.Clone();
 					//controls.all[category.Key][ctrl.dataName].data *= .01f;
@@ -931,39 +837,8 @@ namespace Character_Morpher
 
 		}
 
-		bool initReset = true;//needed
-		/// <inheritdoc/>
-		protected override void OnReload(GameMode currentGameMode, bool keepState)
-		{
-			if(keepState) return;
 
-			if(initReset && !isInitLoadFinished)
-				initReset = isReloading = false;
-
-			//for in game load correction
-			if(!MakerAPI.InsideMaker && isInitLoadFinished)
-				MorphChangeUpdate(forceReset: true);
-
-			//if(MakerAPI.InsideMaker || !initLoadFinished)
-			OnCharaReload(currentGameMode);
-		}
-
-		/// <inheritdoc/>
-		protected override void OnCardBeingSaved(GameMode currentGameMode)
-		{
-			if(cfg.enable.Value && cfg.saveAsMorphData.Value)
-			{
-				//	MorphChangeUpdate(forceReset: true);
-				this.SaveExtData();
-			}
-
-			////reset values to normal after saving
-			//if(cfg.enable.Value && cfg.saveAsMorphData.Value)
-			//	for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-			//		StartCoroutine(CoMorphChangeUpdate(delay: (int)cfg.multiUpdateEnableTest.Value + a + 1));//turn the card back after(do not change)
-		}
-
-
+		#region Character Updates
 		/// <summary>
 		/// 
 		/// </summary>
@@ -1056,6 +931,12 @@ namespace Character_Morpher
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("not male in maker check?");
 			if(MakerAPI.InsideMaker && ChaControl.sex != 1
 				&& !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
+
+			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Morph only character with save data in game check?");
+			if(!MakerAPI.InsideMaker &&
+				cfg.onlyMorphCharWithDataInGame.Value &&
+				!isUsingExtMorphData)
+				reset = true;
 
 			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("All Checks passed?");
 
@@ -1239,63 +1120,73 @@ namespace Character_Morpher
 				{
 					//Value Update
 					{
+						result = ChaControl.GetShapeBodyValue(a);
+
 						float
 							d1 = m_data1.main.custom.body.shapeValueBody[a],
 							d2 = m_data2.main.custom.body.shapeValueBody[a];
+						try
+						{
+							var bodyValue = GetControlValue("body", fullVal: initReset, overall: true);
 
-						if(cfg.headIndex.FindIndex(find => (find.Value == a)) >= 0)
-						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("head", fullVal: initReset).data;
-							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("head", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
-							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							if(cfg.headIndex.FindIndex(find => (find.Value == a)) >= 0)
+							{
+								var val = bodyValue.data * GetControlValue("head", fullVal: initReset).data;
+								result = Mathf.LerpUnclamped(d1, d2,
+								(reset ? enable : (val * (GetControlValue("head", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
+								cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							}
+							else
+							if(cfg.torsoIndex.FindIndex(find => (find.Value == a)) >= 0)
+							{
+								var val = bodyValue.data * GetControlValue("torso", fullVal: initReset).data;
+								result = Mathf.LerpUnclamped(d1, d2,
+								(reset ? enable : (val * (GetControlValue("torso", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
+								cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							}
+							else
+							if(cfg.buttIndex.FindIndex(find => (find.Value == a)) >= 0)
+							{
+								var val = bodyValue.data * GetControlValue("butt", fullVal: initReset).data;
+								result = Mathf.LerpUnclamped(d1, d2,
+								(reset ? enable : (val * (GetControlValue("butt", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
+								cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							}
+							else
+							if(cfg.legIndex.FindIndex(find => (find.Value == a)) >= 0)
+							{
+								var val = bodyValue.data * GetControlValue("legs", fullVal: initReset).data;
+								result = Mathf.LerpUnclamped(d1, d2,
+								(reset ? enable : (val * (GetControlValue("legs", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
+								cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							}
+							else
+							if(cfg.armIndex.FindIndex(find => (find.Value == a)) >= 0)
+							{
+								var val = bodyValue.data * GetControlValue("arms", fullVal: initReset).data;
+								result = Mathf.LerpUnclamped(d1, d2,
+								(reset ? enable : (val * (GetControlValue("arms", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
+								cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							}
+							else
+							if(cfg.brestIndex.FindIndex(find => (find.Value == a)) >= 0)
+							{
+								var val = bodyValue.data * GetControlValue("boobs", fullVal: initReset).data;
+								result = Mathf.LerpUnclamped(d1, d2,
+								(reset ? enable : (val * (GetControlValue("boobs", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
+								cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							}
+							else
+							{
+								var val = bodyValue.data * GetControlValue("body other", fullVal: initReset).data;
+								result = Mathf.LerpUnclamped(d1, d2,
+								(reset ? enable : (val * (GetControlValue("body other", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
+								cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							}
 						}
-						else
-						if(cfg.torsoIndex.FindIndex(find => (find.Value == a)) >= 0)
+						catch(Exception e)
 						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("torso", fullVal: initReset).data;
-							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("torso", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
-							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
-						}
-						else
-						if(cfg.buttIndex.FindIndex(find => (find.Value == a)) >= 0)
-						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("butt", fullVal: initReset).data;
-							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("butt", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
-							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
-						}
-						else
-						if(cfg.legIndex.FindIndex(find => (find.Value == a)) >= 0)
-						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("legs", fullVal: initReset).data;
-							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("legs", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
-							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
-						}
-						else
-						if(cfg.armIndex.FindIndex(find => (find.Value == a)) >= 0)
-						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("arms", fullVal: initReset).data;
-							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("arms", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
-							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
-						}
-						else
-						if(cfg.brestIndex.FindIndex(find => (find.Value == a)) >= 0)
-						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("boobs", fullVal: initReset).data;
-							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("boobs", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
-							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
-						}
-						else
-						{
-							var val = GetControlValue("body", fullVal: initReset, overall: true).data * GetControlValue("body other", fullVal: initReset).data;
-							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("body other", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
-							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							CharaMorpher_Core.Logger.LogError($"This object is causing an error: {e}");
 						}
 					}
 
@@ -1311,47 +1202,57 @@ namespace Character_Morpher
 				{
 					//Value Update
 					{
+						result = ChaControl.GetShapeFaceValue(a);
+
 						float
 							d1 = m_data1.main.custom.face.shapeValueFace[a],
 							d2 = m_data2.main.custom.face.shapeValueFace[a];
+						try
+						{
+							var faceValue = GetControlValue("face", fullVal: initReset, overall: true);
 
-						if(cfg.eyeIndex.FindIndex(find => (find.Value == a)) >= 0)
-						{
-							var val = GetControlValue("face", fullVal: initReset, overall: true).data * GetControlValue("eyes", fullVal: initReset).data;
-							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("eyes", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
-							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							if(cfg.eyeIndex.FindIndex(find => (find.Value == a)) >= 0)
+							{
+								var val = faceValue.data * GetControlValue("eyes", fullVal: initReset).data;
+								result = Mathf.LerpUnclamped(d1, d2,
+								(reset ? enable : (val * (GetControlValue("eyes", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
+								cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							}
+							else
+							 if(cfg.mouthIndex.FindIndex(find => (find.Value == a)) >= 0)
+							{
+								var val = faceValue.data * GetControlValue("mouth", fullVal: initReset).data;
+								result = Mathf.LerpUnclamped(d1, d2,
+								(reset ? enable : (val * (GetControlValue("mouth", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
+								cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							}
+							else
+							  if(cfg.earIndex.FindIndex(find => (find.Value == a)) >= 0)
+							{
+								var val = faceValue.data * GetControlValue("ears", fullVal: initReset).data;
+								result = Mathf.LerpUnclamped(d1, d2,
+								(reset ? enable : (val * (GetControlValue("ears", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
+								cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							}
+							else
+							 if(cfg.noseIndex.FindIndex(find => (find.Value == a)) >= 0)
+							{
+								var val = faceValue.data * GetControlValue("nose", fullVal: initReset).data;
+								result = Mathf.LerpUnclamped(d1, d2,
+								(reset ? enable : (val * (GetControlValue("nose", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
+								cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							}
+							else
+							{
+								var val = faceValue.data * GetControlValue("face other", fullVal: initReset).data;
+								result = Mathf.LerpUnclamped(d1, d2,
+								(reset ? enable : (val * (GetControlValue("face other", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
+								cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							}
 						}
-						else
-						 if(cfg.mouthIndex.FindIndex(find => (find.Value == a)) >= 0)
+						catch(Exception e)
 						{
-							var val = GetControlValue("face", fullVal: initReset, overall: true).data * GetControlValue("mouth", fullVal: initReset).data;
-							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("mouth", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
-							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
-						}
-						else
-						  if(cfg.earIndex.FindIndex(find => (find.Value == a)) >= 0)
-						{
-							var val = GetControlValue("face", fullVal: initReset, overall: true).data * GetControlValue("ears", fullVal: initReset).data;
-							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("ears", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
-							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
-						}
-						else
-						 if(cfg.noseIndex.FindIndex(find => (find.Value == a)) >= 0)
-						{
-							var val = GetControlValue("face", fullVal: initReset, overall: true).data * GetControlValue("nose", fullVal: initReset).data;
-							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("nose", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
-							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
-						}
-						else
-						{
-							var val = GetControlValue("face", fullVal: initReset, overall: true).data * GetControlValue("face other", fullVal: initReset).data;
-							result = Mathf.LerpUnclamped(d1, d2,
-							(reset ? enable : (val * (GetControlValue("face other", fullVal: initReset).calcType == MorphCalcType.QUADRATIC &&
-							cfg.enableCalcTypes.Value ? Mathf.Abs(val) : 1))));
+							CharaMorpher_Core.Logger.LogError($"error:\n {e}");
 						}
 					}
 
@@ -1556,174 +1457,60 @@ namespace Character_Morpher
 
 
 		}
-
-
+		
 		/// <summary>
 		/// makes sure values are set based on internal values
 		/// </summary>
 		private void SetDefaultSliders()
 		{
 			var mkBase = MakerAPI.GetMakerBase();
-			var bodycustum = CharaMorpherGUI.bodyCustom;
-			var facecustum = CharaMorpherGUI.faceCustom;
-			var boobcustum = CharaMorpherGUI.boobCustom;
+			//	var bodycustum = CharaMorpherGUI.bodyCustom;
+			//	var facecustum = CharaMorpherGUI.faceCustom;
+			//	var boobcustum = CharaMorpherGUI.boobCustom;
 
 			if(mkBase && !isReloading)
 			{
 
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Resetting CVS Sliders");
-				bodycustum?.CalculateUI();
-				facecustum?.CalculateUI();
-				boobcustum?.CalculateUI();
+
+				//bodycustum?.CalculateUI();
+				//facecustum?.CalculateUI();
+				//boobcustum?.CalculateUI();
 
 				mkBase.updateCvsChara = true;
 #if HONEY_API
-				mkBase.updateCvsBodyShapeBreast = true;
-#endif
+				mkBase.updateCvsBodyShapeWhole = true;
+				mkBase.updateCvsFaceShapeWhole = true;
+				mkBase.updateCvsBodyShapeArm = true;
+				mkBase.updateCvsBodyShapeLeg = true;
+				mkBase.updateCvsBodyShapeLower = true;
+				mkBase.updateCvsBodyShapeUpper = true;
+				mkBase.updateCvsFaceShapeCheek = true;
+				mkBase.updateCvsFaceShapeChin = true;
+				mkBase.updateCvsFaceShapeEar = true;
+				mkBase.updateCvsFaceShapeEyebrow = true;
+				mkBase.updateCvsFaceShapeEyes = true;
+				mkBase.updateCvsFaceShapeMouth = true;
+				mkBase.updateCvsFaceShapeNose = true;
 
-				KKABMX.GUI.KKABMX_GUI.SpawnedSliders.Last();
-				//KKABMX.GUI.KKABMX_GUI.SpawnedSliders.Last().Sliders.Last().Value = KKABMX.GUI.KKABMX_GUI.SpawnedSliders.Last().Sliders.Last().DefaultValue;
+
+				mkBase.updateCvsBodyShapeBreast = true; 
+
+#else
+				mkBase.updateCvsBodyShapeAll = true;
+				mkBase.updateCvsFaceShapeAll = true;
+				mkBase.updateCvsBodyAll = true;
+				mkBase.updateCvsFaceAll = true;
+				mkBase.updateCvsBreast = true;
+#endif
+				//	mkBase.cvs  = true; 
+
 			}
 		}
+		#endregion
 
-		bool resettingHeihgt = false;
-		/// <summary>
-		/// Don't ask me why this works it just does
-		/// </summary>
-		internal void ResetHeight()
-		{
-			//reset the height using shoes
-			if(resettingHeihgt) return;
-
-			resettingHeihgt = true;
-#if KOI_API
-			var tmpstate1 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_inner];
-			var tmpstate2 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_outer];
-#else
-			var tmpstate = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes];
-#endif
-
-#if KOI_API
-			void heightReset(byte shoestate1, byte shoestate2)
-#else
-			void heightReset(byte shoestate)
-#endif
-			{
-
-#if KOI_API
-				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, shoestate1);
-				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, shoestate2);
-#else
-				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, shoestate);
-#endif
-			}
-
-
-#if KOI_API
-			heightReset(1, 1);
-#else
-			heightReset(1);
-#endif
-
-#if KOI_API
-			IEnumerator CoAfterReset(byte state1, byte state2)
-#else
-			IEnumerator CoAfterReset(byte state)
-#endif
-			{
-				if(isReloading)
-					for(int a = -1; a < (int)cfg.reloadTest.Value; ++a)
-						yield return new WaitForEndOfFrame();
-#if KOI_API
-				heightReset(state1, state2);
-#else
-				heightReset(state);
-#endif
-				resettingHeihgt = false;
-				yield break;
-			}
-#if KOI_API
-			StartCoroutine(CoAfterReset(tmpstate1, tmpstate2));
-#else
-			StartCoroutine(CoAfterReset(tmpstate));
-#endif
-		}
-
-		/// <summary>
-		/// dumb fix for a dumb issue. seems legit.
-		/// </summary>
-		internal void ResetFace(bool forceReset = false)
-		{
-
-			//	if(ResetCheck() || forceReset) return;
-
-			int val = 500;
-
-			void Reset(int valu)
-			{
-
-				//for(int a = 0; a < m_data1.main.custom.face.shapeValueFace.Length; ++a)
-				//	ChaControl.SetShapeBodyValue(a, ChaControl.GetShapeBodyValue(a) + valu);
-				//ChaControl.LateUpdateForce();
-
-
-
-
-				//Use if prior don't work
-				var
-				tmp = GetControlValue("eyes");
-				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
-				tmp = GetControlValue("mouth");
-				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
-				tmp = GetControlValue("ears");
-				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
-				tmp = GetControlValue("nose");
-				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
-				tmp = GetControlValue("face other");
-				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
-
-
-
-				MorphValuesUpdate(false, abmx: false);
-				ChaControl.LateUpdateForce();
-			}
-
-			Reset(-val);
-			Reset(val * 2);
-			Reset(-val);
-			if(ResetCheck || forceReset)
-				MorphValuesUpdate(true, abmx: false);
-		}
-
-		/// <summary>
-		/// checks if ABMX data has been split to body/head 
-		/// </summary>
-		/// <param name="onlyCheck"></param>
-		/// <returns></returns>
-		bool BoneSplitCheck(bool onlyCheck = false)
-		{
-
-			if(!onlyCheck && (!m_data1.abmx.isSplit || !m_data2.abmx.isSplit))
-			{
-				if(!m_data1.abmx.isSplit)
-				{
-					if(!m_data1.abmx.isLoaded)
-						m_data1.abmx.Populate(this, false);
-					m_data1.abmx.BoneSplit(this, ChaControl);
-				}
-				if(!m_data2.abmx.isSplit)
-				{
-					if(!m_data2.abmx.isLoaded)
-						m_data2.abmx.Populate(this, true);
-					m_data2.abmx.BoneSplit(this, ChaControl, true);
-
-				}
-			}
-			return m_data1.abmx.isSplit && m_data2.abmx.isSplit;
-		}
-
-
+		#region ABMX Modification
 		/// <summary>
 		/// Adds all bones from bone2 to bone1
 		/// </summary>
@@ -1864,7 +1651,32 @@ namespace Character_Morpher
 				CharaMorpher_Core.Logger.LogError($"Error: {e.TargetSite} went boom... {e.Message}");
 			}
 		}
+		#endregion
 
+		#region Custom Controller Overrides
+		bool initReset = true;//needed
+		/// <inheritdoc/>
+		protected override void OnReload(GameMode currentGameMode, bool keepState)
+		{
+			if(keepState) return;
+
+			if(initReset && !isInitLoadFinished)
+				initReset = isReloading = false;
+
+			//for in game load correction
+			if(!MakerAPI.InsideMaker && isInitLoadFinished)
+				MorphChangeUpdate(forceReset: true);
+
+			//if(MakerAPI.InsideMaker || !initLoadFinished)
+			OnCharaReload(currentGameMode);
+		}
+
+		/// <inheritdoc/>
+		protected override void OnCardBeingSaved(GameMode currentGameMode)
+		{
+			if(cfg.enable.Value && cfg.saveAsMorphData.Value)
+				this.SaveExtData();
+		}
 
 		/// <inheritdoc/>
 		protected override void OnDestroy()
@@ -1873,9 +1685,221 @@ namespace Character_Morpher
 			//	MorphTarget.initalize = false;
 			base.OnDestroy();
 		}
+		#endregion
 
+		#region Coroutine Helpers
+		public IEnumerator CoResetFace(int delayFrames, bool forceReset = false)
+		{
+			for(int a = 0; a < delayFrames; ++a)
+				yield return null;
+
+			ResetFace(forceReset);
+
+			yield break;
+		}
+
+		public IEnumerator CoReloadChara()
+		{
+			for(int a = 0; a < 7; ++a)
+				yield return null;
+
+			OnCharaReload(KoikatuAPI.GetCurrentGameMode());
+
+			yield break;
+		}
+
+		public IEnumerator CoMorphTargetUpdate(int delay = 10, bool updateValues = true, bool initReset = false)
+		{
+			for(int a = 0; a < delay; ++a)
+				yield return null;
+
+			MorphTargetUpdate();
+
+			yield return null;
+
+			if(isReloading) yield break;
+
+			for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+				MorphChangeUpdate(updateValues: updateValues, initReset: initReset);
+
+
+			yield break;
+		}
+
+		public IEnumerator CoMorphChangeUpdate(int delay = 6, bool forceReset = false, bool initReset = false, bool forceChange = false)
+		{
+			for(int a = 0; a < delay; ++a)
+				yield return null;
+
+			if(!isReloading || forceChange)
+			{
+				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
+			}
+			else
+			{
+				yield return new WaitWhile(() => isReloading);
+
+				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
+			}
+
+
+			yield break;
+		}
+
+		public IEnumerator CoMorphAfterABMX(int delay = 5, bool forceReset = false, bool forceChange = false)
+		{
+			var boneCtrl = GetComponent<BoneController>();
+
+			yield return new WaitWhile(() => boneCtrl.NeedsFullRefresh || boneCtrl.NeedsBaselineUpdate);
+
+			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Updating morph values after ABMX");
+
+			yield return StartCoroutine(CoMorphChangeUpdate(delay, forceReset, forceChange: forceChange));
+
+			yield break;
+		}
+		#endregion
+
+		#region Misc.
+		bool resettingHeihgt = false;
+		/// <summary>
+		/// Don't ask me why this works it just does
+		/// </summary>
+		internal void ResetHeight()
+		{
+			//reset the height using shoes (yes I beat them into the ground with their own shoes)
+			if(resettingHeihgt) return;
+
+			resettingHeihgt = true;
+#if KOI_API
+			var tmpstate1 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_inner];
+			var tmpstate2 = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes_outer];
+#else
+			var tmpstate = ChaControl.fileStatus.clothesState[(int)ChaFileDefine.ClothesKind.shoes];
+#endif
+
+#if KOI_API
+			void heightReset(byte shoestate1, byte shoestate2)
+#else
+			void heightReset(byte shoestate)
+#endif
+			{
+
+#if KOI_API
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_inner, shoestate1);
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes_outer, shoestate2);
+#else
+				ChaControl.SetClothesState((int)ChaFileDefine.ClothesKind.shoes, shoestate);
+#endif
+			}
+
+
+#if KOI_API
+			heightReset(1, 1);
+#else
+			heightReset(1);
+#endif
+
+#if KOI_API
+			IEnumerator CoAfterReset(byte state1, byte state2)
+#else
+			IEnumerator CoAfterReset(byte state)
+#endif
+			{
+				if(isReloading)
+					for(int a = -1; a < (int)cfg.reloadTest.Value; ++a)
+						yield return new WaitForEndOfFrame();
+#if KOI_API
+				heightReset(state1, state2);
+#else
+				heightReset(state);
+#endif
+				resettingHeihgt = false;
+				yield break;
+			}
+#if KOI_API
+			StartCoroutine(CoAfterReset(tmpstate1, tmpstate2));
+#else
+			StartCoroutine(CoAfterReset(tmpstate));
+#endif
+		}
+
+		/// <summary>
+		/// dumb fix for a dumb issue. seems legit.
+		/// </summary>
+		internal void ResetFace(bool forceReset = false)
+		{
+
+			//	if(ResetCheck() || forceReset) return;
+
+			int val = 500;
+
+			void Reset(int valu)
+			{
+
+				//for(int a = 0; a < m_data1.main.custom.face.shapeValueFace.Length; ++a)
+				//	ChaControl.SetShapeBodyValue(a, ChaControl.GetShapeBodyValue(a) + valu);
+				//ChaControl.LateUpdateForce();
+
+
+
+
+				//Use if prior don't work
+				var
+				tmp = GetControlValue("eyes");
+				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
+				tmp = GetControlValue("mouth");
+				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
+				tmp = GetControlValue("ears");
+				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
+				tmp = GetControlValue("nose");
+				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
+				tmp = GetControlValue("face other");
+				controls.all[controls.currentSet][tmp.dataName].SetData(tmp.data + valu);
+
+
+
+				MorphValuesUpdate(false, abmx: false);
+				ChaControl.LateUpdateForce();
+			}
+
+			Reset(-val);
+			Reset(val * 2);
+			Reset(-val);
+			if(ResetCheck || forceReset)
+				MorphValuesUpdate(true, abmx: false);
+		}
+
+		/// <summary>
+		/// checks if ABMX data has been split to body/head 
+		/// </summary>
+		/// <param name="onlyCheck"></param>
+		/// <returns></returns>
+		bool BoneSplitCheck(bool onlyCheck = false)
+		{
+
+			if(!onlyCheck && (!m_data1.abmx.isSplit || !m_data2.abmx.isSplit))
+			{
+				if(!m_data1.abmx.isSplit)
+				{
+					if(!m_data1.abmx.isLoaded)
+						m_data1.abmx.Populate(this, false);
+					m_data1.abmx.BoneSplit(this, ChaControl);
+				}
+				if(!m_data2.abmx.isSplit)
+				{
+					if(!m_data2.abmx.isLoaded)
+						m_data2.abmx.Populate(this, true);
+					m_data2.abmx.BoneSplit(this, ChaControl, true);
+
+				}
+			}
+			return m_data1.abmx.isSplit && m_data2.abmx.isSplit;
+		}
+		#endregion
 	}
 
+	#region Extra Data
 	public enum MorphCalcType : int
 	{
 		LINEAR,
@@ -2444,4 +2468,5 @@ namespace Character_Morpher
 			return results;
 		}
 	}
+	#endregion
 }

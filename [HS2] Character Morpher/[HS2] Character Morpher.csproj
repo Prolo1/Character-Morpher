@@ -57,6 +57,9 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+  </PropertyGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
@@ -186,8 +189,8 @@
   <Import Project="..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets" Condition="Exists('..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\build\IllusionLibs.BepInEx.Harmony.targets')" />
   <Import Project="..\packages\IllusionLibs.HoneySelect2.Unity.TextMeshPro.2018.4.11.4\build\IllusionLibs.HoneySelect2.Unity.TextMeshPro.targets" Condition="Exists('..\packages\IllusionLibs.HoneySelect2.Unity.TextMeshPro.2018.4.11.4\build\IllusionLibs.HoneySelect2.Unity.TextMeshPro.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>FOR /F delims^=^"^ tokens^=2 %25%25i in ('findstr [System.Reflection.Assembly]::LoadFrom("$(TargetPath)").GetName().Version') do (set version=%25%25i)
-call "$(SolutionDir)zipper.bat" "$(TargetDir)..\..\..\..\[HS2]_Character_Morpher_%25version%25.zip" "$(TargetDir)..\..\..\" "$(SolutionDir)Readme.md"</PostBuildEvent>
+    <PostBuildEvent>powershell "&amp; '$(SolutionDir)Post-Builder.ps1' '$(TargetPath)' '$(SolutionDir)zipper.bat' '$(TargetDir)..\..\..\..\[HS2]_Character_Morpher.zip' '$(TargetDir)..\..\..\' '$(SolutionDir)Readme.md' "
+</PostBuildEvent>
   </PropertyGroup>
   <Import Project="..\packages\IllusionLibs.HoneySelect2.UnityEngine.TextRenderingModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.TextRenderingModule.targets" Condition="Exists('..\packages\IllusionLibs.HoneySelect2.UnityEngine.TextRenderingModule.2018.4.11.4\build\IllusionLibs.HoneySelect2.UnityEngine.TextRenderingModule.targets')" />
 </Project>
