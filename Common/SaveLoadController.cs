@@ -21,6 +21,8 @@ using static Character_Morpher.CharaMorpherController;
 using static Character_Morpher.MorphUtil;
 using KKAPI.Maker;
 using UniRx;
+
+
 #if HONEY_API
 using CharaCustom;
 using AIChara;
@@ -136,7 +138,9 @@ namespace Character_Morpher
 					//last version
 					var values = LZ4MessagePackSerializer.Deserialize<Dictionary<string, Tuple<float, MorphCalcType>>>((byte[])data.data[DataKeys[0]], CompositeResolver.Instance);
 
-					var tmpVals = values.ToDictionary((k) => k.Key.Trim(), (v) => new MorphSliderData(v.Key.Trim()/*just in case*/, data: v.Value.Item1, calc: v.Value.Item2));
+					var tmpVals = values.ToDictionary((k) => k.Key.Trim(),
+						(v) => new MorphSliderData(v.Key.Trim() /*just in case*/, data: v.Value.Item1, calc: v.Value.Item2, 
+						isABMX: bool.Parse(oldConversionList.FirstOrNull((p) => v.Key.Trim() == p[0].Trim())?[2] ?? bool.FalseString)));
 					var newValues = new MorphControls() { all = { { defaultStr, tmpVals } } };
 					data.data[DataKeys[0]] = LZ4MessagePackSerializer.Serialize(newValues, CompositeResolver.Instance);
 
@@ -229,7 +233,7 @@ namespace Character_Morpher
 
 		public new PluginData Save(CharaCustomFunctionController ctrler)
 		{
-			if(!CharaMorpher_Core.cfg.saveAsMorphData.Value) return null;
+			if(!CharaMorpher_Core.cfg.saveExtData.Value) return null;
 			PluginData data = new PluginData() { version = Version, };
 			try
 			{
@@ -555,7 +559,7 @@ namespace Character_Morpher
 
 		public override PluginData Save(CharaCustomFunctionController ctrler)
 		{
-			if(!CharaMorpher_Core.cfg.saveAsMorphData.Value) return null;
+			if(!CharaMorpher_Core.cfg.saveExtData.Value) return null;
 			PluginData data = new PluginData() { version = Version, };
 			try
 			{

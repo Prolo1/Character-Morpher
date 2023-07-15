@@ -270,7 +270,7 @@ namespace Character_Morpher
 #endif
 
 				if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
-				if(cfg.enable.Value && cfg.saveAsMorphData.Value)
+				if(cfg.enable.Value && cfg.saveExtData.Value)
 				{
 					UpdateCurrentCharacters(true);
 					UpdateCurrentCharacters();
@@ -292,7 +292,7 @@ namespace Character_Morpher
 				if(!(ctrler.name.ToLower().Contains("exit") || ctrler.name.Contains("No")/*fixes issue with finding false results*/)) return;
 #endif
 				if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
-				if(cfg.enable.Value && cfg.saveAsMorphData.Value)
+				if(cfg.enable.Value && cfg.saveExtData.Value)
 					UpdateCurrentCharacters();
 			}
 

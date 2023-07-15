@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Resources;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
@@ -74,17 +74,17 @@ namespace Character_Morpher
 				.Aggregate((l, r) => l.Concat(r).ToArray());//should flaten array
 
 
-				//	bodyCustom = (CvsB_ShapeWhole)allCvs.FirstOrNull((p) => p.cvsBase is CvsB_ShapeWhole)?.cvsBase;
-				//	faceCustom = (CvsF_ShapeWhole)allCvs.FirstOrNull((p) => p.cvsBase is CvsF_ShapeWhole)?.cvsBase;
-				//	boobCustom = (CvsB_ShapeBreast)allCvs.FirstOrNull((p) => p.cvsBase is CvsB_ShapeBreast)?.cvsBase;
+				bodyCustom = (CvsB_ShapeWhole)allCvs.FirstOrNull((p) => p.cvsBase is CvsB_ShapeWhole)?.cvsBase;
+				faceCustom = (CvsF_ShapeWhole)allCvs.FirstOrNull((p) => p.cvsBase is CvsF_ShapeWhole)?.cvsBase;
+				boobCustom = (CvsB_ShapeBreast)allCvs.FirstOrNull((p) => p.cvsBase is CvsB_ShapeBreast)?.cvsBase;
 				charaCustom = (CvsO_Type)allCvs.FirstOrNull((p) => p.cvsBase is CvsO_Type)?.cvsBase;
 
 
 #else
-				0;
-				//	bodyCustom = (CvsBodyShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsBodyShapeAll))[0];
-				//	faceCustom = (CvsFaceShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsFaceShapeAll))[0];
-				//	boobCustom = (CvsBreast)Resources.FindObjectsOfTypeAll(typeof(CvsBreast))[0];
+				0;//don't remove this!
+				bodyCustom = (CvsBodyShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsBodyShapeAll))[0];
+				faceCustom = (CvsFaceShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsFaceShapeAll))[0];
+				boobCustom = (CvsBreast)Resources.FindObjectsOfTypeAll(typeof(CvsBreast))[0];
 				charaCustom = (CvsChara)Resources.FindObjectsOfTypeAll(typeof(CvsChara))[0];
 #endif
 
@@ -131,21 +131,23 @@ namespace Character_Morpher
 		}
 
 #if HONEY_API
-		static private CvsO_Type charaCustom = null;
-		//	static public CvsB_ShapeBreast boobCustom = null;
-		//	static public CvsB_ShapeWhole bodyCustom = null;
-		//	static public CvsF_ShapeWhole faceCustom = null;
+		public static CvsO_Type charaCustom { get; private set; } = null;
+		public static CvsB_ShapeBreast boobCustom { get; private set; } = null;
+		public static CvsB_ShapeWhole bodyCustom { get; private set; } = null;
+		public static CvsF_ShapeWhole faceCustom { get; private set; } = null;
 #else
-		static private CvsChara charaCustom = null;
-		//	static public CvsBreast boobCustom = null;
-		//	static public CvsBodyShapeAll bodyCustom = null;
-		//	static public CvsFaceShapeAll faceCustom = null;
+		public static CvsChara charaCustom { get; private set; } = null;
+		public static CvsBreast boobCustom { get; private set; } = null;
+		public static CvsBodyShapeAll bodyCustom { get; private set; } = null;
+		public static CvsFaceShapeAll faceCustom { get; private set; } = null;
 #endif
+
 		private static int abmxIndex = -1;
 		private readonly static List<MorphMakerSlider> sliders = new List<MorphMakerSlider>();
 		private readonly static List<MorphMakerDropdown> modes = new List<MorphMakerDropdown>();
 		private readonly static List<UnityAction> sliderValActions = new List<UnityAction>();
 		static EventHandler lastUCMDEvent = null;
+		static EventHandler loadInitMorphCharacterEvent = null;
 		static EventHandler saveAsMorphDataEvent = null;
 		static EventHandler enableCalcTypesEvent = null;
 		static EventHandler enableEvent = null;
@@ -167,16 +169,19 @@ namespace Character_Morpher
 			select = null;
 			sliders.Clear();
 			modes.Clear();
+
 			if(lastUCMDEvent != null)
 				cfg.preferCardMorphDataMaker.SettingChanged -= lastUCMDEvent;
 			if(saveAsMorphDataEvent != null)
-				cfg.saveAsMorphData.SettingChanged -= saveAsMorphDataEvent;
+				cfg.saveExtData.SettingChanged -= saveAsMorphDataEvent;
 			if(enableCalcTypesEvent != null)
 				cfg.enableCalcTypes.SettingChanged -= enableCalcTypesEvent;
 			if(enableEvent != null)
 				cfg.enable.SettingChanged -= enableEvent;
 			if(currentControlNameEvent != null)
 				cfg.currentControlName.SettingChanged -= currentControlNameEvent;
+			if(loadInitMorphCharacterEvent != null)
+				cfg.loadInitMorphCharacter.SettingChanged -= loadInitMorphCharacterEvent;
 
 			foreach(var act in sliderValActions)
 				OnInternalSliderValueChange.RemoveListener(act);
@@ -210,7 +215,19 @@ namespace Character_Morpher
 
 			var enableabmx = e.AddControl(new MakerToggle(category, "Enable ABMX", cfg.enableABMX.Value, CharaMorpher_Core.Instance));
 
-			var linkoverallabmxsliders = e.AddControl(new MakerToggle(category, "Link Overall Base Sliders to ABMX Sliders", cfg.linkOverallABMXSliders.Value, CharaMorpher_Core.Instance));
+			var saveExtData = (MakerToggle)e.AddControl(new MakerToggle(category, "Save Ext. Data", cfg.saveExtData.Value, CharaMorpher_Core.Instance))
+				.OnGUIExists((gui) =>
+					cfg.saveExtData.SettingChanged +=
+					saveAsMorphDataEvent = (s, o) =>
+					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.saveExtData.Value)
+				);
+
+			saveExtData.BindToFunctionController<CharaMorpherController, bool>(
+				(ctrl) => cfg.saveExtData.Value,
+				(ctrl, val) => { if(val != cfg.saveExtData.Value) cfg.saveExtData.Value = val; });
+
+
+			var linkoverallabmxsliders = e.AddControl(new MakerToggle(category, "Link Overall Sliders to ABMX Overall Sliders", cfg.linkOverallABMXSliders.Value, CharaMorpher_Core.Instance));
 			linkoverallabmxsliders.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.linkOverallABMXSliders.Value,
 				(ctrl, val) =>
@@ -223,18 +240,6 @@ namespace Character_Morpher
 					//	ctrl.StartCoroutine(ctrl.CoResetFace(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
 					//	ctrl.StartCoroutine(ctrl.CoResetHeight(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
 				});
-
-			var saveAsMorph = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable Save As Morph Data", cfg.saveAsMorphData.Value, CharaMorpher_Core.Instance))
-				.OnGUIExists((gui) =>
-					cfg.saveAsMorphData.SettingChanged +=
-					saveAsMorphDataEvent = (s, o) =>
-					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.saveAsMorphData.Value)
-				);
-
-
-			saveAsMorph.BindToFunctionController<CharaMorpherController, bool>(
-				(ctrl) => cfg.saveAsMorphData.Value,
-				(ctrl, val) => { if(val != cfg.saveAsMorphData.Value) cfg.saveAsMorphData.Value = val; });
 
 
 
@@ -306,6 +311,34 @@ namespace Character_Morpher
 					};
 				});
 
+			e.AddControl(new MakerToggle(category, "Load Init. Character", cfg.loadInitMorphCharacter.Value, CharaMorpher_Core.Instance))
+				.OnGUIExists((gui) =>
+				{
+					var tgl = (MakerToggle)gui;
+
+					tgl.BindToFunctionController<CharaMorpherController, bool>(
+						(ctrl) => cfg.loadInitMorphCharacter.Value,
+						(ctrl, val) => cfg.loadInitMorphCharacter.Value = val);
+
+					cfg.loadInitMorphCharacter.SettingChanged +=
+					loadInitMorphCharacterEvent += (m, n) =>
+					{
+						tgl.Value = cfg.loadInitMorphCharacter.Value;
+					};
+				});
+
+			e.AddControl(new MakerButton("Reset To Original Shape", category, CharaMorpher_Core.Instance))
+				.OnGUIExists((gui) =>
+				{
+					var btn = (MakerButton)gui;
+
+					btn.OnClick.AddListener(() =>
+					{
+						var ctrl = GetFuncCtrlOfType<CharaMorpherController>().First();
+						ctrl.ResetOriginalShape();
+					});
+				});
+
 			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			#endregion
 
@@ -354,12 +387,12 @@ namespace Character_Morpher
 
 
 				//setup slider
-				var currSlider = sliders.AddNReturn(e.AddControl(new MorphMakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[defaultStr][settingName].Value.data, CharaMorpher_Core.Instance)));
+				var currSlider = sliders.AddNReturn(e.AddControl(new MorphMakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[cfg.currentControlName.Value][settingName].Value.data, CharaMorpher_Core.Instance)));
 				currSlider.BindToFunctionController<CharaMorpherController, float>(
 						(ctrl) => ctrl.controls.all[ctrl.controls.currentSet][settingName].data,
 						(ctrl, val) =>
 						{
-							CharaMorpher_Core.Logger.LogDebug($"called slider");
+							//	CharaMorpher_Core.Logger.LogDebug($"called slider");
 							if(!ctrl) return;
 							if(!ctrl.isInitLoadFinished || ctrl.isReloading) return;
 							if(ctrl.controls.all[ctrl.controls.currentSet][settingName].data == (float)Math.Round(val, 2)) return;
@@ -369,7 +402,7 @@ namespace Character_Morpher
 							ctrl.controls.all[ctrl.controls.currentSet][settingName].
 							SetData(currSlider.StoreDefault = (float)Math.Round(val, 2));
 
-							CharaMorpher_Core.Logger.LogDebug($"edited slider");
+							//	CharaMorpher_Core.Logger.LogDebug($"edited slider");
 
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 								ctrl?.StartCoroutine(ctrl?.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
@@ -378,7 +411,7 @@ namespace Character_Morpher
 
 				//mode dropdown 
 				var ting = Enum.GetNames(typeof(MorphCalcType));
-				var currMode = modes.AddNReturn(e.AddControl(new MorphMakerDropdown("", ting, category, (int)cfg.defaults[defaultStr][settingName].Value.calcType, Instance)));
+				var currMode = modes.AddNReturn(e.AddControl(new MorphMakerDropdown("", ting, category, (int)cfg.defaults[cfg.currentControlName.Value][settingName].Value.calcType, Instance)));
 				currMode.BindToFunctionController<CharaMorpherController, int>(
 						(ctrl) => (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].calcType,
 						(ctrl, val) =>
@@ -401,18 +434,12 @@ namespace Character_Morpher
 				//make sure values can be changed internally
 				OnInternalSliderValueChange.AddListener(sliderValActions.AddNReturn(() =>
 				{
-					//if(cfg.debug.Value)
-					CharaMorpher_Core.Logger.LogDebug("controls updating");
+					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("controls updating");
 
-					CharaMorpherController ctrl = null;
-					try
-					{
-						ctrl = GetFuncCtrlOfType<CharaMorpherController>()?.First(k => k != null);//first one only
-					}
-					catch { }
+					CharaMorpherController ctrl = GetFuncCtrlOfType<CharaMorpherController>()?.FirstOrNull(k => k != null);//first one only
 
 					if(ctrl == null) return;
-					bool change = false;
+
 					currSlider.OnGUIExists((gui) =>
 					{
 						MorphMakerSlider slider = (MorphMakerSlider)gui;
@@ -422,7 +449,6 @@ namespace Character_Morpher
 							slider.Value = slider.StoreDefault = ctrl.controls.all[ctrl.controls.currentSet][settingName].data;
 							//	if(cfg.debug.Value) 
 							CharaMorpher_Core.Logger.LogDebug($"Slider control changed: {slider.Value}");
-							change = true;
 						}
 					});
 
@@ -435,20 +461,14 @@ namespace Character_Morpher
 							dropdown.Value = dropdown.StoreDefault = (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].calcType;
 							//	if(cfg.debug.Value) 
 							CharaMorpher_Core.Logger.LogDebug($"Calc control changed: {dropdown.Value}");
-							change = true;
 						}
 					});
 
-					//	if(change)
-					//		for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
-					//			ctrl?.StartCoroutine(ctrl?.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
-					//
 				}));
 
 				//add separator after overall control
 				if(Regex.IsMatch(settingName, searchHits[0], RegexOptions.IgnoreCase))
 					e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));//create separator line
-
 
 				return currSlider;
 			}
@@ -731,7 +751,7 @@ namespace Character_Morpher
 
 
 			select = ((MorphMakerDropdown)e.AddControl(
-			   new MorphMakerDropdown("Selected", ControlsList, category, 0, Instance))
+			   new MorphMakerDropdown("Selected Slot", ControlsList, category, 0, Instance))
 			   .OnGUIExists(
 			   (gui) =>
 			   {
@@ -832,6 +852,7 @@ namespace Character_Morpher
 
 					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
 				});
+
 
 			((MakerButton)e.AddControl(new MakerButton("Load Default", category, Instance))
 				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)))).
