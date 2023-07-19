@@ -31,7 +31,9 @@ using UnityEngine;
 using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpherController;
 using static Character_Morpher.CharaMorpherGUI;
-using ADV.Commands.Base;
+using static Character_Morpher.CurrentSaveLoadController;
+using MessagePack.Resolvers;
+using MessagePack;
 
 namespace Character_Morpher
 {
@@ -783,9 +785,15 @@ namespace Character_Morpher
 					StartCoroutine(CoMorphChangeUpdate(a + 1));
 
 				if(isUsingExtMorphData)
-					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-						StartCoroutine(CoResetOriginalBody(
-							(int)cfg.multiUpdateEnableTest.Value + a + 1, data: m_initalData));
+				{
+					var isCurData = LZ4MessagePackSerializer.Deserialize<bool>
+							((byte[])m_extData.data[new CurrentSaveLoadController().DataKeys[((int)LoadDataType.Values)]], CompositeResolver.Instance);
+
+					if(isCurData)
+						for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+							StartCoroutine(CoResetOriginalBody(
+								(int)cfg.multiUpdateEnableTest.Value + a + 1, data: m_initalData));
+				}
 
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogMessage("CoReload Completed");
 				yield break;

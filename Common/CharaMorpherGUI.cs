@@ -41,11 +41,47 @@ namespace Character_Morpher
 {
 	class CharaMorpherGUI
 	{
+
+		#region Data
 		private static MakerCategory category;
 
 		private static Coroutine lastExtent;
 		public static readonly string subCategoryName = "Morph";
 		public static readonly string displayName = "Chara Morph";
+
+
+#if HONEY_API
+		public static CvsO_Type charaCustom { get; private set; } = null;
+		public static CvsB_ShapeBreast boobCustom { get; private set; } = null;
+		public static CvsB_ShapeWhole bodyCustom { get; private set; } = null;
+		public static CvsF_ShapeWhole faceCustom { get; private set; } = null;
+#else
+		public static CvsChara charaCustom { get; private set; } = null;
+		public static CvsBreast boobCustom { get; private set; } = null;
+		public static CvsBodyShapeAll bodyCustom { get; private set; } = null;
+		public static CvsFaceShapeAll faceCustom { get; private set; } = null;
+#endif
+
+		private static int abmxIndex = -1;
+		private readonly static List<MorphMakerSlider> sliders = new List<MorphMakerSlider>();
+		private readonly static List<MorphMakerDropdown> modes = new List<MorphMakerDropdown>();
+		private readonly static List<UnityAction> sliderValActions = new List<UnityAction>();
+		static EventHandler lastUCMDEvent = null;
+		static EventHandler loadInitMorphCharacterEvent = null;
+		static EventHandler saveAsMorphDataEvent = null;
+		static EventHandler enableCalcTypesEvent = null;
+		static EventHandler enableEvent = null;
+		static EventHandler currentControlNameEvent = null;
+
+
+		private static bool m_morphLoadToggle = true;
+		public static bool MorphLoadToggle
+		{
+			get => !MakerAPI.InsideMaker || m_morphLoadToggle;
+			private set => m_morphLoadToggle = value;
+		}
+		internal static MorphMakerDropdown select = null;
+		#endregion
 
 		internal static void Initialize()
 		{
@@ -129,39 +165,7 @@ namespace Character_Morpher
 				lastExtent = Instance.StartCoroutine(CoEditExtents(start: 1));
 			};
 		}
-
-#if HONEY_API
-		public static CvsO_Type charaCustom { get; private set; } = null;
-		public static CvsB_ShapeBreast boobCustom { get; private set; } = null;
-		public static CvsB_ShapeWhole bodyCustom { get; private set; } = null;
-		public static CvsF_ShapeWhole faceCustom { get; private set; } = null;
-#else
-		public static CvsChara charaCustom { get; private set; } = null;
-		public static CvsBreast boobCustom { get; private set; } = null;
-		public static CvsBodyShapeAll bodyCustom { get; private set; } = null;
-		public static CvsFaceShapeAll faceCustom { get; private set; } = null;
-#endif
-
-		private static int abmxIndex = -1;
-		private readonly static List<MorphMakerSlider> sliders = new List<MorphMakerSlider>();
-		private readonly static List<MorphMakerDropdown> modes = new List<MorphMakerDropdown>();
-		private readonly static List<UnityAction> sliderValActions = new List<UnityAction>();
-		static EventHandler lastUCMDEvent = null;
-		static EventHandler loadInitMorphCharacterEvent = null;
-		static EventHandler saveAsMorphDataEvent = null;
-		static EventHandler enableCalcTypesEvent = null;
-		static EventHandler enableEvent = null;
-		static EventHandler currentControlNameEvent = null;
-
-
-		private static bool m_morphLoadToggle = true;
-		public static bool MorphLoadToggle
-		{
-			get => !MakerAPI.InsideMaker || m_morphLoadToggle;
-			private set => m_morphLoadToggle = value;
-		}
-		internal static MorphMakerDropdown select = null;
-
+		
 		private static void Cleanup()
 		{
 			abmxIndex = -1;
@@ -279,7 +283,7 @@ namespace Character_Morpher
 
 
 							{
-								CharaMorpher_Core.Logger.LogDebug($"lastUCMD: {lastUCMD}");
+							//	CharaMorpher_Core.Logger.LogDebug($"lastUCMD: {lastUCMD}");
 								yield return new WaitWhile(() => ctrl.isReloading);
 
 								var tmpCtrls =
@@ -294,7 +298,7 @@ namespace Character_Morpher
 								ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1));
 
 								lastUCMD = cfg.preferCardMorphDataMaker.Value;//this is needed
-								CharaMorpher_Core.Logger.LogDebug($"Next lastUCMD: {lastUCMD}");
+						//		CharaMorpher_Core.Logger.LogDebug($"Next lastUCMD: {lastUCMD}");
 							}
 
 							if(!name.IsNullOrEmpty())
@@ -868,9 +872,9 @@ namespace Character_Morpher
 					if(list?.ContainsKey(name) ?? false)
 						foreach(var def2 in list[name].Keys.ToList())
 						{
-							CharaMorpher_Core.Logger.LogDebug($"Data Expected: data[{name}][{def2}]");
-							CharaMorpher_Core.Logger.LogDebug($"Data Key1:\n data[{string.Join(",\n ", data?.Keys.ToArray())}]");
-							CharaMorpher_Core.Logger.LogDebug($"Data Key2:\n data[{string.Join(",\n ", data?[data.Keys.ElementAt(0)].Keys.ToArray())}]");
+							//CharaMorpher_Core.Logger.LogDebug($"Data Expected: data[{name}][{def2}]");
+							//CharaMorpher_Core.Logger.LogDebug($"Data Key1:\n data[{string.Join(",\n ", data?.Keys.ToArray())}]");
+							//CharaMorpher_Core.Logger.LogDebug($"Data Key2:\n data[{string.Join(",\n ", data?[data.Keys.ElementAt(0)].Keys.ToArray())}]");
 
 							var val = data[name][def2].data;
 							var cal = data[name][def2].calcType;
@@ -967,18 +971,21 @@ namespace Character_Morpher
 					foreach(CharaMorpherController ctrl in GetFuncCtrlOfType<CharaMorpherController>())
 					{
 						//	ctrl.StopAllCoroutines();
+
+						//	CharaMorpher_Core.Logger.LogDebug($"Mod Category:{ctrl.controls.currentSet}");
 						if(reset)
 							for(int a = 0; a < ctrl.controls.all[ctrl.controls.currentSet].Count; ++a)
 							{
+								//CharaMorpher_Core.Logger.LogDebug($"Mod name:{ctrl.controls.all[ctrl.controls.currentSet].Keys.ElementAt(a)}");
 								//	var cal = ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all.Keys.ElementAt(a)].calcType;
-								ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all.Keys.ElementAt(a)].SetData(1f);
+								ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all[ctrl.controls.currentSet].Keys.ElementAt(a)].SetData(1f);
 							}
 
 						var tmp = swap ? ctrl.controls.overall : ctrl.controls.notOverall;
 						for(int a = 0; a < tmp.Count(); ++a)
 						{
 							//var cal = ctrl.controls.all[ctrl.controls.currentSet][tmp.ElementAt(a).Key].calcType;
-							ctrl.controls.all[ctrl.controls.currentSet][tmp.ElementAt(a).Key].SetData(percent);
+							ctrl.controls.all[ctrl.controls.currentSet][tmp.ElementAt(a).Key].SetData(percent*.01f);
 						}
 
 						for(int a = -1; a < cfg.multiUpdateEnableTest.Value;)

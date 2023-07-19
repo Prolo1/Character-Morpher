@@ -51,12 +51,13 @@ using UniRx;
  * Morph face features     
  * Morph ABMX body features
  * Morph ABMX face features
+ * Easy Morph Buttons
+ * Save morph changes to card (w/o changing card parameters)
  * Added QoL file explorer search for morph target in maker
  * Can choose to enable/disable in-game use (this affects all but male character[s])
  * Can choose to enable/disable use in male maker
 
   Planned:                                           
- * Save morph changes to card (w/o changing card parameters)
 ************************************************/
 
 
@@ -85,7 +86,7 @@ namespace Character_Morpher
 		// Avoid changing GUID unless absolutely necessary. Plugins that rely on your plugin will no longer recognize it, and if you use it in function controllers you will lose all data saved to cards before the change!
 		public const string ModName = "Character Morpher";
 		public const string GUID = "prolo.chararmorpher";//never change this
-		public const string Version = "1.0.0";
+		public const string Version = "1.1.0";
 
 		public const string strDivider = ":";
 		public const string defaultStr = "(Default)" + strDivider;
@@ -612,7 +613,7 @@ namespace Character_Morpher
 			cfg.preferCardMorphDataMaker.SettingChanged += (m, n) =>
 			{
 				if(MakerAPI.InsideMaker)
-					foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+					foreach(var ctrl in GetFuncCtrlOfType<CharaMorpherController>())
 						if(ctrl.isInitLoadFinished)
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 			};
@@ -620,7 +621,7 @@ namespace Character_Morpher
 			cfg.preferCardMorphDataGame.SettingChanged += (m, n) =>
 			{
 				if(!MakerAPI.InsideMaker)
-					foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+					foreach(var ctrl in GetFuncCtrlOfType<CharaMorpherController>())
 						if(ctrl.isInitLoadFinished)
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 			};
@@ -987,7 +988,7 @@ namespace Character_Morpher
 				ConfigEntry<MorphSliderData> lastConfig = null;
 
 				var oldData = oldConversionList.FirstOrNull((a) => a[1] == settingName);
-				string convertStr = oldData?[0] ?? "";
+				string convertStr = oldData?[0].Trim() ?? "";
 				bool isAbmx = bool.Parse(oldData?[2] ?? bool.FalseString);
 
 				if(!cfg.defaults[slotName].Any((k) => k.Value.Definition.Key == val.Key))
@@ -1021,12 +1022,12 @@ namespace Character_Morpher
 
 						if(!(cfg.defaults[defaultStr].Values.ToList().
 							FirstOrNull((v) => v.Definition.Key.Contains(val.Key)) == null))
-							if(!(convertStr = oldConversionList.FirstOrNull((a) => a[1] == val.Key)?[0] ?? null).IsNullOrEmpty())
+							if(!(convertStr = oldConversionList.FirstOrNull((a) => a[1] == val.Key)?[0].Trim() ?? null).IsNullOrEmpty())
 								cfg.defaults[defaultStr][convertStr]?.Value.SetData(lastConfig?.Value.data * .01f ?? 0);
 
 						if(!(cfg.defaults[defaultStr].Values.ToList().
 							FirstOrNull((v) => (v.Definition.Key + " Mode").Contains(val.Key)) == null))
-							if(!(convertStr = oldConversionList.FirstOrNull((a) => (a[1] + " Mode") == val.Key)?[0] ?? null).IsNullOrEmpty())
+							if(!(convertStr = oldConversionList.FirstOrNull((a) => (a[1] + " Mode") == val.Key)?[0].Trim() ?? null).IsNullOrEmpty())
 								cfg.defaults[defaultStr][convertStr]?.Value.SetCalcType(lastConfig?.Value.calcType ?? MorphCalcType.LINEAR);
 					}
 
@@ -1684,25 +1685,6 @@ namespace Character_Morpher
 				ctrl.ctrls2 = ctrl?.controls.Clone();//needs to be done this way
 
 			var listCtrl = !ucmd ? ctrl.ctrls1 : (ctrl.ctrls2 ?? ctrl.ctrls1);
-
-			//var list = ((!ucmd ? ctrl.ctrls1 : ctrl.ctrls2 ?? ctrl.ctrls1)?.all);
-			//var listCpy = list.ToDictionary((k) => k.Key, (e1) => e1.Value.ToDictionary(k => k.Key, e2 => e2.Value));
-			//if(listCtrl?.Copy(ctrl.controls) ?? false)
-			//	CharaMorpher_Core.Logger.LogDebug("SoftSave Saved successfully");
-			//else
-			//	CharaMorpher_Core.Logger.LogDebug("SoftSave Failed... successfully");
-
-
-			//CharaMorpher_Core.Logger.LogDebug($"ctrls1 Saved:\n [{string.Join(",\n ", ctrl.ctrls1?.all?.Keys?.ToArray() ?? new string[] { })}]");
-			//CharaMorpher_Core.Logger.LogDebug($"ctrls2 Saved:\n [{string.Join(",\n ", ctrl.ctrls2?.all?.Keys?.ToArray() ?? new string[] { })}]");
-
-			//foreach(var def in list.Keys.ToList())
-			//	if(spec == null || def == spec)
-			//		foreach(var def2 in list[def].Keys.ToList())
-			//			list[def][def2] = Tuple.Create
-			//				(ctrl.controls.all[def][def2].Item1,
-			//				ctrl.controls.all[def][def2].Item2);
-
 		}
 
 		/// <summary>
