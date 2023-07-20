@@ -1296,6 +1296,7 @@ namespace Character_Morpher
 				}
 
 				enable = (reset ? (initReset ? cfg.initialMorphFaceTest.Value : 0) : 1);
+				
 				//Face Shape
 				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"updating face Shape");
 				if(a < mainData1.custom.face.shapeValueFace.Length)
@@ -1362,7 +1363,7 @@ namespace Character_Morpher
 					}
 
 					//load values to character
-					if(result != ChaControl.GetShapeBodyValue(a))
+					if(result != ChaControl.GetShapeFaceValue(a) )
 						ChaControl.SetShapeFaceValue(a, result);
 				}
 			}
@@ -2326,37 +2327,36 @@ namespace Character_Morpher
 					{
 						bool Check()
 						{
-
 							if(_all.Count != _lastAll.Count)
-								return false;
+								return true;
 
 							if(!_all.TryGetValue(currentSet, out var tmp1)) return true;
 
 							if(_all[currentSet].Count != _lastAll[currentSet].Count)
-								return false;
-
+								return true;
 
 							for(int a = 0; a < _all[currentSet].Count; ++a)
 							{
 								var name = _all[currentSet].Keys.ElementAt(a);
 								if(_lastAll.ContainsKey(currentSet) && _lastAll[currentSet].ContainsKey(name))
 								{
-									if(_all[currentSet].TryGetValue(_all[currentSet].Keys.ElementAt(a), out var tmp2))
-										if(_all[currentSet][_all[currentSet].Keys.ElementAt(a)].data !=
-											_lastAll[currentSet][_lastAll[currentSet].Keys.ElementAt(a)].data)
-											return true;
+									//if(_all[currentSet].TryGetValue(_all[currentSet].Keys.ElementAt(a), out var tmp2))
+									if(_all[currentSet][name].data !=
+										_lastAll[currentSet][name].data)
+										return true;
 								}
-								else return false;
+								else return true;
 							}
+
 							return false;
 						};
 
 						if(_all == null) yield break;
 
 						bool check = Check();
-						_lastAll = new Dictionary<string, Dictionary<string, MorphSliderData>>(_all ??
-							new Dictionary<string, Dictionary<string, MorphSliderData>>());
+						_lastAll = _all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value.Clone()));
 
+					//	CharaMorpher_Core.Logger.LogInfo($"The change check returned: {check}");
 						if(check)
 							OnInternalSliderValueChange.Invoke();
 
