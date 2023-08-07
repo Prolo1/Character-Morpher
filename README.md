@@ -27,8 +27,8 @@ This mod allows for the user to set a morph target and change any character to l
 The mod versions used are from the latest versions of [Better Repack](https://dl.betterrepack.com/public/)
 
 * [Illusion API](https://github.com/IllusionMods/IllusionModdingAPI)
-* [ABMX](https://github.com/ManlyMarco/ABMX) (this mod basically made it all possible)
 * [BepisPlugins](https://github.com/IllusionMods/BepisPlugins)
+* [ABMX](https://github.com/ManlyMarco/ABMX) (this mod basically made it all possible)
 
 ## Setup
 
