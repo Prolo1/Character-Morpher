@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 //using System.Threading.Tasks;
 
@@ -10,26 +11,20 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 //using BepInEx.Preloader.Patching;
-using ExtensibleSaveFormat;
-using HarmonyLib;
+using KKAPI;
 using KKAPI.Chara;
 using KKAPI.Maker;
 using KKAPI.Studio;
-
-
-using KKAPI;
-using UnityEngine.Events;
-//using UniRx;
-using UnityEngine;
-using System.Runtime.InteropServices;
-using KKABMX.Core;
-using Manager;
-
-
 using KKAPI.Utilities;
 using KKAPI.Maker.UI;
+using ExtensibleSaveFormat;
+//using HarmonyLib;
 
-
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.UI;
+using TMPro;
+using UniRx;
 
 #if HONEY_API
 
@@ -37,12 +32,9 @@ using AIChara;
 #endif
 
 using static Character_Morpher.CharaMorpher_Core;
-using static Character_Morpher.CharaMorpherController;
+//using static Character_Morpher.CharaMorpherController;
 using static Character_Morpher.CharaMorpherGUI;
 using static Character_Morpher.MorphUtil;
-using TMPro;
-using UnityEngine.UI;
-using UniRx;
 
 /***********************************************
   Features:
@@ -51,12 +43,13 @@ using UniRx;
  * Morph face features     
  * Morph ABMX body features
  * Morph ABMX face features
+ * Easy Morph Buttons
+ * Save morph changes to card (w/o changing card parameters)
  * Added QoL file explorer search for morph target in maker
  * Can choose to enable/disable in-game use (this affects all but male character[s])
  * Can choose to enable/disable use in male maker
 
   Planned:                                           
- * Save morph changes to card (w/o changing card parameters)
 ************************************************/
 
 
@@ -85,7 +78,7 @@ namespace Character_Morpher
 		// Avoid changing GUID unless absolutely necessary. Plugins that rely on your plugin will no longer recognize it, and if you use it in function controllers you will lose all data saved to cards before the change!
 		public const string ModName = "Character Morpher";
 		public const string GUID = "prolo.chararmorpher";//never change this
-		public const string Version = "1.0.0";
+		public const string Version = "1.1.0";
 
 		public const string strDivider = ":";
 		public const string defaultStr = "(Default)" + strDivider;
@@ -94,7 +87,7 @@ namespace Character_Morpher
 		internal static new ManualLogSource Logger;
 		internal static OnNewImage OnNewTargetImage = new OnNewImage();
 		internal static OnValueChange OnInternalSliderValueChange = new OnValueChange();
-		internal static OnControlSetValueChange OnInternalControlSetAdded = new OnControlSetValueChange();
+		internal static OnControlSetValueChange OnInternalControlListChanged = new OnControlSetValueChange();
 
 		public Dictionary<string, List<MorphSliderData>> controlCategories = new Dictionary<string, List<MorphSliderData>>();
 		public static MorphConfig cfg;
@@ -177,45 +170,8 @@ namespace Character_Morpher
 
 			ForeGrounder.SetCurrentForground();
 
-			//Adding new Type for Config list!
-			string splitstr = "\\:/";
-			TomlTypeConverter.AddConverter(typeof(MorphSliderData),
-							new TypeConverter
-							{
-								ConvertToObject = (s, t) =>
-								{
-									var vals = s.Split(new string[] { splitstr }, StringSplitOptions.None);
-									if(vals.Length > 4)
-										for(int a = 1; a <= (vals.Length - 4); ++a)
-											vals[0] += vals[a];
-									if(vals.Length < 3)
-										return new MorphSliderData
-										{
-											dataName = "",
-											data = float.TryParse(vals[0], out var result1) ? result1 : 0.0f,
-											calcType = int.TryParse(vals[0], out var result2) ? (MorphCalcType)result2 : MorphCalcType.LINEAR,
-										};
-									return new MorphSliderData
-									{
-										dataName = vals[0],
-										data = float.Parse(vals[1]) * 0.01f,
-										calcType = (MorphCalcType)int.Parse(vals[2]),
-										isABMX = bool.Parse(vals.Length == 4 ? vals[3] : "false"),
-									};
-								},
-
-								ConvertToString = (o, t) =>
-								{
-									var val = (MorphSliderData)o;
-
-									return
-									$"{val.dataName}{splitstr}{val.data * 100}{splitstr}" +
-									$"{(int)val.calcType}{splitstr}{val.isABMX}";
-								}
-							});
 
 			/**This stuff will be used later*/
-
 			//	var assembly = Assembly.GetExecutingAssembly();
 			////	var resources = assembly.GetManifestResourceNames();
 			//	var image = assembly.GetManifestResourceStream("Character_Morpher.Resources.ultra instinct.jpg");
@@ -225,14 +181,14 @@ namespace Character_Morpher
 
 
 
-			string femalepath = Path.Combine(Paths.GameRootPath, "/UserData/chara/female/");
+			string femalepath = MorphUtil.MakeDirPath
+				(Path.Combine(Paths.GameRootPath, "UserData/chara/female/"));
 
 			int bodyBoneAmount = ChaFileDefine.cf_bodyshapename.Length - 1;
 			int faceBoneAmount = ChaFileDefine.cf_headshapename.Length - 1;
-			//Logger.LogDebug($"Body bones amount: {bodyBoneAmount}");
-			//Logger.LogDebug($"Face bones amount: {faceBoneAmount}");
+			//Logger.LogDebug($"Body bones amount: {bodyBoneAmount+1}");
+			//Logger.LogDebug($"Face bones amount: {faceBoneAmount+1}");
 
-			//	Instance.Config.Reload();//get controls from disk
 
 			int index = 0;//easier to input index order values
 			string main = "__Main__", advanced = "_Advanced_";
@@ -247,15 +203,15 @@ namespace Character_Morpher
 				enableABMX = Config.Bind(main, "Enable ABMX", true, new ConfigDescription("Allows ABMX to be affected", null, new ConfigurationManagerAttributes { Order = --index })),
 				enableInMaleMaker = Config.Bind(main, "Enable in Male Maker", false, new ConfigDescription("Allows the plugin to run while in male maker (enable before launching maker)", null, new ConfigurationManagerAttributes { Order = --index })),
 				enableInGame = Config.Bind(main, "Enable in Game", true, new ConfigDescription("Allows the plugin to run while in main game", null, new ConfigurationManagerAttributes { Order = --index })),
-				linkOverallABMXSliders = Config.Bind(main, "Link Overall Base Sliders to ABMX Overall Sliders", true, new ConfigDescription("Allows ABMX overall sliders to be affected by their base counterpart (i.e. Body:50% * ABMXBody:100% = ABMXBody:50%)", null, new ConfigurationManagerAttributes { Order = --index })),
+				linkOverallABMXSliders = Config.Bind(main, "Link Overall Base Sliders to Overall ABMX Sliders", true, new ConfigDescription("Allows ABMX overall sliders to be affected by their base counterpart (i.e. Body:50% * ABMXBody:100% = ABMXBody:50%)", null, new ConfigurationManagerAttributes { Order = --index })),
 				enableCalcTypes = Config.Bind(main, "Enable Calculation Types", false, new ConfigDescription("Enables quadratic mode where value gets squared (i.e. 1.2 = 1.2^2 = 1.44)", null, new ConfigurationManagerAttributes { Order = --index })),
 				saveExtData = Config.Bind(main, "Save Ext. Data", true,
 				new ConfigDescription("Allows the card to save using ext. data. " +
 				"If true, card is saved as seen with Morph Ext. data added to the card (card will look the same for those who don't have the mod), " +
 				"else the card is saved normally w/o Morph Ext. data and saved as seen (must be set before saving)", null, new ConfigurationManagerAttributes { Order = --index })),
-				preferCardMorphDataMaker = Config.Bind(main, "Prefer Card Morph Data (Maker)", true, new ConfigDescription("Allows the mod to use data from card instead of default data (If false card uses default Morph card dat \nNote: the image will go dark if using card data", null, new ConfigurationManagerAttributes { Order = --index })),
-				preferCardMorphDataGame = Config.Bind(main, "Prefer Card Morph Data (Game)", true, new ConfigDescription("Allows the mod to use data from card instead of default data (If false card uses default Morph card data) \nNote: the image will go dark if using card data", null, new ConfigurationManagerAttributes { Order = --index })),
-				loadInitMorphCharacter = Config.Bind(main, "Load Init. Character", true, new ConfigDescription("If the character had extra work done to it before it was saved, when loaded you will see those changes")),
+				preferCardMorphDataMaker = Config.Bind(main, "Use Card Morph Data (Maker)", true, new ConfigDescription("Allows the mod to use data from card instead of default data (If false card uses default Morph card dat \nNote: the image will go dark if using card data", null, new ConfigurationManagerAttributes { Order = --index })),
+				preferCardMorphDataGame = Config.Bind(main, "Use Card Morph Data (Game)", true, new ConfigDescription("Allows the mod to use data from card instead of default data (If false card uses default Morph card data) \nNote: the image will go dark if using card data", null, new ConfigurationManagerAttributes { Order = --index })),
+				loadInitMorphCharacter = Config.Bind(main, "Load Init. Character", true, new ConfigDescription("If the character had extra work done to it before it was saved, when loaded you will see those changes", null, new ConfigurationManagerAttributes() { Order = --index })),
 				onlyMorphCharWithDataInGame = Config.Bind(main, "Only Morph Characters With Save Data (Game)", false, new ConfigDescription("Only allows cards that have morph data saved to it to be changed in game (If true all cards not saved with CharaMorph Data will not morph AT ALL!)", null, new ConfigurationManagerAttributes { Order = --index })),
 
 				charDir = Config.Bind(main, "Directory Path", femalepath, new ConfigDescription("Directory where character is stored", null, new ConfigurationManagerAttributes { Order = --index, DefaultValue = true, Browsable = true })),
@@ -601,18 +557,14 @@ namespace Character_Morpher
 
 			cfg.currentControlName.SettingChanged += (m, n) =>
 			{
-				//	OnInternalSliderValueChange.Invoke();
-				//	foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
-				//	{
-				//		for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-				//			StartCoroutine(ctrl?.CoMorphChangeUpdate(delay: a + 1, forceReset: !cfg.enable.Value));
-				//	}
+				UpdateGUISelectList();
+
 			};
 
 			cfg.preferCardMorphDataMaker.SettingChanged += (m, n) =>
 			{
 				if(MakerAPI.InsideMaker)
-					foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+					foreach(var ctrl in GetFuncCtrlOfType<CharaMorpherController>())
 						if(ctrl.isInitLoadFinished)
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 			};
@@ -620,7 +572,7 @@ namespace Character_Morpher
 			cfg.preferCardMorphDataGame.SettingChanged += (m, n) =>
 			{
 				if(!MakerAPI.InsideMaker)
-					foreach(var ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+					foreach(var ctrl in GetFuncCtrlOfType<CharaMorpherController>())
 						if(ctrl.isInitLoadFinished)
 							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 			};
@@ -695,7 +647,7 @@ namespace Character_Morpher
 
 							ctrl.controls.Copy(!lastUCMD ? ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1));
 
-							SoftSave(lastUCMD, ctrl);
+							ctrl.SoftSaveControls(lastUCMD);
 
 							ctrl.controls.Copy(!cfg.preferCardMorphDataGame.Value ?
 							ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1));
@@ -735,18 +687,61 @@ namespace Character_Morpher
 
 	public class MorphSliderData
 	{
-		public MorphSliderData() { }
+		public MorphSliderData() { TypeCreator(); }
 		public MorphSliderData(string dataName, float data = 0, MorphCalcType calc = MorphCalcType.LINEAR, bool isABMX = false)
 		{
 			this.dataName = dataName;
 			this.data = data;
 			this.calcType = calc;
 			this.isABMX = isABMX;
+
+			TypeCreator();
 		}
 		public string dataName;
 		public float data = 0;
 		public bool isABMX = false;
 		public MorphCalcType calcType = MorphCalcType.LINEAR;
+
+		static void TypeCreator()
+		{
+			//Adding new Type for Config list!
+			string splitstr = "\\:/";
+			if(!TomlTypeConverter.CanConvert(typeof(MorphSliderData)))
+				TomlTypeConverter.AddConverter(typeof(MorphSliderData),
+					new TypeConverter
+					{
+						ConvertToObject = (s, t) =>
+						{
+							var vals = s.Split(new string[] { splitstr }, StringSplitOptions.None);
+							if(vals.Length > 4)
+								for(int a = 1; a <= (vals.Length - 4); ++a)
+									vals[0] += vals[a];
+							if(vals.Length < 3)
+								return new MorphSliderData
+								{
+									dataName = "",
+									data = float.TryParse(vals[0], out var result1) ? result1 : 0.0f,
+									calcType = int.TryParse(vals[0], out var result2) ? (MorphCalcType)result2 : MorphCalcType.LINEAR,
+								};
+							return new MorphSliderData
+							{
+								dataName = vals[0],
+								data = float.Parse(vals[1]) * 0.01f,
+								calcType = (MorphCalcType)int.Parse(vals[2]),
+								isABMX = bool.Parse(vals.Length == 4 ? vals[3] : "false"),
+							};
+						},
+
+						ConvertToString = (o, t) =>
+						{
+							var val = (MorphSliderData)o;
+
+							return
+							$"{val.dataName}{splitstr}{val.data * 100}{splitstr}" +
+							$"{(int)val.calcType}{splitstr}{val.isABMX}";
+						}
+					});
+		}
 
 		public MorphSliderData SetData(float data) { this.data = data; return this; }
 		public MorphSliderData SetCalcType(MorphCalcType calcType) { this.calcType = calcType; return this; }
@@ -771,7 +766,7 @@ namespace Character_Morpher
 	}
 
 	public class OnValueChange : UnityEvent { }
-	public class OnControlSetValueChange : UnityEvent<string> { }
+	public class OnControlSetValueChange : UnityEvent<string[]> { }
 	public class OnNewImage : UnityEvent<string, byte[]> { }
 
 	/// <summary>
@@ -788,7 +783,7 @@ namespace Character_Morpher
 		{
 			ptr = GetActiveWindow();
 
-			//	CharaMorpher_Core.Logger.LogDebug($"Process ptr 1 set to: {ptr}");
+			//	MorphUtil.Logger.LogDebug($"Process ptr 1 set to: {ptr}");
 		}
 
 		/// <summary>
@@ -796,7 +791,7 @@ namespace Character_Morpher
 		/// </summary>
 		public static void RevertForground()
 		{
-			//	CharaMorpher_Core.Logger.LogDebug($"process ptr: {ptr}");
+			//	MorphUtil.Logger.LogDebug($"process ptr: {ptr}");
 
 			if(ptr != IntPtr.Zero)
 				SwitchToThisWindow(ptr, true);
@@ -971,8 +966,8 @@ namespace Character_Morpher
 				var slotName = val.Key.Substring(0, val.Key.LastIndexOf(strDivider) + 1)?.Trim();
 				var settingName = val.Key.Substring(val.Key.LastIndexOf(strDivider) + 1);
 
-				//CharaMorpher_Core.Logger.LogDebug($"For start");
-				//CharaMorpher_Core.Logger.LogDebug($"val.key: {val.Key}");
+				//MorphUtil.Logger.LogDebug($"For start");
+				//MorphUtil.Logger.LogDebug($"val.key: {val.Key}");
 
 				if(!cfg.defaults.TryGetValue(slotName, out var tmp) && !slotName.IsNullOrEmpty())
 					PopulateDefaultSettings(slotName);
@@ -987,7 +982,7 @@ namespace Character_Morpher
 				ConfigEntry<MorphSliderData> lastConfig = null;
 
 				var oldData = oldConversionList.FirstOrNull((a) => a[1] == settingName);
-				string convertStr = oldData?[0] ?? "";
+				string convertStr = oldData?[0].Trim() ?? "";
 				bool isAbmx = bool.Parse(oldData?[2] ?? bool.FalseString);
 
 				if(!cfg.defaults[slotName].Any((k) => k.Value.Definition.Key == val.Key))
@@ -1021,12 +1016,12 @@ namespace Character_Morpher
 
 						if(!(cfg.defaults[defaultStr].Values.ToList().
 							FirstOrNull((v) => v.Definition.Key.Contains(val.Key)) == null))
-							if(!(convertStr = oldConversionList.FirstOrNull((a) => a[1] == val.Key)?[0] ?? null).IsNullOrEmpty())
+							if(!(convertStr = oldConversionList.FirstOrNull((a) => a[1] == val.Key)?[0].Trim() ?? null).IsNullOrEmpty())
 								cfg.defaults[defaultStr][convertStr]?.Value.SetData(lastConfig?.Value.data * .01f ?? 0);
 
 						if(!(cfg.defaults[defaultStr].Values.ToList().
 							FirstOrNull((v) => (v.Definition.Key + " Mode").Contains(val.Key)) == null))
-							if(!(convertStr = oldConversionList.FirstOrNull((a) => (a[1] + " Mode") == val.Key)?[0] ?? null).IsNullOrEmpty())
+							if(!(convertStr = oldConversionList.FirstOrNull((a) => (a[1] + " Mode") == val.Key)?[0].Trim() ?? null).IsNullOrEmpty())
 								cfg.defaults[defaultStr][convertStr]?.Value.SetCalcType(lastConfig?.Value.calcType ?? MorphCalcType.LINEAR);
 					}
 
@@ -1048,7 +1043,7 @@ namespace Character_Morpher
 					}
 				}
 
-				//	CharaMorpher_Core.Logger.LogDebug($"UpdateDefaultsList Name: {name}");
+				//	MorphUtil.Logger.LogDebug($"UpdateDefaultsList Name: {name}");
 			}
 
 			Instance.Config.Save();
@@ -1095,7 +1090,7 @@ namespace Character_Morpher
 			foreach(var key in cfg.defaults.Keys)
 				selector?.Add(key);
 
-			//	CharaMorpher_Core.Logger.LogDebug($"current List [{string.Join(", ", selector?.ToArray() ?? new string[] { })}]");
+			//	MorphUtil.Logger.LogDebug($"current List [{string.Join(", ", selector?.ToArray() ?? new string[] { })}]");
 
 			//selecter.Value = 
 			SwitchControlSet(cfg.defaults.Keys.ToArray(), selectedMod);
@@ -1215,7 +1210,7 @@ namespace Character_Morpher
 				foreach(var val in cfg.defaults[name])
 					val.Value.Value.dataName = val.Key + "";
 
-				//CharaMorpher_Core.Logger.LogDebug($"Current List: [{string.Join(", ", Instance.controlCategories[name].Attempt((v)=>v.Value))}]");
+				//MorphUtil.Logger.LogDebug($"Current List: [{string.Join(", ", Instance.controlCategories[name].Attempt((v)=>v.Value))}]");
 
 				Instance.Config.Save();
 				Instance.Config.SaveOnConfigSet = saveCfgAuto;
@@ -1263,11 +1258,11 @@ namespace Character_Morpher
 
 
 
-			//	CharaMorpher_Core.Logger.LogDebug("creating Defaults");
+			//	MorphUtil.Logger.LogDebug("creating Defaults");
 
 			PopulateDefaultSettings(name);
 
-			//CharaMorpher_Core.Logger.LogDebug("creating Controls");
+			//MorphUtil.Logger.LogDebug("creating Controls");
 			foreach(var ctrl2 in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 			{
 				ctrl2.controls.all[name] = new Dictionary<string, MorphSliderData>();
@@ -1290,7 +1285,7 @@ namespace Character_Morpher
 					}
 				}
 
-			CharaMorpher_Core.Logger.LogMessage($"Created {name}");
+			MorphUtil.Logger.LogMessage($"Created {name}");
 
 			return name;
 		}
@@ -1303,7 +1298,7 @@ namespace Character_Morpher
 
 			if(name == defaultStr) return;
 
-			//CharaMorpher_Core.Logger.LogDebug("remove Controls");
+			//MorphUtil.Logger.LogDebug("remove Controls");
 
 			foreach(CharaMorpherController ctrl1 in GetFuncCtrlOfType<CharaMorpherController>())
 			{
@@ -1318,12 +1313,12 @@ namespace Character_Morpher
 				data.Remove(name);
 
 				//(!MakerAPI.InsideMaker||!cfg.useCardMorphDataMaker.Value ? ctrl1.ctrls1 : ctrl1.ctrls2 ?? ctrl1.ctrls1)?.all?.Remove(name);
-				//	CharaMorpher_Core.Logger.LogDebug($"Controls List: [{string.Join(", ", obj.Keys.ToArray())}]");
+				//	MorphUtil.Logger.LogDebug($"Controls List: [{string.Join(", ", obj.Keys.ToArray())}]");
 			}
 
 			if(!MakerAPI.InsideMaker || !cfg.preferCardMorphDataMaker.Value || ctrl?.ctrls2 == null)
 			{
-				//	CharaMorpher_Core.Logger.LogDebug("remove Defaults");
+				//	MorphUtil.Logger.LogDebug("remove Defaults");
 				foreach(var def in cfg.defaults)
 					foreach(var val in def.Value)
 						if(def.Key == name)
@@ -1343,8 +1338,8 @@ namespace Character_Morpher
 					Instance.Config.Save();//save to disk
 			}
 
-			CharaMorpher_Core.Logger.LogMessage($"removed [{name}]");
-			//	CharaMorpher_Core.Logger.LogDebug($"Current List: [{string.Join(", ", ControlsList)}]");
+			MorphUtil.Logger.LogMessage($"removed [{name}]");
+			//	MorphUtil.Logger.LogDebug($"Current List: [{string.Join(", ", ControlsList)}]");
 
 
 		}
@@ -1504,7 +1499,7 @@ namespace Character_Morpher
 				}
 				catch(Exception e)
 				{
-					CharaMorpher_Core.Logger.LogError(e);
+					MorphUtil.Logger.LogError(e);
 				}
 
 				if(vertical)
@@ -1514,9 +1509,10 @@ namespace Character_Morpher
 			});
 		}
 
-
+		private static string[] LastControlsList = null;
 		public static string[] ControlsList
 		{
+
 			get
 			{
 				var val = ((!MakerAPI.InsideMaker || !cfg.preferCardMorphDataMaker.Value) ?
@@ -1525,8 +1521,12 @@ namespace Character_Morpher
 					?? Instance?.controlCategories?.Keys.ToList()))
 					.Attempt((k) => k.LastIndexOf(strDivider) >= 0 ? k.Substring(0, k.LastIndexOf(strDivider)) : throw new Exception())
 					.ToArray();
-
 				Array.Sort(val ?? new string[] { });
+
+				if(val != LastControlsList)
+					OnInternalControlListChanged.Invoke(val);
+
+				LastControlsList = val;
 				return val;
 			}
 		}
@@ -1577,15 +1577,15 @@ namespace Character_Morpher
 
 				if(addPress)
 				{
-					//CharaMorpher_Core.Logger.LogDebug("Trying to add a comp from drawer");
+					//MorphUtil.Logger.LogDebug("Trying to add a comp from drawer");
 					AddNewSetting();
 					//UpdateDrpodown(ControlsList);
-					//	CharaMorpher_Core.Logger.LogDebug("execution got to this point");
+					//	MorphUtil.Logger.LogDebug("execution got to this point");
 				}
 
 				if(removePress)
 				{
-					//CharaMorpher_Core.Logger.LogDebug("Trying to remove a comp from drawer");
+					//MorphUtil.Logger.LogDebug("Trying to remove a comp from drawer");
 					//switch control before deletion
 					int tmp = selectedMod;
 					if(selectedMod >= ControlsList.Length - 1)
@@ -1596,14 +1596,14 @@ namespace Character_Morpher
 					selectedMod = SwitchControlSet(ControlsList, tmp);
 
 					//	UpdateDrpodown(ControlsList);
-					//CharaMorpher_Core.Logger.LogDebug("execution got to this point");
+					//MorphUtil.Logger.LogDebug("execution got to this point");
 					//scrollview = Vector2.zero;
 				}
 				GUILayout.EndVertical();
 			}
 			catch(Exception e)
 			{
-				CharaMorpher_Core.Logger.LogError(e);
+				MorphUtil.Logger.LogError(e);
 			}
 		}
 
@@ -1635,7 +1635,7 @@ namespace Character_Morpher
 			return gui;
 		}
 
-		static CurrentSaveLoadController saveLoad = new CurrentSaveLoadController();
+		public static readonly CurrentSaveLoadController saveLoad = new CurrentSaveLoadController();
 		public static PluginData SaveExtData(this CharaMorpherController ctrl) => saveLoad.Save(ctrl);
 		public static PluginData LoadExtData(this CharaMorpherController ctrl, PluginData data = null)
 		{
@@ -1671,39 +1671,6 @@ namespace Character_Morpher
 			};
 		}
 
-		public static void SoftSave(bool ucmd, CharaMorpherController ctrl = null/*, string spec = null*/)
-		{
-			if(!MakerAPI.InsideMaker) return;
-
-			if(!ctrl)
-				ctrl = GetFuncCtrlOfType<CharaMorpherController>().FirstOrNull();
-
-			if(!ctrl) return;//return if ctrl is null
-
-			if(ucmd && ctrl.isReloading)
-				ctrl.ctrls2 = ctrl?.controls.Clone();//needs to be done this way
-
-			var listCtrl = !ucmd ? ctrl.ctrls1 : (ctrl.ctrls2 ?? ctrl.ctrls1);
-
-			//var list = ((!ucmd ? ctrl.ctrls1 : ctrl.ctrls2 ?? ctrl.ctrls1)?.all);
-			//var listCpy = list.ToDictionary((k) => k.Key, (e1) => e1.Value.ToDictionary(k => k.Key, e2 => e2.Value));
-			//if(listCtrl?.Copy(ctrl.controls) ?? false)
-			//	CharaMorpher_Core.Logger.LogDebug("SoftSave Saved successfully");
-			//else
-			//	CharaMorpher_Core.Logger.LogDebug("SoftSave Failed... successfully");
-
-
-			//CharaMorpher_Core.Logger.LogDebug($"ctrls1 Saved:\n [{string.Join(",\n ", ctrl.ctrls1?.all?.Keys?.ToArray() ?? new string[] { })}]");
-			//CharaMorpher_Core.Logger.LogDebug($"ctrls2 Saved:\n [{string.Join(",\n ", ctrl.ctrls2?.all?.Keys?.ToArray() ?? new string[] { })}]");
-
-			//foreach(var def in list.Keys.ToList())
-			//	if(spec == null || def == spec)
-			//		foreach(var def2 in list[def].Keys.ToList())
-			//			list[def][def2] = Tuple.Create
-			//				(ctrl.controls.all[def][def2].Item1,
-			//				ctrl.controls.all[def][def2].Item2);
-
-		}
 
 		/// <summary>
 		/// gets the text of the first Text or TMP_Text component in a game object or it's children.
