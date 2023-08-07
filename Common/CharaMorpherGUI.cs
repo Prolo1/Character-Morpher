@@ -6,6 +6,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.Events;
+using TMPro;
 
 using BepInEx;
 using BepInEx.Configuration;
@@ -15,9 +19,9 @@ using KKAPI.Utilities;
 using KKAPI.Maker;
 using KKAPI.Maker.UI;
 using KKAPI.Chara;
+using KKABMX.Core;
 using UniRx;
 using UniRx.Triggers;
-
 
 #if HONEY_API
 using CharaCustom;
@@ -26,15 +30,10 @@ using AIChara;
 using ChaCustom;
 #endif
 
-using UnityEngine;
-using TMPro;
-using UnityEngine.UI;
-using UnityEngine.UI.Collections;
-using UnityEngine.Events;
-
 using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.MorphUtil;
-using KKABMX.Core;
+using static KKAPI.Maker.MakerAPI;
+
 
 
 namespace Character_Morpher
@@ -66,26 +65,34 @@ namespace Character_Morpher
 		private readonly static List<MorphMakerSlider> sliders = new List<MorphMakerSlider>();
 		private readonly static List<MorphMakerDropdown> modes = new List<MorphMakerDropdown>();
 		private readonly static List<UnityAction> sliderValActions = new List<UnityAction>();
+		//static Dictionary<EventHandler, List<EventHandler>> handelerList = new Dictionary<EventHandler, List<EventHandler>>();
+		static EventHandler enableEvent = null;
+		static EventHandler enableABMXEvent = null;
+		static EventHandler saveAsMorphDataEvent = null;
+		static EventHandler linkOverallSlidersEvent = null;
+		static EventHandler enableCalcTypesEvent = null;
 		static EventHandler lastUCMDEvent = null;
 		static EventHandler loadInitMorphCharacterEvent = null;
-		static EventHandler saveAsMorphDataEvent = null;
-		static EventHandler enableCalcTypesEvent = null;
-		static EventHandler enableEvent = null;
 		static EventHandler currentControlNameEvent = null;
-
+		static EventHandler easyMorphOverallEvent = null;
+		static EventHandler easyMorphDefaultingEvent = null;
+		static UnityAction<string[]> controlSetChangedAct = null;
+		static UnityAction<bool, bool, bool> loadDefaultValues = null;
 
 		private static bool m_morphLoadToggle = true;
 		public static bool MorphLoadToggle
 		{
-			get => !MakerAPI.InsideMaker || m_morphLoadToggle;
+			get => !InsideMaker || m_morphLoadToggle;
 			private set => m_morphLoadToggle = value;
 		}
-		internal static MorphMakerDropdown select = null;
+		private static MorphMakerDropdown select = null;
 		#endregion
+
+
 
 		internal static void Initialize()
 		{
-			MakerAPI.RegisterCustomSubCategories += (s, e) =>
+			RegisterCustomSubCategories += (s, e) =>
 			{
 				//Create custom category 
 
@@ -98,8 +105,8 @@ namespace Character_Morpher
 
 				e.AddSubCategory(category);
 			};
-			MakerAPI.MakerBaseLoaded += (s, e) => { AddCharaMorpherMenu(e); };
-			MakerAPI.MakerFinishedLoading += (s, e) =>
+			MakerBaseLoaded += (s, e) => { AddCharaMorpherMenu(e); };
+			MakerFinishedLoading += (s, e) =>
 			{
 				var allCvs =
 
@@ -128,10 +135,10 @@ namespace Character_Morpher
 				//Force the floating settings window to show up
 
 				var btn = allCvs?.FirstOrNull(p => p?.btnItem?.gameObject?.GetTextFromTextComponent() == displayName).btnItem;
-				btn?.onClick?.AddListener(() => MakerAPI.GetMakerBase().drawMenu.ChangeMenuFunc());
+				btn?.onClick?.AddListener(() => GetMakerBase().drawMenu.ChangeMenuFunc());
 #endif
 			};
-			MakerAPI.MakerExiting += (s, e) => { Cleanup(); };
+			MakerExiting += (s, e) => { Cleanup(); };
 			cfg.sliderExtents.SettingChanged += (m, n) =>
 			{
 				IEnumerator CoEditExtents(uint start = 0, uint end = int.MaxValue)
@@ -165,7 +172,7 @@ namespace Character_Morpher
 				lastExtent = Instance.StartCoroutine(CoEditExtents(start: 1));
 			};
 		}
-		
+
 		private static void Cleanup()
 		{
 			abmxIndex = -1;
@@ -174,18 +181,30 @@ namespace Character_Morpher
 			sliders.Clear();
 			modes.Clear();
 
+
+			if(enableEvent != null)
+				cfg.enable.SettingChanged -= enableEvent;
+			if(enableABMXEvent != null)
+				cfg.enableABMX.SettingChanged -= enableABMXEvent;
 			if(lastUCMDEvent != null)
 				cfg.preferCardMorphDataMaker.SettingChanged -= lastUCMDEvent;
+			if(linkOverallSlidersEvent != null)
+				cfg.linkOverallABMXSliders.SettingChanged -= linkOverallSlidersEvent;
 			if(saveAsMorphDataEvent != null)
 				cfg.saveExtData.SettingChanged -= saveAsMorphDataEvent;
 			if(enableCalcTypesEvent != null)
 				cfg.enableCalcTypes.SettingChanged -= enableCalcTypesEvent;
-			if(enableEvent != null)
-				cfg.enable.SettingChanged -= enableEvent;
 			if(currentControlNameEvent != null)
 				cfg.currentControlName.SettingChanged -= currentControlNameEvent;
 			if(loadInitMorphCharacterEvent != null)
 				cfg.loadInitMorphCharacter.SettingChanged -= loadInitMorphCharacterEvent;
+			if(easyMorphOverallEvent != null)
+				cfg.easyMorphBtnOverallSet.SettingChanged -= easyMorphOverallEvent;
+			if(easyMorphDefaultingEvent != null)
+				cfg.easyMorphBtnEnableDefaulting.SettingChanged -= easyMorphDefaultingEvent;
+
+			if(controlSetChangedAct != null)
+				OnInternalControlListChanged.RemoveListener(controlSetChangedAct);
 
 			foreach(var act in sliderValActions)
 				OnInternalSliderValueChange.RemoveListener(act);
@@ -198,7 +217,7 @@ namespace Character_Morpher
 
 			var inst = Instance;
 
-			if(MakerAPI.GetMakerSex() == 0 && !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
+			if(GetMakerSex() == 0 && !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
 
 			#region Load Toggles
 
@@ -213,50 +232,58 @@ namespace Character_Morpher
 			#endregion
 
 			#region Enables
+			e.AddControl(new MakerText("Enablers", category, Instance));
 
-			e.AddControl(new MakerText("Enablers", category, CharaMorpher_Core.Instance));
-			var enable = e.AddControl(new MakerToggle(category, "Enable", cfg.enable.Value, CharaMorpher_Core.Instance));
-
-			var enableabmx = e.AddControl(new MakerToggle(category, "Enable ABMX", cfg.enableABMX.Value, CharaMorpher_Core.Instance));
-
-			var saveExtData = (MakerToggle)e.AddControl(new MakerToggle(category, "Save Ext. Data", cfg.saveExtData.Value, CharaMorpher_Core.Instance))
+			var enable = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable", cfg.enable.Value, Instance))
 				.OnGUIExists((gui) =>
-					cfg.saveExtData.SettingChanged +=
-					saveAsMorphDataEvent = (s, o) =>
-					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.saveExtData.Value)
-				);
+				cfg.enable.SettingChanged +=
+				enableEvent = (s, o) =>
+				gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enable.Value));
 
-			saveExtData.BindToFunctionController<CharaMorpherController, bool>(
-				(ctrl) => cfg.saveExtData.Value,
-				(ctrl, val) => { if(val != cfg.saveExtData.Value) cfg.saveExtData.Value = val; });
+			var enableabmx = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable ABMX", cfg.enableABMX.Value, Instance))
+				.OnGUIExists((gui) =>
+				cfg.enableABMX.SettingChanged +=
+				enableABMXEvent = (s, o) =>
+				gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableABMX.Value));
 
-
-			var linkoverallabmxsliders = e.AddControl(new MakerToggle(category, "Link Overall Sliders to ABMX Overall Sliders", cfg.linkOverallABMXSliders.Value, CharaMorpher_Core.Instance));
-			linkoverallabmxsliders.BindToFunctionController<CharaMorpherController, bool>(
-				(ctrl) => cfg.linkOverallABMXSliders.Value,
-				(ctrl, val) =>
-				{
-					if(!ctrl || !ctrl.isInitLoadFinished) return;
-					cfg.linkOverallABMXSliders.Value = val;
-					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-						ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
-
-					//	ctrl.StartCoroutine(ctrl.CoResetFace(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
-					//	ctrl.StartCoroutine(ctrl.CoResetHeight(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
-				});
+			((MakerToggle)e.AddControl(new MakerToggle(category, "Save Ext. Data", cfg.saveExtData.Value, Instance))
+				.OnGUIExists((gui) =>
+				cfg.saveExtData.SettingChanged +=
+				saveAsMorphDataEvent = (s, o) =>
+				gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.saveExtData.Value)
+		   )).BindToFunctionController<CharaMorpherController, bool>
+		   ((ctrl) => cfg.saveExtData.Value,
+		   (ctrl, val) => { if(val != cfg.saveExtData.Value) cfg.saveExtData.Value = val; });
 
 
+			((MakerToggle)e.AddControl(new MakerToggle(category, "Link Overall Sliders to ABMX Overall Sliders", cfg.linkOverallABMXSliders.Value, Instance))
+			   .OnGUIExists((gui) =>
+			   cfg.linkOverallABMXSliders.SettingChanged +=
+			   linkOverallSlidersEvent = (s, o) =>
+			   gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.linkOverallABMXSliders.Value))
+		   ).BindToFunctionController<CharaMorpherController, bool>
+			   ((ctrl) => cfg.linkOverallABMXSliders.Value,
+			   (ctrl, val) =>
+			   {
+				   if(!ctrl || !ctrl.isInitLoadFinished) return;
+				   cfg.linkOverallABMXSliders.Value = val;
+				   for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+					   ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
 
-			var enableQuadManip = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable Calculation Types", cfg.enableCalcTypes.Value, CharaMorpher_Core.Instance))
+				   //	ctrl.StartCoroutine(ctrl.CoResetFace(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
+				   //	ctrl.StartCoroutine(ctrl.CoResetHeight(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
+			   });
+
+
+
+			var enableQuadManip = (MakerToggle)e.AddControl(new MakerToggle(category, "Enable Calculation Types", cfg.enableCalcTypes.Value, Instance))
 				.OnGUIExists((gui) =>
 					cfg.enableCalcTypes.SettingChanged +=
 					enableCalcTypesEvent = (s, o) =>
 					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableCalcTypes.Value)
 				);
 
-
-
-			e.AddControl(new MakerToggle(category, "Prefer Card Morph Data", cfg.preferCardMorphDataMaker.Value, CharaMorpher_Core.Instance))
+			e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.preferCardMorphDataMaker.Value, Instance))
 				.OnGUIExists((gui) =>
 				{
 					var toggle = (MakerToggle)gui;
@@ -283,7 +310,7 @@ namespace Character_Morpher
 
 
 							{
-							//	CharaMorpher_Core.Logger.LogDebug($"lastUCMD: {lastUCMD}");
+								//	MorphUtil.Logger.LogDebug($"lastUCMD: {lastUCMD}");
 								yield return new WaitWhile(() => ctrl.isReloading);
 
 								var tmpCtrls =
@@ -293,17 +320,19 @@ namespace Character_Morpher
 
 								ctrl.controls.Copy(!lastUCMD ? ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1));
 
-								SoftSave(lastUCMD);
+								ctrl.SoftSaveControls(lastUCMD);
 								ctrl.controls.Copy(!cfg.preferCardMorphDataMaker.Value ?
 								ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1));
 
 								lastUCMD = cfg.preferCardMorphDataMaker.Value;//this is needed
-						//		CharaMorpher_Core.Logger.LogDebug($"Next lastUCMD: {lastUCMD}");
+																			  //		MorphUtil.Logger.LogDebug($"Next lastUCMD: {lastUCMD}");
 							}
 
 							if(!name.IsNullOrEmpty())
 								SwitchControlSet(ControlsList, name);
-							select.Options = ControlsList;
+
+							UpdateGUISelectList();
+
 							toggle?.SetValue(cfg.preferCardMorphDataMaker.Value);
 
 							yield break;
@@ -315,23 +344,26 @@ namespace Character_Morpher
 					};
 				});
 
-			e.AddControl(new MakerToggle(category, "Load Init. Character", cfg.loadInitMorphCharacter.Value, CharaMorpher_Core.Instance))
+			e.AddControl(new MakerToggle(category, "Load Init. Character", cfg.loadInitMorphCharacter.Value, Instance))
 				.OnGUIExists((gui) =>
 				{
 					var tgl = (MakerToggle)gui;
 
 					tgl.BindToFunctionController<CharaMorpherController, bool>(
 						(ctrl) => cfg.loadInitMorphCharacter.Value,
-						(ctrl, val) => cfg.loadInitMorphCharacter.Value = val);
+						(ctrl, val) =>
+						{
+							if(cfg.loadInitMorphCharacter.Value != val)
+								cfg.loadInitMorphCharacter.Value = val;
+						});
 
 					cfg.loadInitMorphCharacter.SettingChanged +=
 					loadInitMorphCharacterEvent += (m, n) =>
-					{
-						tgl.Value = cfg.loadInitMorphCharacter.Value;
-					};
+					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.loadInitMorphCharacter.Value);
+					
 				});
 
-			e.AddControl(new MakerButton("Reset To Original Shape", category, CharaMorpher_Core.Instance))
+			e.AddControl(new MakerButton("Reset To Original Shape", category, Instance))
 				.OnGUIExists((gui) =>
 				{
 					var btn = (MakerButton)gui;
@@ -343,7 +375,7 @@ namespace Character_Morpher
 					});
 				});
 
-			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
+			e.AddControl(new MakerSeparator(category, Instance));
 			#endregion
 
 			#region Easy Morph Stuff
@@ -364,13 +396,13 @@ namespace Character_Morpher
 				//add space after separator
 				if(Regex.IsMatch(settingName, searchHits[0], RegexOptions.IgnoreCase))
 				{
-					e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
+					e.AddControl(new MakerText("", category, Instance));//create space
 
 					string part = Regex.Replace(visualName, searchHits[0],
 						Regex.IsMatch(visualName, searchHits[1], RegexOptions.IgnoreCase) ? "" : "Base", RegexOptions.IgnoreCase);
 
 					part = Regex.Replace(part, "  ", " ", RegexOptions.IgnoreCase);
-					e.AddControl(new MakerText($"{part} Controls".Trim(), category, CharaMorpher_Core.Instance));
+					e.AddControl(new MakerText($"{part} Controls".Trim(), category, Instance));
 				}
 
 				//find section index
@@ -378,7 +410,7 @@ namespace Character_Morpher
 				{
 					abmxIndex = abmxIndex >= 0 ? abmxIndex : sliders.Count + 1;
 
-					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"ABMX index: {abmxIndex}");
+					if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"ABMX index: {abmxIndex}");
 				}
 
 				if(Regex.Match(visualName, "other", RegexOptions.IgnoreCase).Success)
@@ -391,22 +423,22 @@ namespace Character_Morpher
 
 
 				//setup slider
-				var currSlider = sliders.AddNReturn(e.AddControl(new MorphMakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[cfg.currentControlName.Value][settingName].Value.data, CharaMorpher_Core.Instance)));
+				var currSlider = sliders.AddNReturn(e.AddControl(new MorphMakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[cfg.currentControlName.Value][settingName].Value.data, Instance)));
 				currSlider.BindToFunctionController<CharaMorpherController, float>(
 						(ctrl) => ctrl.controls.all[ctrl.controls.currentSet][settingName].data,
 						(ctrl, val) =>
 						{
-							//	CharaMorpher_Core.Logger.LogDebug($"called slider");
+							//	MorphUtil.Logger.LogDebug($"called slider");
 							if(!ctrl) return;
 							if(!ctrl.isInitLoadFinished || ctrl.isReloading) return;
 							if(ctrl.controls.all[ctrl.controls.currentSet][settingName].data == (float)Math.Round(val, 2)) return;
 
-							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"ctrl.controls.all[{ctrl.controls.currentSet}][{settingName}]");
-							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {(float)Math.Round(val, 2)}");
+							if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"ctrl.controls.all[{ctrl.controls.currentSet}][{settingName}]");
+							if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"{settingName} Value: {(float)Math.Round(val, 2)}");
 							ctrl.controls.all[ctrl.controls.currentSet][settingName].
 							SetData(currSlider.StoreDefault = (float)Math.Round(val, 2));
 
-							//	CharaMorpher_Core.Logger.LogDebug($"edited slider");
+							//	MorphUtil.Logger.LogDebug($"edited slider");
 
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 								ctrl?.StartCoroutine(ctrl?.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
@@ -424,7 +456,7 @@ namespace Character_Morpher
 							if(!ctrl.isInitLoadFinished || ctrl.isReloading) return;
 							if((int)ctrl.controls.all[ctrl.controls.currentSet][settingName].calcType == val) return;
 
-							if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"{settingName} Value: {val}");
+							if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"{settingName} Value: {val}");
 							ctrl.controls.all[ctrl.controls.currentSet][settingName].SetCalcType((MorphCalcType)val);
 
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
@@ -438,7 +470,7 @@ namespace Character_Morpher
 				//make sure values can be changed internally
 				OnInternalSliderValueChange.AddListener(sliderValActions.AddNReturn(() =>
 				{
-					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("controls updating");
+					if(cfg.debug.Value) MorphUtil.Logger.LogDebug("controls updating");
 
 					CharaMorpherController ctrl = GetFuncCtrlOfType<CharaMorpherController>()?.FirstOrNull(k => k != null);//first one only
 
@@ -451,8 +483,8 @@ namespace Character_Morpher
 						//if(currSlider.ControlObject)
 						{
 							slider.Value = slider.StoreDefault = ctrl.controls.all[ctrl.controls.currentSet][settingName].data;
-							//	if(cfg.debug.Value) 
-							CharaMorpher_Core.Logger.LogDebug($"Slider control changed: {slider.Value}");
+							if(cfg.debug.Value)
+								MorphUtil.Logger.LogDebug($"Slider control [{slider.ModSettingName}] changed: {slider.Value}");
 						}
 					});
 
@@ -463,8 +495,8 @@ namespace Character_Morpher
 						//	if(currMode.ControlObject)
 						{
 							dropdown.Value = dropdown.StoreDefault = (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].calcType;
-							//	if(cfg.debug.Value) 
-							CharaMorpher_Core.Logger.LogDebug($"Calc control changed: {dropdown.Value}");
+							if(cfg.debug.Value)
+								MorphUtil.Logger.LogDebug($"Calc control [{dropdown.ModSettingName}] changed: {dropdown.Value}");
 						}
 					});
 
@@ -472,7 +504,7 @@ namespace Character_Morpher
 
 				//add separator after overall control
 				if(Regex.IsMatch(settingName, searchHits[0], RegexOptions.IgnoreCase))
-					e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));//create separator line
+					e.AddControl(new MakerSeparator(category, Instance));//create separator line
 
 				return currSlider;
 			}
@@ -504,7 +536,7 @@ namespace Character_Morpher
 						{
 							if(!slid.interactable) yield break;
 							for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-								inst.StartCoroutine(MakerAPI.GetCharacterControl().
+								inst.StartCoroutine(GetCharacterControl().
 								GetComponent<CharaMorpherController>().CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
 
 						}
@@ -530,7 +562,7 @@ namespace Character_Morpher
 				IEnumerator CoVoiceAfterFullRefresh()
 				{
 					yield return new WaitWhile(
-						() => MakerAPI.GetCharacterControl().GetComponent<BoneController>().NeedsFullRefresh);
+						() => GetCharacterControl().GetComponent<BoneController>().NeedsFullRefresh);
 					//	MakerAPI.GetMakerBase().playSampleVoice = true;
 					//					MakerAPI.GetMakerBase().
 					//#if HONEY_API
@@ -570,7 +602,7 @@ namespace Character_Morpher
 					CreateShapeSlider(ctrl.dataName);
 
 
-			e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
+			e.AddControl(new MakerText("", category, Instance));//create space
 
 			//e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			#endregion
@@ -580,7 +612,7 @@ namespace Character_Morpher
 			IEnumerator CoSliderDisable(bool val, uint start = 0, uint end = int.MaxValue)
 			{
 
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"CoSliderDisable Called!");
+				if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"CoSliderDisable Called!");
 				yield return new WaitWhile(() =>
 				{
 					for(int a = (int)start; a < Math.Min(sliders.Count, (int)end); ++a)
@@ -588,7 +620,7 @@ namespace Character_Morpher
 					return false;
 				});
 
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"sliders are visible: {val}");
+				if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"sliders are visible: {val}");
 				for(int a = (int)start; a < sliders.Count; ++a)
 				{
 					sliders?[a]?.ControlObject?.SetActive(val);
@@ -601,7 +633,7 @@ namespace Character_Morpher
 			IEnumerator CoModeDisable(bool val, uint start = 0, uint end = int.MaxValue)
 			{
 
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"CoModeDisable Called!");
+				if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"CoModeDisable Called!");
 				yield return new WaitWhile(() =>
 				{
 					for(int a = (int)start; a < Math.Min(modes.Count, (int)end); ++a)
@@ -609,7 +641,7 @@ namespace Character_Morpher
 					return false;
 				});
 
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Modes are visible: {val}");
+				if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"Modes are visible: {val}");
 				for(int a = (int)start; a < modes.Count; ++a)
 					if((bool)sliders?[a]?.ControlObject?.activeSelf)
 					{
@@ -630,21 +662,19 @@ namespace Character_Morpher
 
 			enable.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.enable.Value,
-						(ctrl, val) =>
-						{
-							cfg.enable.Value = val;
-							ShowEnabledSliders();
-						});
-
-			cfg.enable.SettingChanged += enableEvent =
-			(s, o) => enable?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enable.Value);
-
+				(ctrl, val) =>
+				{
+					if(val != cfg.enable.Value)
+						cfg.enable.Value = val;
+					ShowEnabledSliders();
+				});
 
 			enableabmx.BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.enableABMX.Value,
 				(ctrl, val) =>
 				{
-					cfg.enableABMX.Value = val;
+					if(val != cfg.enableABMX.Value)
+						cfg.enableABMX.Value = val;
 					ShowEnabledSliders();
 				});
 
@@ -652,7 +682,8 @@ namespace Character_Morpher
 				(ctrl) => cfg.enableCalcTypes.Value,
 				(ctrl, val) =>
 				{
-					cfg.enableCalcTypes.Value = val;
+					if(val != cfg.enableCalcTypes.Value)
+						cfg.enableCalcTypes.Value = val;
 					ShowEnabledSliders();
 				});
 
@@ -663,14 +694,14 @@ namespace Character_Morpher
 
 			IEnumerator ChangeGUILayout(BaseGuiEntry gui)
 			{
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("moving object");
+				if(cfg.debug.Value) MorphUtil.Logger.LogDebug("moving object");
 
 				yield return new WaitWhile(() => gui?.ControlObject?.GetComponentInParent<ScrollRect>()?.transform == null);
 
 				var par = gui.ControlObject.GetComponentInParent<ScrollRect>()?.transform;
 
 
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Parent: " + par);
+				if(cfg.debug.Value) MorphUtil.Logger.LogDebug("Parent: " + par);
 
 				//This fixes the KOI_API rendering issue & enables scrolling over viewport
 #if KOI_API
@@ -712,7 +743,7 @@ namespace Character_Morpher
 				}
 
 
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("setting as last");
+				if(cfg.debug.Value) MorphUtil.Logger.LogDebug("setting as last");
 				gui.ControlObject.transform.SetParent(par);
 				gui.ControlObject.transform.SetAsLastSibling();
 				var thisLE = gui.ControlObject.GetOrAddComponent<LayoutElement>();
@@ -748,48 +779,29 @@ namespace Character_Morpher
 				yield break;
 			}
 
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Adding buttons");
+			if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"Adding buttons");
 
-			var sep = e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance))
+			var sep = e.AddControl(new MakerSeparator(category, Instance))
 				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)));
 
-
 			select = ((MorphMakerDropdown)e.AddControl(
-			   new MorphMakerDropdown("Selected Slot", ControlsList, category, 0, Instance))
-			   .OnGUIExists(
-			   (gui) =>
-			   {
-				   MorphMakerDropdown mmd = (MorphMakerDropdown)gui;
-				   // var drop = mmd.ControlObject?.GetComponentInChildren<TMP_Dropdown>().ite ??
-				   //	   mmd.ControlObject?.GetComponentInChildren<Dropdown>().OnUpdateSelectedAsObservable();
+				new MorphMakerDropdown("Selected Slot", ControlsList, category, 0, Instance))
+				.OnGUIExists(
+				(gui) =>
+				{
+					MorphMakerDropdown mmd = (MorphMakerDropdown)gui;
+					// var drop = mmd.ControlObject?.GetComponentInChildren<TMP_Dropdown>().ite ??
+					//	   mmd.ControlObject?.GetComponentInChildren<Dropdown>().OnUpdateSelectedAsObservable();
 
 
-				   //  cfg.currentControlName = null;
+					//  cfg.currentControlName = null;
 
-				   cfg.currentControlName.SettingChanged +=
-				   currentControlNameEvent = (s, o) =>
-				   {
-					   //UpdateDrpodown(select.Options);
-					   select.Options = ControlsList.ToArray();
-					   var name = cfg.currentControlName.Value;
-					   select.Value = SwitchControlSet(mmd.Options, name);
 
-					   // OnInternalSliderValueChange.Invoke();
 
-					   //   var ctrl = GetFuncCtrlOfType<CharaMorpherController>()?.First();
-					   //   var val = (!ctrl.isUsingExtMorphData ? ctrl.ctrls1 : ctrl.ctrls2 ?? ctrl.ctrls1).all;
-					   //   foreach(var slider in sliders)
-					   //   {
-					   //	   slider.StoreDefault = val[name][slider.ModSettingName].Item1;
-					   //	   slider.ApplyDefault();
-					   //   }
-
-				   };
-
-				   Instance.StartCoroutine(ChangeGUILayout(gui));
-				   mmd.ValueChanged?.Subscribe((val) => { mmd.Value = SwitchControlSet(mmd.Options, val); Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.sel); });//This loops back to TmpThing()
-				   mmd.Value = SwitchControlSet(mmd.Options, cfg.currentControlName.Value);
-			   }));
+					Instance.StartCoroutine(ChangeGUILayout(gui));
+					mmd.ValueChanged?.Subscribe((val) => { mmd.Value = SwitchControlSet(mmd.Options, val); Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.sel); });//This loops back to TmpThing()
+					mmd.Value = SwitchControlSet(mmd.Options, cfg.currentControlName.Value);
+				}));
 
 
 			((MakerButton)e.AddControl(new MakerButton("Add New Slot", category, Instance))
@@ -800,7 +812,7 @@ namespace Character_Morpher
 
 					//update dropdown list					
 					//UpdateDrpodown(select.Options);
-					select.Options = ControlsList.ToArray();
+					UpdateGUISelectList();
 				});
 
 
@@ -817,8 +829,7 @@ namespace Character_Morpher
 
 					RemoveCurrentSetting(null);
 
-					select.Options = ControlsList.ToArray();
-
+					UpdateGUISelectList();
 					select.Value = SwitchControlSet(select.Options, tmp);
 					//UpdateDrpodown(select.Options);
 				});
@@ -851,64 +862,81 @@ namespace Character_Morpher
 							cfg.defaults[ctrl.controls.currentSet][def.dataName].Value.calcType =
 							ctrl.controls.all[ctrl.controls.currentSet][def.dataName].calcType;
 
-					SoftSave(cfg.preferCardMorphDataMaker.Value);
-					CharaMorpher_Core.Logger.LogMessage($"Saved as CharaMorpher {ctrl.controls.currentSet}");
+					ctrl.SoftSaveControls(cfg.preferCardMorphDataMaker.Value, defaultSave: false);
+					MorphUtil.Logger.LogMessage($"Saved as CharaMorpher {ctrl.controls.currentSet}");
 
 					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
 				});
 
 
 			((MakerButton)e.AddControl(new MakerButton("Load Default", category, Instance))
-				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)))).
+				.OnGUIExists((gui) =>
+				{
+					Instance.StartCoroutine(ChangeGUILayout(gui));
+					loadDefaultValues = (bool showMessage, bool playSound, bool runUpdate) =>
+					{
+						var ctrl = GetFuncCtrlOfType<CharaMorpherController>().First();
+
+						var data = (!ctrl.isUsingExtMorphData ? ctrl.ctrls1 : (ctrl.ctrls2 ?? ctrl.ctrls1))?.Clone()?.all;
+						var listCtrls = ctrl?.controls;
+						var list = listCtrls?.all;
+						var name = cfg.currentControlName.Value;
+
+						if(list?.ContainsKey(name) ?? false)
+							foreach(var def2 in list[name].Keys.ToList())
+							{
+								if(cfg.debug.Value)
+								{
+									MorphUtil.Logger.LogDebug($"Data Expected: data[{name}][{def2}]");
+									MorphUtil.Logger.LogDebug($"Data Key1:\n data[{string.Join(",\n ", data?.Keys.ToArray())}]");
+									MorphUtil.Logger.LogDebug($"Data Key2:\n data[{string.Join(",\n ", data?[data.Keys.ElementAt(0)].Keys.ToArray())}]");
+								}
+
+								var val = data[name][def2].data;
+								var cal = data[name][def2].calcType;
+
+								list[name][def2] = data[name][def2].Clone();
+							}
+
+						OnInternalSliderValueChange.Invoke();
+
+						foreach(var slider in sliders)
+							slider.ApplyDefault();
+						foreach(var mode in modes)
+							mode.ApplyStoredSetting();
+
+						if(runUpdate)
+							for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
+								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
+
+						if(showMessage)
+							MorphUtil.Logger.LogMessage($"Loaded CharaMorpher: {name}");
+
+						if(playSound)
+							Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
+					};
+				})).
 				OnClick.AddListener(() =>
 				{
-					var ctrl = GetFuncCtrlOfType<CharaMorpherController>().First();
-
-					var data = (!ctrl.isUsingExtMorphData ? ctrl.ctrls1 : (ctrl.ctrls2 ?? ctrl.ctrls1))?.Clone()?.all;
-					var listCtrls = ctrl?.controls;
-					var list = listCtrls?.all;
-					var name = cfg.currentControlName.Value;
-
-					if(list?.ContainsKey(name) ?? false)
-						foreach(var def2 in list[name].Keys.ToList())
-						{
-							//CharaMorpher_Core.Logger.LogDebug($"Data Expected: data[{name}][{def2}]");
-							//CharaMorpher_Core.Logger.LogDebug($"Data Key1:\n data[{string.Join(",\n ", data?.Keys.ToArray())}]");
-							//CharaMorpher_Core.Logger.LogDebug($"Data Key2:\n data[{string.Join(",\n ", data?[data.Keys.ElementAt(0)].Keys.ToArray())}]");
-
-							var val = data[name][def2].data;
-							var cal = data[name][def2].calcType;
-
-							list[name][def2] = data[name][def2].Clone();
-
-
-						}
-
-					OnInternalSliderValueChange.Invoke();
-
-					foreach(var slider in sliders)
-						slider.ApplyDefault();
-					foreach(var mode in modes)
-						mode.ApplyStoredSetting();
-
-					for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
-						ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
-
-					CharaMorpher_Core.Logger.LogMessage($"Loaded CharaMorpher: {name}");
-					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
+					loadDefaultValues.Invoke(true, true, true);
 				});
 
 
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Finished adding buttons");
+			if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"Finished adding buttons");
 			//e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			//e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 			#endregion
 
 		}
 
+		private static void EnableABMX_SettingChanged(object sender, EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
 		private static void ImageControls(RegisterCustomControlsEvent e, BaseUnityPlugin owner)
 		{
-			e.AddControl(new MakerText("Morph Target", category, CharaMorpher_Core.Instance));
+			e.AddControl(new MakerText("Morph Target", category, Instance));
 
 
 			var img = e.AddControl(new MakerImage(null, category, owner)
@@ -919,17 +947,17 @@ namespace Character_Morpher
 					yield return null;
 				yield return new WaitUntil(() => img.Exists);
 
-				if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"The CoSetTexture was called");
+				if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"The CoSetTexture was called");
 				img.Texture = path?.CreateTexture(png);
 				//(img.Texture as Texture2D).Resize(150, 200);
 				img.ControlObject.GetComponentInChildren<RawImage>().color = Color.white * ((!png.IsNullOrEmpty()) ? .65f : 1);
 			}
 
-			CharaMorpher_Core.OnNewTargetImage.AddListener(
+			OnNewTargetImage.AddListener(
 				(path, png) =>
 				{
-					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Calling OnNewTargetImage callback");
-					CharaMorpher_Core.Instance.StartCoroutine(CoSetTexture(path, png));
+					if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"Calling OnNewTargetImage callback");
+					Instance.StartCoroutine(CoSetTexture(path, png));
 				});
 
 			var button = e.AddControl(new MakerButton($"Set New Morph Target", category, owner));
@@ -940,25 +968,33 @@ namespace Character_Morpher
 				GetNewImageTarget();
 			});
 
-			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
+			e.AddControl(new MakerSeparator(category, Instance));
 		}
 
 		private static void ButtonDefaults(RegisterCustomControlsEvent e, BaseUnityPlugin owner)
 		{
 
 			//e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
-			e.AddControl(new MakerText("Easy Morph Buttons", category, CharaMorpher_Core.Instance));
+			e.AddControl(new MakerText("Easy Morph Buttons", category, Instance));
 
-			var tgl = e.AddControl(new MakerToggle(category, "Control overall sliders with Morph Buttons", cfg.easyMorphBtnOverallSet.Value, owner));
-			tgl.BindToFunctionController<CharaMorpherController, bool>(
+			((MakerToggle)e.AddControl(new MakerToggle(category, "Control overall sliders with Morph Buttons", cfg.easyMorphBtnOverallSet.Value, owner))
+				.OnGUIExists((gui) =>
+				cfg.easyMorphBtnOverallSet.SettingChanged += easyMorphOverallEvent += (s, o) =>
+				gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.easyMorphBtnOverallSet.Value))
+			).BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.easyMorphBtnOverallSet.Value,
 				(ctrl, val) => cfg.easyMorphBtnOverallSet.Value = val
-				);
-			var tgl2 = e.AddControl(new MakerToggle(category, "Other values default to 100%", cfg.easyMorphBtnEnableDefaulting.Value, owner));
-			tgl2.BindToFunctionController<CharaMorpherController, bool>(
+			);
+
+			((MakerToggle)e.AddControl(new MakerToggle(category, "Other values default to 100%", cfg.easyMorphBtnEnableDefaulting.Value, owner))
+				.OnGUIExists((gui) =>
+				cfg.easyMorphBtnEnableDefaulting.SettingChanged += easyMorphDefaultingEvent += (s, o) =>
+				gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.easyMorphBtnEnableDefaulting.Value))
+			).BindToFunctionController<CharaMorpherController, bool>(
 				(ctrl) => cfg.easyMorphBtnEnableDefaulting.Value,
 				(ctrl, val) => cfg.easyMorphBtnEnableDefaulting.Value = val
-				);
+			);
+
 			void CreateMorphButton(int percent)
 			{
 				var button = e.AddControl(new MakerButton($"Morph {percent}%", category, owner));
@@ -972,11 +1008,11 @@ namespace Character_Morpher
 					{
 						//	ctrl.StopAllCoroutines();
 
-						//	CharaMorpher_Core.Logger.LogDebug($"Mod Category:{ctrl.controls.currentSet}");
+						//	MorphUtil.Logger.LogDebug($"Mod Category:{ctrl.controls.currentSet}");
 						if(reset)
 							for(int a = 0; a < ctrl.controls.all[ctrl.controls.currentSet].Count; ++a)
 							{
-								//CharaMorpher_Core.Logger.LogDebug($"Mod name:{ctrl.controls.all[ctrl.controls.currentSet].Keys.ElementAt(a)}");
+								//MorphUtil.Logger.LogDebug($"Mod name:{ctrl.controls.all[ctrl.controls.currentSet].Keys.ElementAt(a)}");
 								//	var cal = ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all.Keys.ElementAt(a)].calcType;
 								ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all[ctrl.controls.currentSet].Keys.ElementAt(a)].SetData(1f);
 							}
@@ -985,14 +1021,14 @@ namespace Character_Morpher
 						for(int a = 0; a < tmp.Count(); ++a)
 						{
 							//var cal = ctrl.controls.all[ctrl.controls.currentSet][tmp.ElementAt(a).Key].calcType;
-							ctrl.controls.all[ctrl.controls.currentSet][tmp.ElementAt(a).Key].SetData(percent*.01f);
+							ctrl.controls.all[ctrl.controls.currentSet][tmp.ElementAt(a).Key].SetData(percent * .01f);
 						}
 
 						for(int a = -1; a < cfg.multiUpdateEnableTest.Value;)
 							ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(++a));
 
 
-						CharaMorpher_Core.Logger.LogMessage($"Morphed to {percent}%");
+						MorphUtil.Logger.LogMessage($"Morphed to {percent}%");
 						break;
 					}
 					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
@@ -1010,42 +1046,30 @@ namespace Character_Morpher
 
 
 			//Add Ending
-			e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
+			e.AddControl(new MakerSeparator(category, Instance));
 			//	e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 		}
 
-		private static string MakeDirPath(string path) => MorphUtil.MakeDirPath(path);
-
-		/// <summary>
-		/// Called after a file is chosen in file explorer menu  
-		/// </summary>
-		/// <param name="strings: ">the info returned from file explorer. strings[0] returns the full file path</param>
-		private static void OnFileObtained(string[] strings)
+		public static void UpdateGUISelectList()
 		{
+			if(!InsideMaker) return;
+			if(select == null) return;
 
-			ForeGrounder.RevertForground();
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Enters accept");
-			if(strings == null || strings.Length == 0) return;
-			var texPath = MakeDirPath(strings[0]);
+			var ctrl = GetFuncCtrlOfType<CharaMorpherController>().FirstOrNull();
 
-			if(cfg.debug.Value)
-			{
-				CharaMorpher_Core.Logger.LogDebug($"Original path: {texPath}");
-				CharaMorpher_Core.Logger.LogDebug($"texture path: {Path.Combine(Path.GetDirectoryName(texPath), Path.GetFileName(texPath))}");
-			}
-
-			if(string.IsNullOrEmpty(texPath)) return;
-
-			cfg.charDir.Value = Path.GetDirectoryName(texPath).MakeDirPath();
-			cfg.imageName.Value = texPath.Substring(texPath.LastIndexOf('/') + 1).MakeDirPath();//not sure why this happens on hs2?
-
-			if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug($"Exit accept");
+			select.Options = ControlsList;
+			select.Value = SwitchControlSet(select.Options, ctrl.controls.currentSet);
 		}
 
+		public static void LoadCurrentDefaultValues(bool showMessage = true, bool playSound = true, bool runUpdate = true) => loadDefaultValues?.Invoke(showMessage, playSound, runUpdate);
+
+		#region Image Stuff
+
+		#region File Data
 		public const string FileExt = ".png";
 		public const string FileFilter = "Character Images (*.png)|*.png";
 
-		private static readonly string _defaultOverlayDirectory = Path.Combine(BepInEx.Paths.GameRootPath, "UserData/chara/");
+		private static readonly string _defaultOverlayDirectory = Path.Combine(Paths.GameRootPath, "UserData/chara/");
 		public static string TargetDirectory { get => MakeDirPath(Path.GetDirectoryName(TargetPath)); }
 
 		public static string TargetPath
@@ -1058,6 +1082,36 @@ namespace Character_Morpher
 				return File.Exists(path) ? path : Path.Combine(_defaultOverlayDirectory, tmp);
 			}
 		}
+		#endregion
+
+		private static string MakeDirPath(string path) => MorphUtil.MakeDirPath(path);
+
+		/// <summary>
+		/// Called after a file is chosen in file explorer menu  
+		/// </summary>
+		/// <param name="strings: ">the info returned from file explorer. strings[0] returns the full file path</param>
+		private static void OnFileObtained(string[] strings)
+		{
+
+			ForeGrounder.RevertForground();
+			if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"Enters accept");
+			if(strings == null || strings.Length == 0) return;
+			var texPath = MakeDirPath(strings[0]);
+
+			if(cfg.debug.Value)
+			{
+				MorphUtil.Logger.LogDebug($"Original path: {texPath}");
+				MorphUtil.Logger.LogDebug($"texture path: {Path.Combine(Path.GetDirectoryName(texPath), Path.GetFileName(texPath))}");
+			}
+
+			if(string.IsNullOrEmpty(texPath)) return;
+
+			cfg.charDir.Value = Path.GetDirectoryName(texPath).MakeDirPath();
+			cfg.imageName.Value = texPath.Substring(texPath.LastIndexOf('/') + 1).MakeDirPath();//not sure why this happens on hs2?
+
+			if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"Exit accept");
+		}
+
 		public static void GetNewImageTarget()
 		{
 			var paths = OpenFileDialog.ShowDialog("Set Morph Target",
@@ -1070,6 +1124,7 @@ namespace Character_Morpher
 			Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
 		}
 
+		#endregion
 
 		public class MorphMakerSlider : MakerSlider
 		{

@@ -1,35 +1,31 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using UnityEngine;
 using ExtensibleSaveFormat;
 using KKAPI.Chara;
-using KKAPI.Utilities;
 using MessagePack;
 using MessagePack.Unity;
 using MessagePack.Resolvers;
-//using UniRx;
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
+using UniRx;
 
 using static BepInEx.Logging.LogLevel;
-using System.Collections;
-using System.Text.RegularExpressions;
-using UnityEngine;
 using KKABMX.Core;
 using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpherController;
 using static Character_Morpher.MorphUtil;
-using KKAPI.Maker;
-using UniRx;
-
 
 #if HONEY_API
-using CharaCustom;
 using AIChara;
+//using CharaCustom;
 //using AIProject;
 #else
-using ChaCustom;
-using static ChaFileDefine;
+//using ChaCustom;
+//using static ChaFileDefine;
 //using StrayTech;
 #endif
 
@@ -141,22 +137,17 @@ namespace Character_Morpher
 			{
 
 				data = base.Load(ctrler, data)?.Copy();
-				//CharaMorpher_Core.Logger.LogDebug($"Old version: {data?.version.ToString() ?? "Don't exist..."}");
+				//MorphUtil.Logger.LogDebug($"Old version: {data?.version.ToString() ?? "Don't exist..."}");
 				if(data != null && data.version == base.Version)
 				{
 					//last version
 					var values = LZ4MessagePackSerializer.Deserialize<Dictionary<string, Tuple<float, MorphCalcType>>>((byte[])data.data[DataKeys[0]], CompositeResolver.Instance);
-
-
-
-					var tmpVals = values.ToDictionary((k) =>
-					{
-						//	CharaMorpher_Core.Logger.LogDebug(k.Key.Trim());
-						return k.Key.Trim();
-					},
-						(v) => new MorphSliderData(v.Key.Trim() /*just in case*/, data: v.Value.Item1, calc: v.Value.Item2,
+					var tmpVals = values.ToDictionary((k) => k.Key.Trim(),
+						(v) => new MorphSliderData(v.Key.Trim() /*just in case*/,
+						data: v.Value.Item1, calc: v.Value.Item2,
 						isABMX: bool.Parse(oldConversionList.FirstOrNull((p) => v.Key.Trim() == p[0].Trim())?[2] ?? bool.FalseString)));
-					var newValues = new MorphControls() { all = { { defaultStr, tmpVals } } };
+
+					var newValues = new MorphControls() { currentSet = defaultStr, all = { { defaultStr, tmpVals } } };
 					data.data[DataKeys[((int)LoadDataType.Values)]] = LZ4MessagePackSerializer.Serialize(newValues, CompositeResolver.Instance);
 					data.data[DataKeys[((int)LoadDataType.OgSize)]] = LZ4MessagePackSerializer.Serialize(ctrl.m_data1, CompositeResolver.Instance);
 					data.data[DataKeys[((int)LoadDataType.IsCurrentData)]] = LZ4MessagePackSerializer.Serialize(false, CompositeResolver.Instance);
@@ -213,9 +204,9 @@ namespace Character_Morpher
 				var newValues = values.all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value.Clone()));
 
 				if(ctrl.isReloading)//can only be done when reloading 
-					SoftSave(ctrl.canUseCardMorphData);//keep this here
+					ctrl.SoftSaveControls(ctrl.canUseCardMorphData);//keep this here
 
-				//	CharaMorpher_Core.Logger.LogDebug("DATA 2");
+				//	MorphUtil.Logger.LogDebug("DATA 2");
 				ctrl.m_data2.Copy(data2);
 
 				ctrl.ctrls2 = new MorphControls { all = newValues };
@@ -223,21 +214,14 @@ namespace Character_Morpher
 				if(ctrl.canUseCardMorphData)
 					ctrl.controls.Copy(ctrl.ctrls2);
 
-				if(MakerAPI.InsideMaker &&
-					CharaMorpherGUI.select != null)
-				{
-					CharaMorpherGUI.select.Options = ControlsList;
-					CharaMorpherGUI.select.Value = SwitchControlSet(ControlsList, cfg.currentControlName.Value);
-				}
-
 				//get original 
 				data1.abmx.ForceSplitStatus();
-				//	CharaMorpher_Core.Logger.LogDebug("DATA 1");
+				//	MorphUtil.Logger.LogDebug("DATA 1");
 				ctrl.m_data1.Copy(data1);
 			}
 			catch(Exception e)
 			{
-				CharaMorpher_Core.Logger.Log(Error | Message, $"Could not load PluginData:\n{e}\n");
+				MorphUtil.Logger.Log(Error | Message, $"Could not load PluginData:\n{e}\n");
 				return null;
 			}
 
@@ -264,7 +248,7 @@ namespace Character_Morpher
 			}
 			catch(Exception e)
 			{
-				CharaMorpher_Core.Logger.Log(Error | Message, $"Could not save PluginData: \n {e} ");
+				MorphUtil.Logger.Log(Error | Message, $"Could not save PluginData: \n {e} ");
 				return null;
 			}
 			ctrler.SetExtendedData(data);
@@ -379,8 +363,8 @@ namespace Character_Morpher
 					//Store Bonemod Extended Data
 					{//helps get rid of data sooner
 
-						if(!boneCtrl) CharaMorpher_Core.Logger.LogDebug("Bone controller doesn't exist");
-						if(!charaCtrl) CharaMorpher_Core.Logger.LogDebug("Character controller doesn't exist");
+						if(!boneCtrl) MorphUtil.Logger.LogDebug("Bone controller doesn't exist");
+						if(!charaCtrl) MorphUtil.Logger.LogDebug("Character controller doesn't exist");
 
 						//This is the second dumbest fix
 						//(I was changing the player character's bones when this was true ¯\_(ツ)_/¯)
@@ -399,9 +383,9 @@ namespace Character_Morpher
 
 					if(cfg.debug.Value)
 					{
-						if(morph) CharaMorpher_Core.Logger.LogDebug("Character 2:");
-						else CharaMorpher_Core.Logger.LogDebug("Character 1:");
-						foreach(var part in body) CharaMorpher_Core.Logger.LogDebug("Bone: " + part.BoneName);
+						if(morph) MorphUtil.Logger.LogDebug("Character 2:");
+						else MorphUtil.Logger.LogDebug("Character 1:");
+						foreach(var part in body) MorphUtil.Logger.LogDebug("Bone: " + part.BoneName);
 					}
 
 					BoneSplit(morphControl, charaCtrl, morph);
@@ -416,7 +400,7 @@ namespace Character_Morpher
 					if(!bodyCharaCtrl?.objHeadBone) return;
 					if(isSplit || !isLoaded) return;
 
-					if(cfg.debug.Value) CharaMorpher_Core.Logger.LogDebug("Splitting bones apart (this is gonna hurt)");
+					if(cfg.debug.Value) MorphUtil.Logger.LogDebug("Splitting bones apart (this is gonna hurt)");
 
 
 					var headRoot = bodyCharaCtrl.objHeadBone.transform.parent.parent;
@@ -489,7 +473,7 @@ namespace Character_Morpher
 					tmp.facePngData = main.facePngData.ToArray();//copy
 #endif
 				}
-				catch(Exception e) { CharaMorpher_Core.Logger.LogError("Could not copy character data:\n" + e); }
+				catch(Exception e) { MorphUtil.Logger.LogError("Could not copy character data:\n" + e); }
 #if HONEY_API
 				//CopyAll will not copy this data in hs2
 				tmp.dataID = main.dataID;
@@ -525,7 +509,7 @@ namespace Character_Morpher
 						data.ChaFileControl.facePngData)?.ToArray();
 #endif
 				}
-				catch(Exception e) { CharaMorpher_Core.Logger.LogError("Could not copy character data:\n" + e); }
+				catch(Exception e) { MorphUtil.Logger.LogError("Could not copy character data:\n" + e); }
 
 				abmx.Populate(data, morph);
 			}
@@ -570,7 +554,7 @@ namespace Character_Morpher
 			}
 			catch(Exception e)
 			{
-				CharaMorpher_Core.Logger.Log(Error | Message, $"Could not load PluginData:\n{e} ");
+				MorphUtil.Logger.Log(Error | Message, $"Could not load PluginData:\n{e} ");
 				return null;
 			}
 
@@ -595,7 +579,7 @@ namespace Character_Morpher
 			}
 			catch(Exception e)
 			{
-				CharaMorpher_Core.Logger.Log(Error | Message, $"Could not save PluginData: \n {e} ");
+				MorphUtil.Logger.Log(Error | Message, $"Could not save PluginData: \n {e} ");
 				return null;
 			}
 

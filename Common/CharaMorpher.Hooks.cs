@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
-using BepInEx;
-using BepInEx.Configuration;
-using BepInEx.Logging;
+
+using UnityEngine;
+using UnityEngine.UI;
+
 using HarmonyLib;
 using KKAPI.Chara;
 using KKAPI.Studio;
@@ -13,17 +14,15 @@ using KKAPI;
 using KKAPI.Maker;
 using KKABMX;
 using KKABMX.Core;
-using UnityEngine;
-using UnityEngine.UI;
-using Manager;
+//using Manager;
 
 
 #if HONEY_API
 using CharaCustom;
 using AIChara;
 #else
-using StrayTech;
 using ChaCustom;
+//using StrayTech;
 #endif
 
 namespace Character_Morpher
@@ -131,8 +130,8 @@ namespace Character_Morpher
 
 				IEnumerator DelayedPngSet(CharaMorpherController ctrl, byte[] png, byte[] facePng)
 				{
-					for(int a = 0; a < 0; ++a)
-						yield return null;
+				//	for(int a = 0; a < 0; ++a)
+				//		yield return null;
 
 					ctrl.ChaFileControl.pngData = png ?? ctrl.ChaFileControl.pngData;
 					ctrl.ChaFileControl.facePngData = facePng ?? ctrl.ChaFileControl.facePngData;
