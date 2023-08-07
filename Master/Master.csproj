@@ -40,25 +40,32 @@
   </PropertyGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>call "$(SolutionDir)zipper master.bat" "$(TargetDir)..\..\..\..\Master.zip" "$(TargetDir)..\..\..\..\" "$(SolutionDir)Readme.md"
+    <PostBuildEvent>powershell "&amp; '$(SolutionDir)Post-Builder.ps1' '$(TargetPath)'  '$(SolutionDir)zipper master.bat' '$(TargetDir)..\..\..\..\Master.zip' '$(TargetDir)..\..\..\..\' '$(SolutionDir)Readme.md'"
 </PostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\[AI] Character Morpher\[AI] Character Morpher.csproj">
       <Project>{5297f533-ae0e-4a80-83b5-a4acc5758cb4}</Project>
       <Name>[AI] Character Morpher</Name>
+      <Aliases>AI</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\[HS2] Character Morpher\[HS2] Character Morpher.csproj">
       <Project>{e96314cf-3d68-4a08-94e7-dd86d7bfa157}</Project>
       <Name>[HS2] Character Morpher</Name>
+      <Aliases>HS2</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\[KKS] Character Morpher\[KKS] Character Morpher.csproj">
       <Project>{15bb6c66-5b78-4eaa-b02d-99b0fe257f55}</Project>
       <Name>[KKS] Character Morpher</Name>
+      <Aliases>KKS</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\[KK] Character Morpher\[KK] Character Morpher.csproj">
       <Project>{676b828f-de2d-4f54-9b96-3a965ebd2042}</Project>
       <Name>[KK] Character Morpher</Name>
+      <Aliases>KK</Aliases>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
 </Project>

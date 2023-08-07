@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
-using BepInEx;
-using BepInEx.Configuration;
-using BepInEx.Logging;
+
+using UnityEngine;
+using UnityEngine.UI;
+
 using HarmonyLib;
 using KKAPI.Chara;
 using KKAPI.Studio;
@@ -13,17 +14,15 @@ using KKAPI;
 using KKAPI.Maker;
 using KKABMX;
 using KKABMX.Core;
-using UnityEngine;
-using UnityEngine.UI;
-using Manager;
+//using Manager;
 
 
 #if HONEY_API
 using CharaCustom;
 using AIChara;
 #else
-using StrayTech;
 using ChaCustom;
+//using StrayTech;
 #endif
 
 namespace Character_Morpher
@@ -46,7 +45,7 @@ namespace Character_Morpher
 					foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
 					{
 						if(!ctrl) continue;
-						if(ctrl.initLoadFinished && !ctrl.reloading)
+						if(ctrl.isInitLoadFinished && !ctrl.isReloading)
 							ctrl.MorphChangeUpdate(forceReset: forcereset);
 					}
 			}
@@ -87,21 +86,24 @@ namespace Character_Morpher
 			[HarmonyPrefix]
 			[HarmonyPatch(typeof(FadeCanvas), nameof(FadeCanvas.StartAysnc),
 				new Type[] { typeof(FadeCanvas.Fade), typeof(float), typeof(bool), typeof(bool), }),]
-			static void OnSceneLoad()
+			static void OnSceneLoad(FadeCanvas __instance)
 			{
+				if(!(__instance is SceneFadeCanvas)) return;
+
 				if(!MakerAPI.InsideMaker) UpdateCurrentCharacters(true);
 			}
 
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(FadeCanvas), nameof(FadeCanvas.StartAysnc),
 				new Type[] { typeof(FadeCanvas.Fade), typeof(float), typeof(bool), typeof(bool), }),]
-			static void OnSceneUnLoad(FadeCanvas.Fade __0)
+			static void OnSceneUnLoad(FadeCanvas __instance,FadeCanvas.Fade __0)
 			{
+				if(!(__instance is SceneFadeCanvas)) return;
+			
 				IEnumerator after()
 				{
 					for(int a = -1; a < cfg.reloadTest.Value; ++a)
 						yield return null;
-
 					if(!MakerAPI.InsideMaker) UpdateCurrentCharacters();
 				}
 
@@ -128,8 +130,8 @@ namespace Character_Morpher
 
 				IEnumerator DelayedPngSet(CharaMorpherController ctrl, byte[] png, byte[] facePng)
 				{
-					for(int a = 0; a < 0; ++a)
-						yield return null;
+				//	for(int a = 0; a < 0; ++a)
+				//		yield return null;
 
 					ctrl.ChaFileControl.pngData = png ?? ctrl.ChaFileControl.pngData;
 					ctrl.ChaFileControl.facePngData = facePng ?? ctrl.ChaFileControl.facePngData;
@@ -147,7 +149,6 @@ namespace Character_Morpher
 
 			}
 #endif
-
 
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(Toggle), nameof(Toggle.OnPointerClick))]
@@ -189,20 +190,20 @@ namespace Character_Morpher
 			}
 
 
+			//nothing below here is actually being used...
+
 			[HarmonyPrefix]
 			[HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
 			static void OnPreButtonClick(Button __instance)
 			{
-
-
+				return;
 				if(!__instance.interactable) return;
 
 				if(!MakerAPI.InsideMaker) return;
 
-				OnSaveLoadClick(__instance);
-				OnExitSaveClick(__instance);
-
-				OnCoordLoadClick(__instance);
+			//	OnSaveLoadClick(__instance);
+			//	OnExitSaveClick(__instance);
+			//	OnCoordLoadClick(__instance);
 			}
 
 			/// <summary>
@@ -268,7 +269,7 @@ namespace Character_Morpher
 #endif
 
 				if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
-				if(cfg.enable.Value && cfg.saveAsMorphData.Value)
+				if(cfg.enable.Value && cfg.saveExtData.Value)
 				{
 					UpdateCurrentCharacters(true);
 					UpdateCurrentCharacters();
@@ -290,7 +291,7 @@ namespace Character_Morpher
 				if(!(ctrler.name.ToLower().Contains("exit") || ctrler.name.Contains("No")/*fixes issue with finding false results*/)) return;
 #endif
 				if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
-				if(cfg.enable.Value && cfg.saveAsMorphData.Value)
+				if(cfg.enable.Value && cfg.saveExtData.Value)
 					UpdateCurrentCharacters();
 			}
 
