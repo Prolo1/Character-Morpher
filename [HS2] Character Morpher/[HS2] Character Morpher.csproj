@@ -35,10 +35,10 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\Builds\[HS2]_Character_Morpher\BepInEx\plugins\Prolo\</OutputPath>
     <DefineConstants>TRACE;DEBUG;HS2 HONEY_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>2</WarningLevel>
     <DocumentationFile>
     </DocumentationFile>
     <RegisterForComInterop>false</RegisterForComInterop>
@@ -51,7 +51,7 @@
     <OutputPath>..\Builds\[HS2]_Character_Morpher\BepInEx\plugins\Prolo\</OutputPath>
     <DefineConstants>TRACE;HS2 HONEY_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>2</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
