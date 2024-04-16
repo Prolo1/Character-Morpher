@@ -31,14 +31,16 @@ using ChaCustom;
 #endif
 
 using static Character_Morpher.CharaMorpher_Core;
-using static Character_Morpher.MorphUtil;
-using static Character_Morpher.CharaMorpherController;
-using static Character_Morpher.CharaMorpherGUI;
-using static Character_Morpher.CurrentSaveLoadController;
+using static Character_Morpher.Morph_Util;
+using static Character_Morpher.CharaMorpher_Controller;
+using static Character_Morpher.CharaMorpher_GUI;
+using static Character_Morpher.CurrentSaveLoadManager;
+using KKAPI.Studio;
+using System.ComponentModel;
 
 namespace Character_Morpher
 {
-	public class CharaMorpherController : CharaCustomFunctionController
+	public class CharaMorpher_Controller : CharaCustomFunctionController
 	{
 		#region Data
 		private PluginData m_extData = null;
@@ -64,20 +66,46 @@ namespace Character_Morpher
 		static bool regesteredResolver = false;
 
 		public readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData(), m_initalData = new MorphData();
-		public bool canUseCardMorphData
+		public static bool CanUseCardMorphData
 		{
-			get => (MakerAPI.InsideMaker ?
+			get => ((MakerAPI.InsideMaker || StudioAPI.InsideStudio) ?
 				cfg.preferCardMorphDataMaker.Value :
 				cfg.preferCardMorphDataGame.Value);
 		}
-		public bool isUsingExtMorphData
+		public bool IsUsingExtMorphData
 		{
-			get => (MakerAPI.InsideMaker ?
+			get => ((MakerAPI.InsideMaker || StudioAPI.InsideStudio) ?
 				cfg.preferCardMorphDataMaker.Value :
 				cfg.preferCardMorphDataGame.Value) &&
 				m_extData != null;
 		}
 
+		internal bool morphEnable = true;
+		internal bool morphEnableABMX = true;
+
+		public bool Enable
+		{
+			get => cfg.enable.Value && morphEnable;
+			set
+			{
+				morphEnable = value;
+				if(isInitLoadFinished)
+					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+						StartCoroutine(CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
+			}
+		}
+
+		public bool EnableABMX
+		{
+			get => cfg.enableABMX.Value && morphEnableABMX;
+			set
+			{
+				morphEnableABMX = value;
+				if(isInitLoadFinished)
+					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
+						StartCoroutine(CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
+			}
+		}
 
 		/// <summary>
 		/// Called after the model has finished being loaded for the first time
@@ -98,7 +126,7 @@ namespace Character_Morpher
 		{
 			get
 			{
-				bool reset = !cfg.enable.Value && !isReloading;
+				bool reset = !Enable && !isReloading;
 				return KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame ?
 						(reset || !cfg.enableInGame.Value) : reset;
 			}
@@ -110,6 +138,7 @@ namespace Character_Morpher
 		public static readonly List<KeyValuePair<string, string>> boneDatabaseCatagories = new List<KeyValuePair<string, string>>()
 #else
 		//this is a tuple list btw (of bones found in abmx mod and online... somewhere)
+
 		public static readonly List<(string, string)> boneDatabaseCatagories = new List<(string, string)>()
 #endif
 
@@ -220,9 +249,9 @@ namespace Character_Morpher
 			new KeyValuePair<string, string>("k_f_leglowR_03"    ,"legs" ),
 		
 		   //Feet;
-		    new KeyValuePair<string, string>("cf_j_foot_L"       , "feet"),
-			new KeyValuePair<string, string>("cf_j_leg03_L"      , "feet"),
 			new KeyValuePair<string, string>("cf_s_leg03_L"      , "feet"),
+			new KeyValuePair<string, string>("cf_j_foot_L"       , "feet"),
+			new KeyValuePair<string, string>("cf_j_leg03_L"      , "feet"),
 			new KeyValuePair<string, string>("cf_j_toes_L"       , "feet"),
 		
 		  //Genitals;
@@ -672,29 +701,29 @@ namespace Character_Morpher
 			var core = Instance;
 
 
-			//MorphUtil.Logger.LogDebug($"Control set: {controls.currentSet}");
+			//Morph_Util.Logger.LogDebug($"Control set: {controls.currentSet}");
 			foreach(var category in core.controlCategories)
 			{
-				//		MorphUtil.Logger.LogDebug($"In forloop 1 Awake");
+				//		Morph_Util.Logger.LogDebug($"In forloop 1 Awake");
 				if(!controls.all.TryGetValue(category.Key, out var tmp))
 					controls.all[category.Key] = new Dictionary<string, MorphSliderData>();
 
 				foreach(var ctrl in category.Value)
 				{
-					//MorphUtil.Logger.LogDebug($"In forloop 2 Awake");
-					//MorphUtil.Logger.LogDebug($"defaults: [{category.Key}][{ctrl.dataName}]");
-					//MorphUtil.Logger.LogDebug($"data: {cfg.defaults[category.Key][ctrl.dataName].Value.data}");
+					//Morph_Util.Logger.LogDebug($"In forloop 2 Awake");
+					//Morph_Util.Logger.LogDebug($"defaults: [{category.Key}][{ctrl.dataName}]");
+					//Morph_Util.Logger.LogDebug($"data: {cfg.defaults[category.Key][ctrl.dataName].Value.data}");
 
 					controls.all[category.Key][ctrl.dataName] = cfg.defaults[category.Key][ctrl.dataName].Value.Clone();
 					//controls.all[category.Key][ctrl.dataName].data *= .01f;
-					//	MorphUtil.Logger.LogDebug($"\ncontrol set: {category.Key}\ncontrol name: {ctrl.Value}");
+					//	Morph_Util.Logger.LogDebug($"\ncontrol set: {category.Key}\ncontrol name: {ctrl.Value}");
 				}
 			}
 
 			ctrls1 = controls.Clone();
 			controls.setIsMainControls = true;
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("dictionary has default values");
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("dictionary has default values");
 
 		}
 
@@ -720,13 +749,14 @@ namespace Character_Morpher
 
 			var boneCtrl = GetComponent<BoneController>();
 			int val = (int)cfg.reloadTest.Value;
+			var tmpCtrlName = "" + cfg.currentControlSetName.Value;
 
 			//make sure to save current controls
 			SoftSaveControls(true, false);
 
 			//clear data 
 			{
-				if(cfg.debug.Value) MorphUtil.Logger.LogDebug("clear data");
+				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("clear data");
 				m_data1.Clear();
 				m_data2.Clear();
 				//ctrls1 = null;
@@ -734,20 +764,16 @@ namespace Character_Morpher
 				m_extData = null;
 				m_initalData.Clear();
 				controls.Copy(ctrls1);//needs to be reset each load
-									  //if(MakerAPI.InsideMaker)//for updating list stuff
-									  //{
-									  //	cfg.preferCardMorphDataMaker.Value = !cfg.preferCardMorphDataMaker.Value;
-									  //	cfg.preferCardMorphDataMaker.Value = !cfg.preferCardMorphDataMaker.Value;
-									  //}
-									  //else
-									  //	cfg.preferCardMorphDataGame.Value = cfg.preferCardMorphDataGame.Value;
+
 			}
 
+			//make sure to reset the current controls
+			controls.currentSet = tmpCtrlName;
 
 			#region Get Character Info
 
 			//store picked character data
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("replace data 1");
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("replace data 1");
 
 
 			m_data1.Copy(this); //get all character data!!!
@@ -763,17 +789,9 @@ namespace Character_Morpher
 			if((MakerAPI.InsideMaker && isInitLoadFinished) || !MakerAPI.InsideMaker)//for the initial character in maker
 			{
 				MorphTargetUpdate();
-
-				//for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 				MorphChangeUpdate(initReset: true, updateValues: true, abmx: true);
-				//	MorphChangeUpdate(initReset: false, updateValues: true, abmx: false);
 			}
 
-
-			//if(MakerAPI.InsideMaker && !initLoadFinished)//for the initial character in maker
-			//	ChaFileControl.CopyAll(m_data1.main);
-
-			//	ChaControl.LateUpdateForce();
 			#endregion
 
 
@@ -781,9 +799,9 @@ namespace Character_Morpher
 
 
 			//post update 
-			IEnumerator CoReloadComplete(int delayFrames, BoneController _boneCtrl)
+			IEnumerator CoReloadComplete(int delayFrames)
 			{
-				if(cfg.debug.Value) MorphUtil.Logger.LogMessage("CoReload Started");
+				if(cfg.debug.Value) Morph_Util.Logger.LogMessage("CoReload Started");
 
 				isReloading = true;//just in case
 				for(int a = -1; a < delayFrames; ++a)
@@ -798,10 +816,10 @@ namespace Character_Morpher
 				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					StartCoroutine(CoMorphChangeUpdate(a + 1));
 
-				if(isUsingExtMorphData)
+				if(IsUsingExtMorphData && cfg.loadInitMorphCharacter.Value)
 				{
 					var isCurData = LZ4MessagePackSerializer.Deserialize<bool>
-					((byte[])m_extData.data[saveLoad.DataKeys[((int)LoadDataType.IsCurrentData)]], CompositeResolver.Instance);
+					((byte[])m_extData.data[saveLoad.DataKeys[((int)LoadDataType.HoldsFigureData)]], CompositeResolver.Instance);
 
 
 					if(isCurData)
@@ -810,17 +828,15 @@ namespace Character_Morpher
 								(int)cfg.multiUpdateEnableTest.Value + a + 1, data: m_initalData));
 				}
 
-				////reset prefered Morph Data
-				//cfg.preferCardMorphDataGame.Value = !cfg.preferCardMorphDataGame.Value;
-				//cfg.preferCardMorphDataGame.Value = !cfg.preferCardMorphDataGame.Value;
-				//
-				//cfg.preferCardMorphDataMaker.Value = !cfg.preferCardMorphDataMaker.Value;
-				//cfg.preferCardMorphDataMaker.Value = !cfg.preferCardMorphDataMaker.Value;
+				if(m_extData != null && !MakerAPI.InsideMaker)
+					CharaMorpher_Core.Logger
+						.LogMessage("Character Morph Data found in this card!");
 
-				if(cfg.debug.Value) MorphUtil.Logger.LogMessage("CoReload Completed");
+
+				if(cfg.debug.Value) Morph_Util.Logger.LogMessage("CoReload Completed");
 				yield break;
 			}
-			StartCoroutine(CoReloadComplete(val, boneCtrl));//I just need to do this stuff later
+			StartCoroutine(CoReloadComplete(val));//I just need to do this stuff later
 		}
 
 
@@ -833,7 +849,7 @@ namespace Character_Morpher
 			if(isDummy) return;
 
 			//create path to morph target
-			string path = Path.Combine(MorphUtil.MakeDirPath(cfg.charDir.Value), MorphUtil.MakeDirPath(cfg.imageName.Value));
+			string path = Path.Combine(Morph_Util.MakeDirPath(cfg.charDir.Value), Morph_Util.MakeDirPath(cfg.imageName.Value));
 
 
 			//load Ext. card data
@@ -845,9 +861,7 @@ namespace Character_Morpher
 				lastCharDir != path ||
 				File.GetLastWriteTime(path).Ticks != lastDT.Ticks))
 			{
-
-
-				if(cfg.debug.Value) MorphUtil.Logger.LogDebug("Initializing secondary character");
+				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Initializing secondary character");
 
 				lastDT = File.GetLastWriteTime(path);
 				lastCharDir = path;
@@ -858,24 +872,35 @@ namespace Character_Morpher
 
 				//MorphTarget.extraCharacter?.gameObject?.SetActive(false);
 
-				if(cfg.debug.Value) MorphUtil.Logger.LogDebug("load morph target");
+				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("load morph target");
 				MorphTarget.chaFile.LoadCharaFile(path);
 
 				morphCharData.Copy(this, true);
 			}
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("replace data 2");
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("replace data 2");
 
 			ctrls2 = null;
 			m_extData = this.LoadExtData(m_extData);
 
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"Morph check status: {isUsingExtMorphData}");
-			if(!isUsingExtMorphData)
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Morph check status: {IsUsingExtMorphData}");
+			if(!IsUsingExtMorphData)
 				m_data2.Copy(morphCharData);
 			//	this.LoadExtData();
 
-			CharaMorpherGUI.UpdateGUISelectList();
+			morphTex = IsUsingExtMorphData ? m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : path.CreateTexture();
+			//dim card image
+			if(IsUsingExtMorphData)
+			{
+				var pix = morphTex.GetPixels();
+				foreach(var i in pix)
+					i.AlphaMultiplied(.5f);
+				morphTex.SetPixels(pix);
+				morphTex.Apply();
+			}
+
+			CharaMorpher_GUI.UpdateGUISelectList();
 		}
 
 
@@ -892,6 +917,8 @@ namespace Character_Morpher
 			var tmp = controls.all[controls.currentSet].ToList();
 			if(fullVal)
 				tmp = controls.fullVal[controls.currentSet].ToList();
+			if(overall)
+				tmp = tmp.Where(p => p.Key.ToLower().Contains("overall")).ToList();
 
 			return (abmx ?
 				tmp.Find(m => m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)) :
@@ -906,6 +933,8 @@ namespace Character_Morpher
 		/// <param name="data2"></param>
 		public void MergeABMXLists(MorphData data1 = null, MorphData data2 = null)
 		{
+			if(!ABMXDependency.InTargetVersionRange) return;
+
 			var charaCtrl = ChaControl;
 			var boneCtrl = charaCtrl.GetComponent<BoneController>();
 			data1 = data1 ?? m_data1;
@@ -914,7 +943,7 @@ namespace Character_Morpher
 			if(BoneSplitCheck(true))
 			{
 
-				if(cfg.debug.Value) MorphUtil.Logger.LogDebug("balancing bone lists...");
+				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("balancing bone lists...");
 
 				//Body
 				BoneModifierMatching(ref data1.abmx.body, ref data2.abmx.body);
@@ -950,12 +979,12 @@ namespace Character_Morpher
 
 			var currGameMode = KoikatuAPI.GetCurrentGameMode();
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"is data copied check?");
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"is data copied check?");
 			if(m_data1?.main == null) return;
 
 			MergeABMXLists(null, null);
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("update values check?");
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("update values check?");
 			if(!updateValues) return;
 
 
@@ -965,27 +994,26 @@ namespace Character_Morpher
 		public void ResetOriginalShape(MorphData data = null)
 		{
 
-
 			if(data == null)
 				data = m_initalData;
 
 			MergeABMXLists(null, data);
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("mod enabled check?");
-			if(!cfg.enable.Value) return;
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("mod enabled check?");
+			if(!Enable) return;
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("not male in main game check?");
-			if(!MakerAPI.InsideMaker && ChaControl.sex != 1/*(allowed in maker as of now)*/)
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("not male in main game check?");
+			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) && ChaControl.sex != 1/*(allowed in maker as of now)*/)
 				return;
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("not male in maker check?");
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("not male in maker check?");
 			if(MakerAPI.InsideMaker && ChaControl.sex != 1
 				&& !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("Morph only character with save data in game check?");
-			if(!MakerAPI.InsideMaker &&
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Morph only character with save data in game check?");
+			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) &&
 				cfg.onlyMorphCharWithDataInGame.Value &&
-				!isUsingExtMorphData) return;
+				!IsUsingExtMorphData) return;
 
 			ObscureUpdateValues(false, replace: true, mainData2: data?.main);
 			MainUpdateValues(false, replace: true, mainData2: data?.main);
@@ -1012,31 +1040,31 @@ namespace Character_Morpher
 		{
 			var currGameMode = KoikatuAPI.GetCurrentGameMode();
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("not male in main game check?");
-			if(!MakerAPI.InsideMaker && ChaControl.sex != 1/*(allowed in maker as of now)*/)
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("not male in main game check?");
+			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) && ChaControl.sex != 1/*(allowed in maker as of now)*/)
 				return;
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("not male in maker check?");
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("not male in maker check?");
 			if(MakerAPI.InsideMaker && ChaControl.sex != 1
 				&& !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("Morph only character with save data in game check?");
-			if(!MakerAPI.InsideMaker &&
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Morph only character with save data in game check?");
+			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) &&
 				cfg.onlyMorphCharWithDataInGame.Value &&
-				!isUsingExtMorphData)
+				!IsUsingExtMorphData)
 				reset = true;
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("All Checks passed?");
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("All Checks passed?");
 
 			if(cfg.debug.Value)
 			{
-				MorphUtil.Logger.LogDebug($"data 1 body bones: {m_data1.abmx.body.Count}");
-				MorphUtil.Logger.LogDebug($"data 2 body bones: {m_data2.abmx.body.Count}");
-				MorphUtil.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
-				MorphUtil.Logger.LogDebug($"data 2 face bones: {m_data2.abmx.face.Count}");
-				MorphUtil.Logger.LogDebug($"chara bones: {ChaControl?.GetComponent<BoneController>().GetAllModifiers().Count()}");
-				MorphUtil.Logger.LogDebug($"body parts: {m_data1.main.custom.body.shapeValueBody.Length}");
-				MorphUtil.Logger.LogDebug($"face parts: {m_data1.main.custom.face.shapeValueFace.Length}");
+				Morph_Util.Logger.LogDebug($"data 1 body bones: {m_data1.abmx.body.Count}");
+				Morph_Util.Logger.LogDebug($"data 2 body bones: {m_data2.abmx.body.Count}");
+				Morph_Util.Logger.LogDebug($"data 1 face bones: {m_data1.abmx.face.Count}");
+				Morph_Util.Logger.LogDebug($"data 2 face bones: {m_data2.abmx.face.Count}");
+				Morph_Util.Logger.LogDebug($"chara bones: {ChaControl?.GetComponent<BoneController>().GetAllModifiers().Count()}");
+				Morph_Util.Logger.LogDebug($"body parts: {m_data1.main.custom.body.shapeValueBody.Length}");
+				Morph_Util.Logger.LogDebug($"face parts: {m_data1.main.custom.face.shapeValueFace.Length}");
 			}
 
 			reset = initReset || reset;
@@ -1044,22 +1072,26 @@ namespace Character_Morpher
 			//float enable = (reset ? (initReset ? cfg.initialMorphBodyTest.Value : 0) : 1);
 
 			if(cfg.debug.Value)
-				MorphUtil.Logger.LogDebug($"setting obscure values: {controls.currentSet} {controls.all[controls.currentSet].Count}");
+				Morph_Util.Logger.LogDebug($"setting obscure values: {controls.currentSet} {controls.all[controls.currentSet].Count}");
+
+			bool charDisabled = !Enable;
 			//update obscure values//
-			ObscureUpdateValues(reset, initReset);
+			ObscureUpdateValues(reset || charDisabled, initReset);
 
 			//value update loops//
 			if(cfg.debug.Value)
-				MorphUtil.Logger.LogDebug($"setting Main values");
-			//Main
-			MainUpdateValues(reset, initReset);
+				Morph_Util.Logger.LogDebug($"setting Main values");
+
+			//Main			 
+			MainUpdateValues(reset || charDisabled, initReset);
 
 			if(cfg.debug.Value)
-				MorphUtil.Logger.LogDebug($"setting ABMX values");
+				Morph_Util.Logger.LogDebug($"setting ABMX values");
 
+			charDisabled = !Enable || !EnableABMX;
 			//ABMX
 			if(abmx)
-				AbmxUpdateValues(reset, initReset);
+				AbmxUpdateValues(reset || charDisabled, initReset);
 
 			chaCtrl.updateShape = true;//this should update the model better
 
@@ -1102,7 +1134,7 @@ namespace Character_Morpher
 
 
 				if(cfg.debug.Value)
-					MorphUtil.Logger.LogDebug($"gets here");
+					Morph_Util.Logger.LogDebug($"gets here");
 
 				//Skin Colour
 				bool newcol = false;
@@ -1116,7 +1148,7 @@ namespace Character_Morpher
 
 
 				if(cfg.debug.Value)
-					MorphUtil.Logger.LogDebug($"gets here");
+					Morph_Util.Logger.LogDebug($"gets here");
 #if KOI_API
 				newcol |= chaCtrl.fileBody.skinMainColor != col1;
 				chaCtrl.fileBody.skinMainColor = col1;
@@ -1132,7 +1164,7 @@ namespace Character_Morpher
 				chaCtrl.fileBody.sunburnColor = col2;
 
 				if(cfg.debug.Value)
-					MorphUtil.Logger.LogDebug($"gets here");
+					Morph_Util.Logger.LogDebug($"gets here");
 
 				//colour update
 				if(isInitLoadFinished && newcol)
@@ -1190,14 +1222,14 @@ namespace Character_Morpher
 				if(cfg.debug.Value)
 				{
 
-					MorphUtil.Logger.LogDebug($"data1   voice rate: {mainData1.parameter.voiceRate}");
-					MorphUtil.Logger.LogDebug($"data2   voice rate: {mainData2.parameter.voiceRate}");
-					MorphUtil.Logger.LogDebug($"current voice rate: {chaCtrl.fileParam.voiceRate}");
+					Morph_Util.Logger.LogDebug($"data1   voice rate: {mainData1.parameter.voiceRate}");
+					Morph_Util.Logger.LogDebug($"data2   voice rate: {mainData2.parameter.voiceRate}");
+					Morph_Util.Logger.LogDebug($"current voice rate: {chaCtrl.fileParam.voiceRate}");
 
 #if HS2
-					MorphUtil.Logger.LogDebug($"data1   voice rate2: {mainData1.parameter2.voiceRate}");
-					MorphUtil.Logger.LogDebug($"data2   voice rate2: {mainData2.parameter2.voiceRate}");
-					MorphUtil.Logger.LogDebug($"current voice rate2: {chaCtrl.fileParam2.voiceRate}");
+					Morph_Util.Logger.LogDebug($"data1   voice rate2: {mainData1.parameter2.voiceRate}");
+					Morph_Util.Logger.LogDebug($"data2   voice rate2: {mainData2.parameter2.voiceRate}");
+					Morph_Util.Logger.LogDebug($"current voice rate2: {chaCtrl.fileParam2.voiceRate}");
 #endif
 				}
 
@@ -1234,7 +1266,7 @@ namespace Character_Morpher
 
 				enable = (reset ? (initReset ? cfg.initialMorphBodyTest.Value : 0) : 1);
 				//Body Shape
-				if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"updating body Shape");
+				if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"updating body Shape");
 				if(a < mainData1.custom.body.shapeValueBody.Length)
 				{
 					//Value Update
@@ -1309,7 +1341,7 @@ namespace Character_Morpher
 						}
 						catch(Exception e)
 						{
-							MorphUtil.Logger.LogError($"This object is causing an error: {e}");
+							Morph_Util.Logger.LogError($"This object is causing an error: {e}");
 						}
 					}
 
@@ -1321,7 +1353,7 @@ namespace Character_Morpher
 				enable = (reset ? (initReset ? cfg.initialMorphFaceTest.Value : 0) : 1);
 
 				//Face Shape
-				if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"updating face Shape");
+				if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"updating face Shape");
 				if(a < mainData1.custom.face.shapeValueFace.Length)
 				{
 					//Value Update
@@ -1381,7 +1413,7 @@ namespace Character_Morpher
 						}
 						catch(Exception e)
 						{
-							MorphUtil.Logger.LogError($"error:\n {e}");
+							Morph_Util.Logger.LogError($"error:\n {e}");
 						}
 					}
 
@@ -1399,6 +1431,8 @@ namespace Character_Morpher
 		/// <param name="initReset"></param>
 		private void AbmxUpdateValues(bool reset, bool initReset = false, bool replace = false, MorphData.AMBXSections abmxData1 = null, MorphData.AMBXSections abmxData2 = null)
 		{
+			if(!ABMXDependency.InTargetVersionRange) return;
+
 			abmxData1 = abmxData1 ?? m_data1?.abmx;
 			abmxData2 = abmxData2 ?? m_data2?.abmx;
 
@@ -1417,10 +1451,10 @@ namespace Character_Morpher
 				++a)
 			{
 				#region Body
-				enable = ((reset || !cfg.enableABMX.Value) ? (initReset ? cfg.initialMorphBodyTest.Value : 0) : 1);
+				enable = ((reset || !EnableABMX) ? (initReset ? cfg.initialMorphBodyTest.Value : 0) : 1);
 				if(a < abmxData1.body.Count)
 				{
-					if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"looking for body values");
+					if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"looking for body values");
 
 					var bone1 = abmxData1.body[a];
 					var bone2 = abmxData2.body[a];
@@ -1432,20 +1466,24 @@ namespace Character_Morpher
 					string content = bone1.BoneName.Trim().ToLower();
 
 					string[] fingerNames = new[]
-					 {
-                            //HS2
-                            "cf_J_Hand_Thumb",
-							"cf_J_Hand_Index",
-							"cf_J_Hand_Middle",
-							"cf_J_Hand_Ring",
-							"cf_J_Hand_Little",
-                            //KK
-                            "cf_j_thumb",
-							"cf_j_index",
-							"cf_j_middle",
-							"cf_j_ring",
-							"cf_j_little"
-						};
+					{
+#if HONEY_API
+						//HS2
+						"cf_J_Hand_Thumb",
+						"cf_J_Hand_Index",
+						"cf_J_Hand_Middle",
+						"cf_J_Hand_Ring",
+						"cf_J_Hand_Little",
+#elif KOI_API
+							
+						//KK
+                        "cf_j_thumb",
+						"cf_j_index",
+						"cf_j_middle",
+						"cf_j_ring",
+						"cf_j_little"
+#endif
+					};
 
 					if(Array.FindIndex(fingerNames, (k) => content.Contains(k.Trim().ToLower())) >= 0)
 						modVal = GetControlValue("hands", true, fullVal: initReset);
@@ -1458,15 +1496,15 @@ namespace Character_Morpher
 						int end2 = -1;
 						if(end >= 0)
 						{
-							ending1 = content.Substring(content.LastIndexOf("_"));
+							ending1 = content.Substring(end);
 							end2 = content.Substring(0, end).LastIndexOf("_");
 						}
 						if(end2 >= 0)
-							ending2 = content.Substring(end - (end - (end2)));
+							ending2 = content.Substring(end - (end - (end2)) + 1);
 
 
 
-						if(ending1 == "_l" || ending1 == "_r" || ending2 == "_l_00" || ending2 == "_r_00")
+						if(ending1 == "_l" || ending1 == "_r" || Regex.IsMatch(ending2 = ending2, @"l_\d\d") || Regex.IsMatch(ending2 = ending2, @"r_\d\d"))
 							content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
 
 #if KOI_API
@@ -1506,7 +1544,7 @@ namespace Character_Morpher
 						}
 					}
 
-					if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"Morphing Bone...");
+					if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Morphing Bone...");
 					if(replace)
 						UpdateBoneModifier(ref current, bone1, bone2, modVal, index: a,
 							enable: 1, reset: reset);
@@ -1521,10 +1559,10 @@ namespace Character_Morpher
 				#endregion
 
 				#region Head
-				enable = ((reset || !cfg.enableABMX.Value) ? (initReset ? cfg.initialMorphFaceTest.Value : 0) : 1);
+				enable = ((reset || !EnableABMX) ? (initReset ? cfg.initialMorphFaceTest.Value : 0) : 1);
 				if(a < abmxData1.face.Count)
 				{
-					if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"looking for face values");
+					if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"looking for face values");
 
 					var bone1 = abmxData1.face[a];
 					var bone2 = abmxData2.face[a];
@@ -1583,7 +1621,7 @@ namespace Character_Morpher
 						break;
 					}
 
-					if(cfg.debug.Value) MorphUtil.Logger.LogDebug($"Morphing Bone...");
+					if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Morphing Bone...");
 					if(replace)
 						UpdateBoneModifier(ref current, bone1, bone2, modVal, index: a,
 							enable: 1, reset: reset);
@@ -1606,13 +1644,13 @@ namespace Character_Morpher
 		private void SetDefaultSliders()
 		{
 			var mkBase = MakerAPI.GetMakerBase();
-			//	var bodycustum = CharaMorpherGUI.bodyCustom;
-			//	var facecustum = CharaMorpherGUI.faceCustom;
-			//	var boobcustum = CharaMorpherGUI.boobCustom;
+			//	var bodycustum = CharaMorpher_GUI.bodyCustom;
+			//	var facecustum = CharaMorpher_GUI.faceCustom;
+			//	var boobcustum = CharaMorpher_GUI.boobCustom;
 
 			if(mkBase && !isReloading)
 			{
-				if(cfg.debug.Value) MorphUtil.Logger.LogDebug("Resetting CVS Sliders");
+				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Resetting CVS Sliders");
 
 
 				bodyCustom?.CalculateUI();
@@ -1649,7 +1687,7 @@ namespace Character_Morpher
 		/// <param name="bone2"></param>
 		private void BoneModifierMatching(ref List<BoneModifier> bone1, ref List<BoneModifier> bone2)
 		{
-
+			if(!ABMXDependency.InTargetVersionRange) return;
 			foreach(var bone in bone2)
 			{
 				string content = bone.BoneName.Trim().ToLower();
@@ -1672,7 +1710,7 @@ namespace Character_Morpher
 		/// <param name="bone2"></param>
 		private void BoneModifierMatching(ref BoneController bone1, List<BoneModifier> bone2)
 		{
-
+			if(!ABMXDependency.InTargetVersionRange) return;
 			foreach(var bone in bone2)
 			{
 				string content = bone.BoneName.Trim().ToLower();
@@ -1703,6 +1741,7 @@ namespace Character_Morpher
 		/// <param name="enable"></param>
 		private void UpdateBoneModifier(ref BoneModifier current, BoneModifier bone1, BoneModifier bone2, MorphSliderData modVal, bool reset, float sectVal = 1, float enable = 1, int index = 0)
 		{
+			if(!ABMXDependency.InTargetVersionRange) return;
 			try
 			{
 				var lerpVal = (reset ? enable : (
@@ -1751,12 +1790,12 @@ namespace Character_Morpher
 					{
 						if(count == 0)
 						{
-							MorphUtil.Logger.LogDebug($"~updated values~");
-							MorphUtil.Logger.LogDebug($"lerp Value {index}: {enable * modVal.data}");
-							MorphUtil.Logger.LogDebug($"{current.BoneName} modifiers!!");
-							MorphUtil.Logger.LogDebug($"Body Bone 1 scale {index}: {bone1.CoordinateModifiers[count].ScaleModifier}");
-							MorphUtil.Logger.LogDebug($"Body Bone 2 scale {index}: {bone2.CoordinateModifiers[count].ScaleModifier}");
-							MorphUtil.Logger.LogDebug($"Result scale {index}: {mod.ScaleModifier}");
+							Morph_Util.Logger.LogDebug($"~updated values~");
+							Morph_Util.Logger.LogDebug($"lerp Value {index}: {enable * modVal.data}");
+							Morph_Util.Logger.LogDebug($"{current.BoneName} modifiers!!");
+							Morph_Util.Logger.LogDebug($"Body Bone 1 scale {index}: {bone1.CoordinateModifiers[count].ScaleModifier}");
+							Morph_Util.Logger.LogDebug($"Body Bone 2 scale {index}: {bone2.CoordinateModifiers[count].ScaleModifier}");
+							Morph_Util.Logger.LogDebug($"Result scale {index}: {mod.ScaleModifier}");
 						}
 					}
 
@@ -1779,7 +1818,7 @@ namespace Character_Morpher
 			}
 			catch(Exception e)
 			{
-				MorphUtil.Logger.LogError($"Error: {e.TargetSite} went boom... {e.Message}");
+				Morph_Util.Logger.LogError($"Error: {e.TargetSite} went boom... {e.Message}");
 			}
 		}
 		#endregion
@@ -1795,7 +1834,7 @@ namespace Character_Morpher
 				initReset = isReloading = false;
 
 			//for in game load correction
-			if(!MakerAPI.InsideMaker && isInitLoadFinished)
+			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) && isInitLoadFinished)
 				MorphChangeUpdate(forceReset: true);
 
 			//if(!isReloading)
@@ -1889,7 +1928,7 @@ namespace Character_Morpher
 
 			yield return new WaitWhile(() => boneCtrl.NeedsFullRefresh || boneCtrl.NeedsBaselineUpdate);
 
-			if(cfg.debug.Value) MorphUtil.Logger.LogDebug("Updating morph values after ABMX");
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Updating morph values after ABMX");
 
 			yield return StartCoroutine(CoMorphChangeUpdate(delay, forceReset, forceChange: forceChange));
 
@@ -2054,10 +2093,10 @@ namespace Character_Morpher
 
 		public void SoftSaveControls(bool saveCMD, bool defaultSave = true)
 		{
-			if(!MakerAPI.InsideMaker) return;
+			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio)) return;
 
 			//if(!ctrl)
-			//	ctrl = GetFuncCtrlOfType<CharaMorpherController>().FirstOrNull();
+			//	ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().FirstOrNull();
 
 			//if(!ctrl) return;//return if ctrl is null
 
@@ -2066,18 +2105,18 @@ namespace Character_Morpher
 
 			var tmp = controls.Clone();
 
-			if(defaultSave && MakerAPI.InsideMaker)
+			if(defaultSave)
 				LoadCurrentDefaultValues(false, false, false);
 
 			var listCtrl =
-			((!MakerAPI.InsideMaker ?
+			(((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) ?
 			cfg.preferCardMorphDataGame.Value :
 			cfg.preferCardMorphDataMaker.Value) && saveCMD) ?
 			(ctrls2 ?? ctrls1) : ctrls1;
 
 			listCtrl?.Copy(controls);
 
-			if(defaultSave && MakerAPI.InsideMaker)
+			if(defaultSave)
 				controls = tmp;
 		}
 
@@ -2110,7 +2149,7 @@ namespace Character_Morpher
 					{
 
 						Transform parent = null;
-						parent = GetFuncCtrlOfType<CharaMorpherController>()?.First()?.transform.parent;
+						parent = GetFuncCtrlOfType<CharaMorpher_Controller>()?.First()?.transform.parent;
 						//_extraCharacter = new ChaControl();
 
 						_extraCharacter =
@@ -2132,21 +2171,22 @@ namespace Character_Morpher
 						Character.Instance?.DeleteChara(_extraCharacter, entryOnly: true);
 #endif
 
-						_bonectrl = _extraCharacter?.GetComponent<BoneController>();
+						if(ABMXDependency.InTargetVersionRange)
+							_bonectrl = _extraCharacter?.GetComponent<BoneController>();
 
 						//This is needed so extracharacter is not imidiately destroyed
-						var ctrler = _extraCharacter?.GetComponent<CharaMorpherController>();
+						var ctrler = _extraCharacter?.GetComponent<CharaMorpher_Controller>();
 						if(ctrler)
 						{
 
-							if(cfg.debug.Value) MorphUtil.Logger.LogDebug("Destroying dummy chara controller");
+							if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Destroying dummy chara controller");
 							ctrler.isDummy = true;
 							ctrler.enabled = false;
 							GameObject.Destroy(ctrler);//change back to Destroy if issues arise
 						}
 
 						_extraCharacter.gameObject.SetActive(false);
-						if(cfg.debug.Value) MorphUtil.Logger.LogDebug("created new Morph character instance");
+						if(cfg.debug.Value) Morph_Util.Logger.LogDebug("created new Morph character instance");
 					}
 
 					return;
@@ -2181,8 +2221,9 @@ namespace Character_Morpher
 			public bool isSplit { get => m_isSplit; private set => m_isSplit = value; }
 
 
-			public void Populate(CharaMorpherController morphControl, bool useTargetData = false)
+			public void Populate(CharaMorpher_Controller morphControl, bool useTargetData = false)
 			{
+				if(!ABMXDependency.InTargetVersionRange) return;
 
 				var boneCtrl = useTargetData ? MorphTarget.extraCharacter?.GetComponent<BoneController>() : morphControl?.GetComponent<BoneController>();
 				var charaCtrl = morphControl?.ChaControl;
@@ -2191,8 +2232,8 @@ namespace Character_Morpher
 				//Store Bonemod Extended Data
 				{//helps get rid of data sooner
 
-					if(!boneCtrl) MorphUtil.Logger.LogDebug("Bone controller doesn't exist");
-					if(!charaCtrl) MorphUtil.Logger.LogDebug("Character controller doesn't exist");
+					if(!boneCtrl) Morph_Util.Logger.LogDebug("Bone controller doesn't exist");
+					if(!charaCtrl) Morph_Util.Logger.LogDebug("Character controller doesn't exist");
 
 					//This is the second dumbest fix
 					//(I was changing the player character's bones when this was true ¯\_(ツ)_/¯)
@@ -2211,24 +2252,26 @@ namespace Character_Morpher
 
 				if(cfg.debug.Value)
 				{
-					if(useTargetData) MorphUtil.Logger.LogDebug("Character 2:");
-					else MorphUtil.Logger.LogDebug("Character 1:");
-					foreach(var part in body) MorphUtil.Logger.LogDebug("Bone: " + part.BoneName);
+					if(useTargetData) Morph_Util.Logger.LogDebug("Character 2:");
+					else Morph_Util.Logger.LogDebug("Character 1:");
+					foreach(var part in body) Morph_Util.Logger.LogDebug("Bone: " + part.BoneName);
 				}
 
 				BoneSplit(morphControl, charaCtrl, useTargetData);
 			}
 
 			//split up body & head bones
-			public void BoneSplit(CharaMorpherController charaControl, ChaControl bodyCharaCtrl, bool useTargetData = false)
+			public void BoneSplit(CharaMorpher_Controller charaControl, ChaControl bodyCharaCtrl, bool useTargetData = false)
 			{
+				if(!ABMXDependency.InTargetVersionRange) return;
+
 				var ChaControl = charaControl?.GetComponent<ChaControl>();
 				var ChaFileControl = ChaControl?.chaFile;
 
 				if(!bodyCharaCtrl?.objHeadBone) return;
 				if(isSplit || !isLoaded) return;
 
-				if(cfg.debug.Value) MorphUtil.Logger.LogDebug("Splitting bones apart (this is gonna hurt)");
+				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Splitting bones apart (this is gonna hurt)");
 
 
 				var headRoot = bodyCharaCtrl.objHeadBone.transform.parent.parent;
@@ -2295,12 +2338,13 @@ namespace Character_Morpher
 			try
 			{
 				tmp.CopyAll(main);
+
 				tmp.pngData = main?.pngData?.ToArray();//copy
 #if KOI_API
 				tmp.facePngData = main?.facePngData?.ToArray();//copy
 #endif
 			}
-			catch(Exception e) { MorphUtil.Logger.LogError("Could not copy character data:\n" + e); }
+			catch(Exception e) { Morph_Util.Logger.LogError("Could not copy character data:\n" + e); }
 
 #if HONEY_API
 			//CopyAll will not copy this data in hs2
@@ -2315,15 +2359,15 @@ namespace Character_Morpher
 			if(data == null) return false;
 
 			var tmp = data.Clone();
-			//MorphUtil.Logger.LogDebug($"Face Bones: \n[{string.Join(",\n ", tmp.abmx.face.Attempt((k) => k.BoneName + " : " + k.CoordinateModifiers[0].ScaleModifier.ToString()).ToArray())}]");
-			//MorphUtil.Logger.LogDebug($"Body Bones: \n[{string.Join(",\n ", tmp.abmx.body.Attempt((k) => k.BoneName + " : " + k.CoordinateModifiers[0].ScaleModifier.ToString()).ToArray())}]");
+			//Morph_Util.Logger.LogDebug($"Face Bones: \n[{string.Join(",\n ", tmp.abmx.face.Attempt((k) => k.BoneName + " : " + k.CoordinateModifiers[0].ScaleModifier.ToString()).ToArray())}]");
+			//Morph_Util.Logger.LogDebug($"Body Bones: \n[{string.Join(",\n ", tmp.abmx.body.Attempt((k) => k.BoneName + " : " + k.CoordinateModifiers[0].ScaleModifier.ToString()).ToArray())}]");
 			this.main = tmp.main;
 			this.abmx = tmp.abmx;
 
 			return true;
 		}
 
-		public bool Copy(CharaMorpherController data, bool useTargetData = false)
+		public bool Copy(CharaMorpher_Controller data, bool useTargetData = false)
 		{
 			try
 			{
@@ -2341,7 +2385,7 @@ namespace Character_Morpher
 					data.ChaFileControl.facePngData)?.ToArray();
 #endif
 			}
-			catch(Exception e) { MorphUtil.Logger.LogError("Could not copy character data:\n" + e); return false; }
+			catch(Exception e) { Morph_Util.Logger.LogError("Could not copy character data:\n" + e); return false; }
 
 			abmx.Populate(data, useTargetData);
 
@@ -2354,10 +2398,12 @@ namespace Character_Morpher
 	public class MorphControls
 	{
 		Dictionary<string, Dictionary<string, MorphSliderData>> _all, _lastAll;
-		public string currentSet { get; internal set; } = cfg.currentControlName.Value;
+		public string currentSet { get; internal set; } = cfg.currentControlSetName.Value;
 		public bool setIsMainControls { get; set; } = false;
 
 		Coroutine post = null;
+
+
 		public Dictionary<string, Dictionary<string, MorphSliderData>> all
 		{
 			get
@@ -2406,24 +2452,27 @@ namespace Character_Morpher
 						bool check = Check();
 						_lastAll = _all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value.Clone()));
 
-						//	MorphUtil.Logger.LogInfo($"The change check returned: {check}");
+						//	Morph_Util.Logger.LogInfo($"The change check returned: {check}");
 						if(check)
-							OnInternalSliderValueChange.Invoke();
+							OnInternalSliderValueChange.Invoke(this);
 
 					}
 					catch(Exception e)
 					{
-						MorphUtil.Logger.LogError($"CoPost failed:\n{e}");
+						Morph_Util.Logger.LogError($"CoPost failed:\n{e}");
 					}
 
 					yield break;
 				}
 
-				if(post != null)
-					Instance.StopCoroutine(post);
+				if(!StudioAPI.InsideStudio)
+				{
+					if(post != null)
+						Instance.StopCoroutine(post);
 
-				if(setIsMainControls)
-					post = Instance.StartCoroutine(CoPost());
+					if(setIsMainControls)
+						post = Instance.StartCoroutine(CoPost());
+				}
 
 				return _all;
 			}
@@ -2510,9 +2559,9 @@ namespace Character_Morpher
 			_lastAll = tmp._lastAll;
 			currentSet = tmp.currentSet;
 
-			//	MorphUtil.Logger.LogDebug($"Current Save: {currentSet}");
-			//	MorphUtil.Logger.LogDebug($"List Names: [{string.Join(", ", all.Keys.ToArray())}]");
-			//	MorphUtil.Logger.LogDebug($"List Counts: [{string.Join(", ", all.Values.Attempt((k) => k.Count.ToString()).ToArray())}]");
+			//	Morph_Util.Logger.LogDebug($"Current Save: {currentSet}");
+			//	Morph_Util.Logger.LogDebug($"List Names: [{string.Join(", ", all.Keys.ToArray())}]");
+			//	Morph_Util.Logger.LogDebug($"List Counts: [{string.Join(", ", all.Values.Attempt((k) => k.Count.ToString()).ToArray())}]");
 
 			return true;
 		}
@@ -2540,7 +2589,7 @@ namespace Character_Morpher
 					//TODO: get the old data converter
 #if KK || EC || KKS
 					case 1:
-						if(cfg.debug.Value) MorphUtil.Logger.LogDebug("[KKABMX] Loading legacy embedded ABM data");
+						if(cfg.debug.Value) Morph_Util.Logger.LogDebug("[KKABMX] Loading legacy embedded ABM data");
 						return ABMXOldDataConverterKoiAPI.MigrateOldExtData(data);
 #endif
 
@@ -2550,7 +2599,7 @@ namespace Character_Morpher
 				}
 				catch(Exception ex)
 				{
-					if(cfg.debug.Value) MorphUtil.Logger.LogError("[KKABMX] Failed to load extended data - " + ex);
+					if(cfg.debug.Value) Morph_Util.Logger.LogError("[KKABMX] Failed to load extended data - " + ex);
 				}
 			}
 			return new List<BoneModifier>();
@@ -2624,7 +2673,7 @@ namespace Character_Morpher
 					}
 					catch(Exception ex)
 					{
-						MorphUtil.Logger.LogError($"ABMX: Failed to load legacy line \"{string.Join(",", singleEntry)}\" - {ex.Message}");
+						Morph_Util.Logger.LogError($"ABMX: Failed to load legacy line \"{string.Join(",", singleEntry)}\" - {ex.Message}");
 					}
 				}
 

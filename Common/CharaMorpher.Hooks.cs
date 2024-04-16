@@ -40,9 +40,8 @@ namespace Character_Morpher
 
 			static void UpdateCurrentCharacters(bool forcereset = false)
 			{
-
-				if(MakerAPI.InsideMaker || cfg.enableInGame.Value)//Make sure the in-game flag is checked
-					foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				if((MakerAPI.InsideMaker || StudioAPI.InsideStudio) || cfg.enableInGame.Value)//Make sure the in-game flag is checked
+					foreach(CharaMorpher_Controller ctrl in Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>())
 					{
 						if(!ctrl) continue;
 						if(ctrl.isInitLoadFinished && !ctrl.isReloading)
@@ -128,7 +127,7 @@ namespace Character_Morpher
 				if(_facePng != null)
 					if(cfg.debug.Value) Logger.LogDebug("Character face png file exists");
 
-				IEnumerator DelayedPngSet(CharaMorpherController ctrl, byte[] png, byte[] facePng)
+				IEnumerator DelayedPngSet(CharaMorpher_Controller ctrl, byte[] png, byte[] facePng)
 				{
 				//	for(int a = 0; a < 0; ++a)
 				//		yield return null;
@@ -138,7 +137,7 @@ namespace Character_Morpher
 					yield break;
 				}
 
-				foreach(CharaMorpherController ctrl in MorphUtil.GetFuncCtrlOfType<CharaMorpherController>())
+				foreach(CharaMorpher_Controller ctrl in Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>())
 				{
 
 #if !KK
@@ -164,28 +163,20 @@ namespace Character_Morpher
 
 			static void OnFaceBonemodToggleClick(Toggle __instance)
 			{
-				var txtPro = __instance?.GetComponentInChildren<TMPro.TMP_Text>();
-				var txt = __instance?.GetComponentInChildren<Text>();
-
-				if((txtPro ? txtPro.text.ToLower().Contains("face bonemod") : false) ||
-					(txt ? txt.text.ToLower().Contains("face bonemod") : false))
+				if(__instance.GetTextFromTextComponent()?.ToLower().Contains("face bonemod") ?? false)
 				{
 					if(cfg.debug.Value) Logger.LogDebug("Change to face bonemod toggle");
-					CharaMorpherController.faceBonemodTgl = __instance.isOn;
+					CharaMorpher_Controller.faceBonemodTgl = __instance.isOn;
 				}
 
 			}
 
 			static void OnBodyBonemodToggleClick(Toggle __instance)
 			{
-				var txtPro = __instance.GetComponentInChildren<TMPro.TMP_Text>();
-				var txt = __instance.GetComponentInChildren<Text>();
-
-				if((txtPro ? txtPro.text.ToLower().Contains("body bonemod") : false) ||
-					(txt ? txt.text.ToLower().Contains("body bonemod") : false))
+				if(__instance.GetTextFromTextComponent()?.ToLower().Contains("body bonemod") ?? false)
 				{
 					if(cfg.debug.Value) Logger.LogDebug("Change to body bonemod toggle");
-					CharaMorpherController.bodyBonemodTgl = __instance.isOn;
+					CharaMorpher_Controller.bodyBonemodTgl = __instance.isOn;
 				}
 			}
 
@@ -196,14 +187,14 @@ namespace Character_Morpher
 			[HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
 			static void OnPreButtonClick(Button __instance)
 			{
-				return;
+				return;//dont worry about it 😏
 				if(!__instance.interactable) return;
 
 				if(!MakerAPI.InsideMaker) return;
 
-			//	OnSaveLoadClick(__instance);
-			//	OnExitSaveClick(__instance);
-			//	OnCoordLoadClick(__instance);
+				//	OnSaveLoadClick(__instance);
+				//	OnExitSaveClick(__instance);
+				//	OnCoordLoadClick(__instance);
 			}
 
 			/// <summary>
