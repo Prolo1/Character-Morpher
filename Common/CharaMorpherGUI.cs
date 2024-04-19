@@ -233,12 +233,14 @@ namespace Character_Morpher
 				winRec = new Rect(cfg.studioWinRec.Value);
 				Func<int> dropdown = null;
 
+				string[] searchHits = new string[] { "overall", "abmx" };
+				var tmpSliderLableStyle = (GUIStyle)null;
 				void CreatSlider(string settingName, CharaMorpher_Controller ctrl1, float min = 0, float max = 1)
 				{
 					var visualName = "" + settingName;
-					var visualNameLow = visualName.ToLower();
-					var tmpSliderLableStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.BoldAndItalic };
-					string[] searchHits = new string[] { "overall", "abmx" };
+					if(tmpSliderLableStyle == null)
+						tmpSliderLableStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.BoldAndItalic };
+					//var visualNameLow = visualName.ToLower();
 
 					tmpSliderLableStyle.normal.textColor = Color.cyan;
 
@@ -398,6 +400,7 @@ namespace Character_Morpher
 						#region Toggles
 						topScrollPos = GUILayout.BeginScrollView(topScrollPos, GUILayout.Height(winRec.height * .20f));
 
+						GUILayout.Label("Enables:");
 						var enable = GUILayout.Toggle(cfg.enable.Value, "Enable");
 						var enableABMX = GUILayout.Toggle(cfg.enableABMX.Value, "Enable ABMX");
 						var charEnable = ctrl ? GUILayout.Toggle(ctrl.morphEnable, "Chara. Enable") : true;
