@@ -54,10 +54,13 @@ using static BepInEx.Logging.LogLevel;
  * Added QoL file explorer search for morph target in maker
  * Can choose to enable/disable in-game use (this affects all but male character[s])
  * Can choose to enable/disable use in male maker
-
-  Planned:                                           
+ * Works in studio (Not all features there yet)
+ * Added per-character enablers that get saved with the character (persistent in game)
+ 
+  Planned:    
+ * ¯\_(ツ)_/¯
+ * 
 ************************************************/
-
 
 /**
  */
@@ -88,8 +91,8 @@ namespace Character_Morpher
 		public const string GUID = "prolo.chararmorpher";//never change this
 		public const string Version = "1.1.0";
 
-		public const string strDivider = ":";
-		public const string defaultStr = "(Default)" + strDivider;
+		public const string strDiv = ":";
+		public const string defaultStr = "(Default)" + strDiv;
 
 		internal static CharaMorpher_Core Instance;
 		internal static new ManualLogSource Logger;
@@ -200,8 +203,8 @@ namespace Character_Morpher
 						$"{ABMXDependency}");
 			}
 
-			//Embeded Resources
-			using(MemoryStream memStreme = new MemoryStream())
+			//Embedded Resources
+			using(MemoryStream memStream = new MemoryStream())
 			{
 				/**This stuff will be used later*/
 				var assembly = Assembly.GetExecutingAssembly();
@@ -211,45 +214,45 @@ namespace Character_Morpher
 
 				var data = assembly.GetManifestResourceStream(resources.FirstOrDefault((txt) => (txt.ToLower()).Contains("ultra instinct")) ?? " ");
 #if KK
-				memStreme.SetLength(0);//Clear Buffer 
-				memStreme.Write(data.ReadAllBytes(), 0, (int)data.Length);//write Buffer
+				memStream.SetLength(0);//Clear Buffer 
+				memStream.Write(data.ReadAllBytes(), 0, (int)data.Length);//write Buffer
 #else
-				memStreme.SetLength(0);//Clear Buffer 
-				data?.CopyTo(memStreme);
+				memStream.SetLength(0);//Clear Buffer 
+				data?.CopyTo(memStream);
 #endif
 				UIGoku =
-					memStreme?.GetBuffer()?
+					memStream?.GetBuffer()?
 					.LoadTexture();
-				memStreme.SetLength(0);
+				memStream.SetLength(0);
 				UIGoku.Compress(false);
 				UIGoku.Apply();
 
 				data = assembly.GetManifestResourceStream(resources.FirstOrDefault((txt) => (txt.ToLower()).Contains("studio morph icon.png")) ?? " ");
 #if KK
-				memStreme.SetLength(0);//Clear Buffer 
-				memStreme.Write(data.ReadAllBytes(), 0, (int)data.Length);//write Buffer
+				memStream.SetLength(0);//Clear Buffer 
+				memStream.Write(data.ReadAllBytes(), 0, (int)data.Length);//write Buffer
 #else
-				memStreme.SetLength(0);//Clear Buffer 
-				data?.CopyTo(memStreme);
+				memStream.SetLength(0);//Clear Buffer 
+				data?.CopyTo(memStream);
 #endif
 				iconBG =
-					memStreme?.GetBuffer()?
+					memStream?.GetBuffer()?
 					.LoadTexture();
-				memStreme.SetLength(0);
+				memStream.SetLength(0);
 				iconBG.Compress(false);
 				iconBG.Apply();
 
 				//data = assembly.GetManifestResourceStream(resources.FirstOrDefault((txt) => (txt.ToLower()).Contains("ultra instinct")) ?? " ");
-				//data?.CopyTo(memStreme);
+				//data?.CopyTo(memStream);
 				//iconBG =
-				//	memStreme?.GetBuffer()?
+				//	memStream?.GetBuffer()?
 				//	.LoadTexture();
 				//memStreme.SetLength(0);
 
 				//data = assembly.GetManifestResourceStream(resources.FirstOrDefault((txt) => txt.ToLower().Contains("icon.png")));
-				//data.CopyTo(memStreme);
+				//data.CopyTo(memStream);
 				//icon =
-				//	memStreme?.GetBuffer()?
+				//	memStream?.GetBuffer()?
 				//	.LoadTexture();
 				//memStreme.SetLength(0);
 				//icon.Compress(false);
@@ -257,7 +260,7 @@ namespace Character_Morpher
 
 			}
 
-			//Type Convertors
+			//Type Converters
 			{
 				TomlTypeConverter.AddConverter(
 				   typeof(Rect),
@@ -345,7 +348,7 @@ namespace Character_Morpher
 				new ConfigurationManagerAttributes { Order = --index, Category = mainx, })),
 				preferCardMorphDataMaker = Config.Bind(main, "Use Card Morph Data (Maker)", true,
 				new ConfigDescription("Allows the mod to use data from card instead of default data " +
-				"(If false card uses default Morph card dat \nNote: the image will go dark if using card data", null,
+				"(If false card uses default Morph card data \nNote: the image will go dark if using card data", null,
 				new ConfigurationManagerAttributes { Order = --index, Category = mainx, })),
 				preferCardMorphDataGame = Config.Bind(main, "Use Card Morph Data (Game)", true,
 				new ConfigDescription("Allows the mod to use data from card instead of default data " +
@@ -432,7 +435,40 @@ namespace Character_Morpher
 				//Studio
 				studioWinRec = Config.Bind(stud, "Studio Win Rec", CharaMorpher_GUI.winRec,
 				new ConfigDescription("", tags:
-				new ConfigurationManagerAttributes() { Order = --index, Category = studx, Browsable = StudioAPI.InsideStudio })),
+				new ConfigurationManagerAttributes()
+				{
+					Order = --index,
+					Category = studx,
+					CustomDrawer = (draw) =>
+					{
+
+						Rect tmp = new Rect((Rect)draw.BoxedValue);
+						GUILayout.BeginHorizontal();
+
+						GUILayout.Label("X", GUILayout.ExpandWidth(false));
+						//tmp.x = GUILayout.HorizontalSlider(tmp.x, 0, Screen.width, GUILayout.ExpandWidth(true));
+						float.TryParse(GUILayout.TextField(string.Format("{0:f0}", tmp.x)), out tmp.m_XMin);
+
+						GUILayout.Label("Y", GUILayout.ExpandWidth(false));
+						//tmp.y = GUILayout.HorizontalSlider(tmp.y, 0, Screen.height, GUILayout.ExpandWidth(true));
+						float.TryParse(GUILayout.TextField(string.Format("{0:f0}", tmp.y)), out tmp.m_YMin);
+
+						GUILayout.Label("Width", GUILayout.ExpandWidth(false));
+						//tmp.width = GUILayout.HorizontalSlider(tmp.width, 0, Screen.width, GUILayout.ExpandWidth(true));
+						float.TryParse(GUILayout.TextField(string.Format("{0:f0}", tmp.width)), out tmp.m_Width);
+
+						GUILayout.Label("Height", GUILayout.ExpandWidth(false));
+						//tmp.height = GUILayout.HorizontalSlider(tmp.height, 0, Screen.height, GUILayout.ExpandWidth(true));
+						float.TryParse(GUILayout.TextField(string.Format("{0:f0}", tmp.height)), out tmp.m_Height);
+
+
+						GUILayout.EndHorizontal();
+
+						if(cfg.studioWinRec.Value != tmp)
+							cfg.studioWinRec.Value = tmp;
+					},
+					Browsable = StudioAPI.InsideStudio
+				})),
 				//studioOneAtATime = Config.Bind(stud, "studio One At A Time", true,
 				//new ConfigDescription("", tags:
 				//new ConfigurationManagerAttributes() { Order = --index, Category = studx, Browsable = StudioAPI.InsideStudio })),
@@ -723,7 +759,7 @@ namespace Character_Morpher
 				{
 					if(File.Exists(path))
 						if(ctrl.isInitLoadFinished)
-							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
+							ctrl?.StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 				}
 			};
 
@@ -735,7 +771,7 @@ namespace Character_Morpher
 				{
 					if(File.Exists(path))
 						if(ctrl.isInitLoadFinished)
-							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
+							ctrl?.StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 				}
 			};
 
@@ -749,7 +785,7 @@ namespace Character_Morpher
 				if(MakerAPI.InsideMaker || StudioAPI.InsideStudio)
 					foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
 						if(ctrl.isInitLoadFinished)
-							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
+							ctrl?.StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 			};
 
 			cfg.preferCardMorphDataGame.SettingChanged += (m, n) =>
@@ -757,7 +793,7 @@ namespace Character_Morpher
 				if(!MakerAPI.InsideMaker && !StudioAPI.InsideStudio)
 					foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
 						if(ctrl.isInitLoadFinished)
-							StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
+							ctrl?.StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 			};
 
 			cfg.onlyMorphCharWithDataInGame.SettingChanged += (m, n) =>
@@ -772,18 +808,20 @@ namespace Character_Morpher
 			{
 				foreach(var ctrl in Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>())
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-						ctrl?.StartCoroutine(ctrl?.CoMorphChangeUpdate(delay: a + 1, forceReset: !ctrl.Enable));
+						ctrl?.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a + 1, forceReset: !cfg.enable.Value));
 
 				Logger.LogMessage(cfg.enable.Value ?
 									"Character Morpher Enabled" :
 									"Character Morpher Disabled");
+
+
 			};
 
 			cfg.enableInGame.SettingChanged += (m, n) =>
 			{
 				foreach(CharaMorpher_Controller ctrl in Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>())
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
+						ctrl?.StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
 			};
 
 			cfg.enableABMX.SettingChanged += (m, n) =>
@@ -800,10 +838,15 @@ namespace Character_Morpher
 				foreach(CharaMorpher_Controller ctrl in Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>())
 				{
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-						StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
+						ctrl?.StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
 				}
 			};
 
+			cfg.studioWinRec.SettingChanged += (m, n) =>
+			{
+				if(!cfg.studioWinRec.Value.Equals(winRec))
+					winRec = new Rect(cfg.studioWinRec.Value);
+			};
 			// useCardMorphDataGame()
 			{
 				Coroutine tmp = null;
@@ -826,7 +869,7 @@ namespace Character_Morpher
 							string name =
 							(!cfg.preferCardMorphDataGame.Value ?
 							ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1))?.currentSet;
-							name = name.Substring(0, Mathf.Clamp(name.LastIndexOf(strDivider), 0, name.Length));
+							name = name.Substring(0, Mathf.Clamp(name.LastIndexOf(strDiv), 0, name.Length));
 
 
 							//Logger.LogDebug($"lastUCMD: {lastUCMD}");
@@ -1163,7 +1206,7 @@ namespace Character_Morpher
 		public static List<string[]> oldConversionList { get; } =
 			new List<string[]>
 			{
-				//I sould have ordered this differently but to late now 😝
+				//I should have ordered this differently but to late now 😝
 				new[]{"Overall Voice","Vioce Default",bool.FalseString},
 				new[]{"Overall Skin Colour","Skin Default",bool.FalseString},
 				new[]{"Base Skin Colour","Base Skin Default",bool.FalseString},
@@ -1227,8 +1270,8 @@ namespace Character_Morpher
 
 			foreach(var val in defList)
 			{
-				var slotName = val.Key.Substring(0, val.Key.LastIndexOf(strDivider) + 1)?.Trim();
-				var settingName = val.Key.Substring(val.Key.LastIndexOf(strDivider) + 1);
+				var slotName = val.Key.Substring(0, val.Key.LastIndexOf(strDiv) + 1)?.Trim();
+				var settingName = val.Key.Substring(val.Key.LastIndexOf(strDiv) + 1);
 
 				//Morph_Util.Logger.LogDebug($"For start");
 				//Morph_Util.Logger.LogDebug($"val.key: {val.Key}");
@@ -1324,8 +1367,8 @@ namespace Character_Morpher
 
 			var name = selection[val = Mathf.Clamp(val, 0, selection.Length - 1)].Trim();
 
-			name = (name.LastIndexOf(strDivider) == name.Length - strDivider.Length ?
-					name.Substring(0, name.LastIndexOf(strDivider)) : name) + strDivider;
+			name = (name.LastIndexOf(strDiv) == name.Length - strDiv.Length ?
+					name.Substring(0, name.LastIndexOf(strDiv)) : name) + strDiv;
 
 			//Replace the new set with the last settings before changing the setting name (loading will call the actual settings)
 			if((ctrl?.controls?.currentSet ?? cfg.currentControlSetName.Value) != name)
@@ -1359,8 +1402,8 @@ namespace Character_Morpher
 		public static int SwitchControlSet(string[] selection, string val, bool keepProgress = true, CharaMorpher_Controller ctrl = null) =>
 			selection is null ? -1 : SwitchControlSet(selection,
 				val is null ? -1 :
-				Array.IndexOf(selection, val.Trim().LastIndexOf(strDivider) == val.Trim().Length - strDivider.Length ?
-					val.Trim().Substring(0, val.Trim().LastIndexOf(strDivider)) : val.Trim()), keepProgress, ctrl);//will automatically remove "strDevider" if at end of string"
+				Array.IndexOf(selection, val.Trim().LastIndexOf(strDiv) == val.Trim().Length - strDiv.Length ?
+					val.Trim().Substring(0, val.Trim().LastIndexOf(strDiv)) : val.Trim()), keepProgress, ctrl);//will automatically remove "strDivider" if at end of string"
 		public static void UpdateDropdown(ICollection<string> selector)
 		{
 
@@ -1378,7 +1421,7 @@ namespace Character_Morpher
 		public static void PopulateDefaultSettings(string name)
 		{
 			var ctrl1 = Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull();
-			if(name.LastIndexOf(strDivider) != (name.Length - strDivider.Length)) name += strDivider;
+			if(name.LastIndexOf(strDiv) != (name.Length - strDiv.Length)) name += strDiv;
 
 			Instance.controlCategories[name] = new List<MorphSliderData> { };//init list
 
@@ -1514,13 +1557,13 @@ namespace Character_Morpher
 			int count = 1;
 			ctrl1 = ctrl1 ?? Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull();
 
-			string name = "Error" + strDivider;
+			string name = "Error" + strDiv;
 			var defList = (!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) || !cfg.preferCardMorphDataMaker.Value || ctrl1?.ctrls2 == null ?
 				Instance.controlCategories.Keys.ToList() :
 				ctrl1?.controls?.all?.Keys?.ToList() ?? Instance.controlCategories.Keys.ToList();
 			//var modeDefList = Instance.Config.Where((k) => k.Key.Section == "Mode Defaults");
 
-			if(baseName.IsNullOrEmpty()) baseName = defaultStr.Substring(0, defaultStr.LastIndexOf(strDivider));
+			if(baseName.IsNullOrEmpty()) baseName = defaultStr.Substring(0, defaultStr.LastIndexOf(strDiv));
 
 			var tmp = 0;
 			foreach(var chara in baseName.Reverse())
@@ -1533,7 +1576,7 @@ namespace Character_Morpher
 
 			//find new empty slot name
 			while(defList?.Any((k) =>
-			k.Contains(name = $"{baseName} {count}{strDivider}")) ?? false) ++count;
+			k.Contains(name = $"{baseName} {count}{strDiv}")) ?? false) ++count;
 
 
 
@@ -1644,28 +1687,27 @@ namespace Character_Morpher
 		}
 
 		/// <summary>
-		/// Returns a list of the regestered handeler specified. returns empty list otherwise 
+		/// Returns a list of the registered handler specified. returns empty list otherwise 
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
 		public static IEnumerable<T> GetFuncCtrlOfType<T>()
 		{
-			foreach(var hnd in CharacterApi.RegisteredHandlers)
-				if(hnd.ControllerType == typeof(T))
-					return hnd.Instances.Cast<T>();
+			foreach(var hnd in CharacterApi.RegisteredHandlers
+				.Where(reg => reg.ControllerType == typeof(T)))
+				return hnd.Instances.Cast<T>();
 
 			return new T[] { };
 		}
 
 		/// <summary>
-		/// Defaults the ConfigEntry on game launch
+		/// Defaults the ConfigEntry on game launch using default value specified
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="v1"></param>
 		/// <param name="v2"></param>
 		public static ConfigEntry<T> ConfigDefaulter<T>(this ConfigEntry<T> v1, T v2)
 		{
-
 			if(v1 == null || !CharaMorpher_Core.cfg.resetOnLaunch.Value) return v1;
 
 			v1.Value = v2;
@@ -1674,12 +1716,12 @@ namespace Character_Morpher
 		}
 
 		/// <summary>
-		/// Defaults the ConfigEntry on game launch
+		/// Defaults the ConfigEntry on game launch using default value in ConfigEntry
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="v1"></param>
 		/// <param name="v2"></param>
-		public static ConfigEntry<T> ConfigDefaulter<T>(this ConfigEntry<T> v1) => v1.ConfigDefaulter((T)v1.DefaultValue);
+		public static ConfigEntry<T> ConfigDefaulter<T>(this ConfigEntry<T> v1) => v1?.ConfigDefaulter((T)v1.DefaultValue);
 
 		static Texture tmpTex = null;
 		static string lastPath = null;
@@ -1813,7 +1855,7 @@ namespace Character_Morpher
 					Instance?.controlCategories?.Keys.ToList() :
 					(GetFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull()?.controls?.all?.Keys?.ToList()
 					?? Instance?.controlCategories?.Keys.ToList()))
-					.Attempt((k) => k.LastIndexOf(strDivider) >= 0 ? k.Substring(0, k.LastIndexOf(strDivider)) : throw new Exception())
+					.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ? k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 					.ToArray();
 				Array.Sort(val ?? (val = new string[] { }));
 
@@ -1850,7 +1892,7 @@ namespace Character_Morpher
 				{
 					//Morph_Util.Logger.LogDebug("Trying to add a comp from drawer");
 					AddNewSetting();
-					//UpdateDrpodown(ControlsList);
+					//UpdateDropdown(ControlsList);
 					//	Morph_Util.Logger.LogDebug("execution got to this point");
 				}
 
@@ -1861,7 +1903,7 @@ namespace Character_Morpher
 					if(selectedMod >= ControlsList.Length - 1)
 						tmp = ControlsList.Length - 2;
 
-					RemoveCurrentSetting(ControlsList[selectedMod] + strDivider);
+					RemoveCurrentSetting(ControlsList[selectedMod] + strDiv);
 
 					selectedMod = SwitchControlSet(ControlsList, tmp);
 
@@ -1900,7 +1942,7 @@ namespace Character_Morpher
 			IEnumerator func(T gui1, UnityAction<T> act1)
 			{
 				if(!gui1.Exists)
-					yield return new WaitUntil(() => gui1.Exists);//the thing neeeds to exist first
+					yield return new WaitUntil(() => gui1.Exists);//the thing needs to exist first
 
 				act1(gui);
 
@@ -2126,7 +2168,7 @@ namespace Character_Morpher
 		}
 
 		/// <summary>
-		/// reverts back to last window specified by SetCurrentForground
+		/// reverts back to last window specified by SetCurrentForeground
 		/// </summary>
 		public static void RevertForground()
 		{

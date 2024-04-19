@@ -118,7 +118,7 @@ namespace Character_Morpher
 		public bool isReloading { get; internal set; } = true;
 
 		/// <summary>
-		/// makes sure most main functins don't run when creating template character
+		/// makes sure most main functions don't run when creating template character
 		/// </summary>
 		public bool isDummy { get; internal set; } = false;
 
@@ -132,14 +132,14 @@ namespace Character_Morpher
 			}
 		}
 
-		#region I dont want to see this
+		#region I don't want to see this
 #if KOI_API
 
-		public static readonly List<KeyValuePair<string, string>> boneDatabaseCatagories = new List<KeyValuePair<string, string>>()
+		public static readonly List<KeyValuePair<string, string>> boneDatabaseCategories = new List<KeyValuePair<string, string>>()
 #else
 		//this is a tuple list btw (of bones found in abmx mod and online... somewhere)
 
-		public static readonly List<(string, string)> boneDatabaseCatagories = new List<(string, string)>()
+		public static readonly List<(string, string)> boneDatabaseCategories = new List<(string, string)>()
 #endif
 
 #if KOI_API
@@ -248,13 +248,13 @@ namespace Character_Morpher
 			new KeyValuePair<string, string>("k_f_leglowR_02"    ,"legs" ),
 			new KeyValuePair<string, string>("k_f_leglowR_03"    ,"legs" ),
 		
-		   //Feet;
+			//Feet;
 			new KeyValuePair<string, string>("cf_s_leg03_L"      , "feet"),
 			new KeyValuePair<string, string>("cf_j_foot_L"       , "feet"),
 			new KeyValuePair<string, string>("cf_j_leg03_L"      , "feet"),
 			new KeyValuePair<string, string>("cf_j_toes_L"       , "feet"),
 		
-		  //Genitals;
+			//Genitals;
 		    new KeyValuePair<string, string>("cf_d_kokan"        , "genitals"),
 			new KeyValuePair<string, string>("cf_j_kokan"        , "genitals"),
 			new KeyValuePair<string, string>("cm_J_dan100_00"    , "genitals"),
@@ -263,7 +263,7 @@ namespace Character_Morpher
 			new KeyValuePair<string, string>("cf_j_ana"          , "genitals"),
 		
 		
-			 //Head;
+			//Head;
 			new KeyValuePair<string, string>("cf_j_head",     "" ),
 			new KeyValuePair<string, string>("cf_s_head"         , ""     ),
 			new KeyValuePair<string, string>("cf_hit_head"       , ""     ),
@@ -704,13 +704,13 @@ namespace Character_Morpher
 			//Morph_Util.Logger.LogDebug($"Control set: {controls.currentSet}");
 			foreach(var category in core.controlCategories)
 			{
-				//		Morph_Util.Logger.LogDebug($"In forloop 1 Awake");
+				//		Morph_Util.Logger.LogDebug($"In for loop 1 Awake");
 				if(!controls.all.TryGetValue(category.Key, out var tmp))
 					controls.all[category.Key] = new Dictionary<string, MorphSliderData>();
 
 				foreach(var ctrl in category.Value)
 				{
-					//Morph_Util.Logger.LogDebug($"In forloop 2 Awake");
+					//Morph_Util.Logger.LogDebug($"In for loop 2 Awake");
 					//Morph_Util.Logger.LogDebug($"defaults: [{category.Key}][{ctrl.dataName}]");
 					//Morph_Util.Logger.LogDebug($"data: {cfg.defaults[category.Key][ctrl.dataName].Value.data}");
 
@@ -760,6 +760,7 @@ namespace Character_Morpher
 				m_data1.Clear();
 				m_data2.Clear();
 				//ctrls1 = null;
+				morphEnable = morphEnableABMX = true;
 				ctrls2 = null;
 				m_extData = null;
 				m_initalData.Clear();
@@ -841,7 +842,7 @@ namespace Character_Morpher
 
 
 		/// <summary>
-		/// updates the morphtarget to a specified target if path has changed or card has been updated
+		/// updates the morph target to a specified target if path has changed or card has been updated
 		/// </summary>
 		/// <param name="ctrl"></param>
 		public void MorphTargetUpdate()
@@ -1088,7 +1089,7 @@ namespace Character_Morpher
 			if(cfg.debug.Value)
 				Morph_Util.Logger.LogDebug($"setting ABMX values");
 
-			charDisabled = !Enable || !EnableABMX;
+			charDisabled |= !EnableABMX;
 			//ABMX
 			if(abmx)
 				AbmxUpdateValues(reset || charDisabled, initReset);
@@ -1508,9 +1509,9 @@ namespace Character_Morpher
 							content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
 
 #if KOI_API
-						switch(boneDatabaseCatagories.Find((k) => k.Key.Trim().ToLower().Contains(content)).Value)
+						switch(boneDatabaseCategories.Find((k) => k.Key.Trim().ToLower().Contains(content)).Value)
 #else
-						switch(boneDatabaseCatagories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
+						switch(boneDatabaseCategories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
 #endif
 						{
 						case "torso":
@@ -1593,9 +1594,9 @@ namespace Character_Morpher
 
 
 #if KOI_API
-					switch(boneDatabaseCatagories.Find((k) => k.Key.Trim().ToLower().Contains(content)).Value)
+					switch(boneDatabaseCategories.Find((k) => k.Key.Trim().ToLower().Contains(content)).Value)
 #else
-					switch(boneDatabaseCatagories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
+					switch(boneDatabaseCategories.Find((k) => k.Item1.Trim().ToLower().Contains(content)).Item2)
 #endif
 					{
 
@@ -1823,7 +1824,7 @@ namespace Character_Morpher
 		}
 		#endregion
 
-		#region Custom Controller Overrides
+		#region CustomController Overrides
 		bool initReset = true;//needed
 		/// <inheritdoc/>
 		protected override void OnReload(GameMode currentGameMode, bool keepState)
@@ -2032,7 +2033,7 @@ namespace Character_Morpher
 			{
 
 				//for(int a = 0; a < m_data1.main.custom.face.shapeValueFace.Length; ++a)
-				//	ChaControl.SetShapeBodyValue(a, ChaControl.GetShapeBodyValue(a) + valu);
+				//	ChaControl.SetShapeBodyValue(a, ChaControl.GetShapeBodyValue(a) + value);
 				//ChaControl.LateUpdateForce();
 
 
@@ -2174,7 +2175,7 @@ namespace Character_Morpher
 						if(ABMXDependency.InTargetVersionRange)
 							_bonectrl = _extraCharacter?.GetComponent<BoneController>();
 
-						//This is needed so extracharacter is not imidiately destroyed
+						//This is needed so extracharacter is not immediately destroyed
 						var ctrler = _extraCharacter?.GetComponent<CharaMorpher_Controller>();
 						if(ctrler)
 						{

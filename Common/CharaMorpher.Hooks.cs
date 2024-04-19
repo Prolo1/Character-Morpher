@@ -187,7 +187,7 @@ namespace Character_Morpher
 			[HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
 			static void OnPreButtonClick(Button __instance)
 			{
-				return;//dont worry about it 😏
+				return;//don't worry about it 😏
 				if(!__instance.interactable) return;
 
 				if(!MakerAPI.InsideMaker) return;
@@ -273,7 +273,7 @@ namespace Character_Morpher
 			/// <param name="__instance"></param>
 			static void OnExitSaveClick(Button __instance)
 			{
-				//Set character back to normal if save was canceled
+				//Set character back to normal if save was cancelled
 				var ctrler = __instance.gameObject;
 				if(!ctrler || ctrler.name.IsNullOrEmpty()) return;
 #if HONEY_API

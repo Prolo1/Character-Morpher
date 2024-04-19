@@ -130,7 +130,7 @@ namespace Character_Morpher
 		private readonly static List<MorphMakerSlider> sliders = new List<MorphMakerSlider>();
 		private readonly static List<MorphMakerDropdown> modes = new List<MorphMakerDropdown>();
 		private readonly static List<UnityAction<MorphControls>> sliderValActions = new List<UnityAction<MorphControls>>();
-		//static Dictionary<EventHandler, List<EventHandler>> handelerList = new Dictionary<EventHandler, List<EventHandler>>();
+		//static Dictionary<EventHandler, List<EventHandler>> handlerList = new Dictionary<EventHandler, List<EventHandler>>();
 		static EventHandler enableEvent = null;
 		static EventHandler enableABMXEvent = null;
 		static EventHandler saveAsMorphDataEvent = null;
@@ -154,7 +154,7 @@ namespace Character_Morpher
 		#endregion
 
 		#region Studio
-		internal static Rect winRec = new Rect(105, 535, 380, 450);
+		internal static Rect winRec = new Rect(105, 535, 440, 455);//{ "x":103, "y":534, "width":439, "height":457 }
 		internal static Texture2D morphTex = null;
 		static bool enableStudioUI = false;
 		static UnityEvent customStudioUI = new UnityEvent();
@@ -379,7 +379,6 @@ namespace Character_Morpher
 				//Update Loop
 				customStudioUI.AddListener(() =>
 				{
-
 					try
 					{
 						GUILayout.BeginVertical();
@@ -401,8 +400,8 @@ namespace Character_Morpher
 
 						var enable = GUILayout.Toggle(cfg.enable.Value, "Enable");
 						var enableABMX = GUILayout.Toggle(cfg.enableABMX.Value, "Enable ABMX");
-						var charEnable = ctrl ? GUILayout.Toggle(ctrl.morphEnable, "Chara Enable") : true;
-						var charEnableABMX = ctrl ? GUILayout.Toggle(ctrl.morphEnableABMX, "Chara Enable ABMX") : true;
+						var charEnable = ctrl ? GUILayout.Toggle(ctrl.morphEnable, "Chara. Enable") : true;
+						var charEnableABMX = ctrl ? GUILayout.Toggle(ctrl.morphEnableABMX, "Chara. Enable ABMX") : true;
 
 						var linkOverallABMXSliders = GUILayout.Toggle(cfg.linkOverallABMXSliders.Value, "Link Overall Sliders to ABMX Overall Sliders");
 
@@ -419,10 +418,10 @@ namespace Character_Morpher
 							//char enables
 							if(ctrl)
 							{
-								if(charEnable != ctrl.Enable)
+								if(charEnable != ctrl.morphEnable)
 									ctrl.Enable = charEnable;
 
-								if(charEnableABMX != ctrl.EnableABMX)
+								if(charEnableABMX != ctrl.morphEnableABMX)
 									ctrl.EnableABMX = charEnableABMX;
 							}
 
@@ -522,7 +521,7 @@ namespace Character_Morpher
 
 						#region Mid
 
-						#region Scrollview
+						#region ScrollView
 						midScrollPos = GUILayout.BeginScrollView(midScrollPos, GUILayout.ExpandWidth(true));
 
 						#region Morph Image
@@ -592,12 +591,12 @@ namespace Character_Morpher
 								content: (ctn, index) => new GUIContent { text = $"Current Slot: {ctrl?.controls?.currentSet ?? cfg.currentControlSetName.Value ?? "None"} " },
 								listUpdate: (old) =>
 								{
-									if(last != ctrl || !init)//njkj:
+									if(last != ctrl || !init)
 										return
 										(ctrl?.controls?.all?.Keys.ToList() ??
 										Instance?.controlCategories?.Keys.ToList())
-										.Attempt((k) => k.LastIndexOf(strDivider) >= 0 ?
-										k.Substring(0, k.LastIndexOf(strDivider)) : throw new Exception())
+										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
+										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 										.ToArray() ??
 										new string[0];
 									return old;
@@ -609,8 +608,8 @@ namespace Character_Morpher
 										selected = SwitchControlSet((
 										ctrl?.controls?.all?.Keys?.ToList() ??
 										Instance?.controlCategories?.Keys.ToList())
-										.Attempt((k) => k.LastIndexOf(strDivider) >= 0 ?
-										k.Substring(0, k.LastIndexOf(strDivider)) : throw new Exception())
+										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
+										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 										.ToArray() ??
 										new string[0], ctrl?.controls?.currentSet);
 										last = ctrl;
@@ -622,8 +621,8 @@ namespace Character_Morpher
 								SwitchControlSet((
 										ctrl?.controls?.all?.Keys?.ToList() ??
 										Instance?.controlCategories?.Keys.ToList())
-										.Attempt((k) => k.LastIndexOf(strDivider) >= 0 ?
-										k.Substring(0, k.LastIndexOf(strDivider)) : throw new Exception())
+										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
+										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 										.ToArray() ??
 										new string[0], selected));
 
@@ -666,8 +665,8 @@ namespace Character_Morpher
 							//UpdateGUISelectList();
 							SwitchControlSet((ctrl?.controls?.all?.Keys?.ToList() ??
 										Instance?.controlCategories?.Keys.ToList())
-										.Attempt((k) => k.LastIndexOf(strDivider) >= 0 ?
-										k.Substring(0, k.LastIndexOf(strDivider)) : throw new Exception())
+										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
+										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 										.ToArray() ??
 										new string[0], ctrl?.controls.currentSet);
 						}
@@ -677,8 +676,8 @@ namespace Character_Morpher
 							//switch control before deletion
 							var list = (ctrl?.controls?.all?.Keys?.ToList() ??
 										Instance?.controlCategories?.Keys.ToList())
-										.Attempt((k) => k.LastIndexOf(strDivider) >= 0 ?
-										k.Substring(0, k.LastIndexOf(strDivider)) : throw new Exception())
+										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
+										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 										.ToArray() ??
 										new string[0];
 
@@ -700,7 +699,7 @@ namespace Character_Morpher
 
 						GUILayout.EndVertical();
 
-						init = true;//inital run complete
+						init = true;//initial run complete
 					}
 					catch(Exception e) { Morph_Util.Logger.LogError(e); }
 				});
@@ -731,7 +730,7 @@ namespace Character_Morpher
 					((CvsSelectWindow[])Resources.FindObjectsOfTypeAll(typeof(CvsSelectWindow)))
 					.OrderBy((k) => k.transform.GetSiblingIndex())//I just want them in the right order
 					.Attempt(p => p.items)
-					.Aggregate((l, r) => l.Concat(r).ToArray());//should flaten array
+					.Aggregate((l, r) => l.Concat(r).ToArray());//should flatten array
 
 
 					bodyCustom = (CvsB_ShapeWhole)allCvs.FirstOrNull((p) => p.cvsBase is CvsB_ShapeWhole)?.cvsBase;
@@ -789,7 +788,6 @@ namespace Character_Morpher
 					lastExtent = Instance.StartCoroutine(CoEditExtents(start: 1));
 				};
 			}
-
 
 		}
 
@@ -856,19 +854,78 @@ namespace Character_Morpher
 			#region Enables
 			e.AddControl(new MakerText("Enablers", category, Instance));
 
-			var enable = e.AddControl(new MakerToggle(category, "Enable", cfg.enable.Value, Instance))
-				.OnGUIExists((gui) =>
-				cfg.enable.SettingChanged +=
-				enableEvent = (s, o) =>
-				gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enable.Value));
+			e.AddControl(new MakerToggle(category, "Enable", cfg.enable.Value, Instance))
+			  .OnGUIExists((gui) =>
+			  cfg.enable.SettingChanged +=
+			  enableEvent = (s, o) =>
+			  gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enable.Value))
+			  ?.BindToFunctionController<CharaMorpher_Controller, bool>(
+				  (ctrl) => cfg.enable.Value,
+				  (ctrl, val) =>
+				  {
+					  if(val != cfg.enable.Value)
+						  cfg.enable.Value = val;
+					  ShowEnabledSliders();
+				  });
 
-			MakerToggle enableabmx = null;
 			if(ABMXDependency.InTargetVersionRange)
-				enableabmx = e.AddControl(new MakerToggle(category, "Enable ABMX", cfg.enableABMX.Value, Instance))
-					.OnGUIExists((gui) =>
-					cfg.enableABMX.SettingChanged +=
-					enableABMXEvent = (s, o) =>
-					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableABMX.Value));
+				e.AddControl(new MakerToggle(category, "Enable ABMX", cfg.enableABMX.Value, Instance))
+				  .OnGUIExists((gui) =>
+				  cfg.enableABMX.SettingChanged +=
+				  enableABMXEvent = (s, o) =>
+				  gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableABMX.Value))
+				  ?.BindToFunctionController<CharaMorpher_Controller, bool>(
+					  (ctrl) => cfg.enableABMX.Value,
+					  (ctrl, val) =>
+					  {
+						  if(val != cfg.enableABMX.Value)
+							  cfg.enableABMX.Value = val;
+						  ShowEnabledSliders();
+					  });
+
+			e.AddControl(new MakerToggle(category, "Chara. Enable", true, Instance))
+			  .OnGUIExists((gui) =>
+			  {
+				  var ctrl = GetCharacterControl().GetComponentInParent<CharaMorpher_Controller>();
+				  ctrl.ObserveEveryValueChanged(v => v.morphEnable).Subscribe(
+					  val =>
+					  {
+
+						  gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(val);
+						  Morph_Util.Logger.LogMessage($"Chara. {(val ? "Enabled" : "Disabled")}");
+					  });
+
+				  gui?.BindToFunctionController<CharaMorpher_Controller, bool>(
+						(ctrl1) => ctrl1.morphEnable,
+						(ctrl1, val) =>
+						{
+							if(val != ctrl1.morphEnable)
+								ctrl1.Enable = val;
+							ShowEnabledSliders();
+						});
+			  });
+
+			if(ABMXDependency.InTargetVersionRange)
+				e.AddControl(new MakerToggle(category, "Chara. Enable ABMX", true, Instance))
+				  .OnGUIExists((gui) =>
+				  {
+					  var ctrl = GetCharacterControl().GetComponentInParent<CharaMorpher_Controller>();
+					  ctrl.ObserveEveryValueChanged(v => v.morphEnableABMX).Subscribe(
+						  val =>
+						  {
+							  gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(val);
+							  Morph_Util.Logger.LogMessage($"Chara ABMX {(val ? "Enabled" : "Disabled")}");
+						  });
+					  gui?.BindToFunctionController<CharaMorpher_Controller, bool>(
+							(ctrl1) => ctrl1.morphEnableABMX,
+							(ctrl1, val) =>
+							{
+								if(val != ctrl1.morphEnableABMX)
+									ctrl1.EnableABMX = val;
+								ShowEnabledSliders();
+							});
+				  });
+
 
 			e.AddControl(new MakerToggle(category, "Save Ext. Data", cfg.saveExtData.Value, Instance))
 			   .OnGUIExists((gui) =>
@@ -897,8 +954,6 @@ namespace Character_Morpher
 				  //	ctrl.StartCoroutine(ctrl.CoResetFace(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
 				  //	ctrl.StartCoroutine(ctrl.CoResetHeight(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
 			  });
-
-
 
 			var enableQuadManip = e.AddControl(new MakerToggle(category, "Enable Calculation Types", cfg.enableCalcTypes.Value, Instance))
 				.OnGUIExists((gui) =>
@@ -1204,27 +1259,6 @@ namespace Character_Morpher
 
 			#region Slider Visibility
 
-			IEnumerator CoSliderDisable(bool val, uint start = 0, uint end = int.MaxValue)
-			{
-
-				if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"CoSliderDisable Called!");
-				yield return new WaitWhile(() =>
-				{
-					for(int a = (int)start; a < Math.Min(sliders.Count, (int)end); ++a)
-						if(sliders?[a]?.ControlObject == null) return true;
-					return false;
-				});
-
-				if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"sliders are visible: {val}");
-				for(int a = (int)start; a < sliders.Count; ++a)
-				{
-					sliders?[a]?.ControlObject?.SetActive(val);
-					modes?[a]?.ControlObject?.SetActive(val);
-				}
-
-				inst.StartCoroutine(CoModeDisable(cfg.enableCalcTypes.Value));
-			}
-
 			IEnumerator CoModeDisable(bool val, uint start = 0, uint end = int.MaxValue)
 			{
 
@@ -1247,6 +1281,27 @@ namespace Character_Morpher
 					}
 			}
 
+			IEnumerator CoSliderDisable(bool val, uint start = 0, uint end = int.MaxValue)
+			{
+
+				if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"CoSliderDisable Called!");
+				yield return new WaitWhile(() =>
+				{
+					for(int a = (int)start; a < Math.Min(sliders.Count, (int)end); ++a)
+						if(sliders?[a]?.ControlObject == null) return true;
+					return false;
+				});
+
+				if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"sliders are visible: {val}");
+				for(int a = (int)start; a < sliders.Count; ++a)
+				{
+					sliders?[a]?.ControlObject?.SetActive(val);
+					modes?[a]?.ControlObject?.SetActive(val);
+				}
+
+				inst.StartCoroutine(CoModeDisable(cfg.enableCalcTypes.Value));
+			}
+
 
 			void ShowEnabledSliders()
 			{
@@ -1255,23 +1310,7 @@ namespace Character_Morpher
 					start: (uint)abmxIndex, end: int.MaxValue));
 			}
 
-			enable?.BindToFunctionController<CharaMorpher_Controller, bool>(
-				(ctrl) => cfg.enable.Value,
-				(ctrl, val) =>
-				{
-					if(val != cfg.enable.Value)
-						cfg.enable.Value = val;
-					ShowEnabledSliders();
-				});
 
-			enableabmx?.BindToFunctionController<CharaMorpher_Controller, bool>(
-				(ctrl) => cfg.enableABMX.Value,
-				(ctrl, val) =>
-				{
-					if(val != cfg.enableABMX.Value)
-						cfg.enableABMX.Value = val;
-					ShowEnabledSliders();
-				});
 
 			enableQuadManip?.BindToFunctionController<CharaMorpher_Controller, bool>(
 				(ctrl) => cfg.enableCalcTypes.Value,
@@ -1659,7 +1698,7 @@ namespace Character_Morpher
 			string name =
 			(!cfg.preferCardMorphDataMaker.Value ?
 			ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1))?.currentSet;
-			name = name.Substring(0, Mathf.Clamp(name.LastIndexOf(strDivider), 0, name.Length));
+			name = name.Substring(0, Mathf.Clamp(name.LastIndexOf(strDiv), 0, name.Length));
 
 
 			{
@@ -1747,7 +1786,7 @@ namespace Character_Morpher
 
 			OnImageTargetObtained(paths);
 
-			Illusion.Game.Utils.Sound.Play(paths.Any() ? Illusion.Game.SystemSE.ok_l : Illusion.Game.SystemSE.cancel);
+			Illusion.Game.Utils.Sound.Play(paths?.Any() ?? false ? Illusion.Game.SystemSE.ok_l : Illusion.Game.SystemSE.cancel);
 		}
 
 		#endregion
@@ -1793,11 +1832,11 @@ namespace Character_Morpher
 
 					if(dropdown is TMP_Dropdown dropdown1)
 						dropdown1.options = value.Attempt((k) =>
-						new TMP_Dropdown.OptionData(k.LastIndexOf(strDivider) >= 0 ? k.Substring(0, k.LastIndexOf(strDivider)) : k)).ToList();
+						new TMP_Dropdown.OptionData(k.LastIndexOf(strDiv) >= 0 ? k.Substring(0, k.LastIndexOf(strDiv)) : k)).ToList();
 
 					else if(dropdown is Dropdown dropdown2)
 						dropdown2.options = value.Attempt((k) =>
-						new Dropdown.OptionData(k.LastIndexOf(strDivider) >= 0 ? k.Substring(0, k.LastIndexOf(strDivider)) : k)).ToList();
+						new Dropdown.OptionData(k.LastIndexOf(strDiv) >= 0 ? k.Substring(0, k.LastIndexOf(strDiv)) : k)).ToList();
 				}
 			}
 
