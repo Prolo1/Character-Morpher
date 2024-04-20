@@ -49,16 +49,19 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 * Added Hotkeys to enable/disable mod (changeable)
 * Can choose to enable/disable in-game use (this affects all but male character[s])
 * Can choose to enable/disable use in male maker
-* Morph data can be saved to the card w/o editing the original character data (New!)
-* Can create preset slot saves (New!)
-* Can choose to only morph characters with data saved to them in-game (New!)
-* Cards save "As Seen" when saved (for people that make adjustments before saving) (New!)
-* Added Hotkeys to change between preset slots (changeable) (New!)
-* Added button that goes back to original look in maker (How it looked when loaded) (New!)
+* Morph data can be saved to the card w/o editing the original character data  
+* Can create preset slot saves  
+* Can choose to only morph characters with data saved to them in-game  
+* Cards save "As Seen" when saved (for people that make adjustments before saving)  
+* Added Hotkeys to change between preset slots (changeable)  
+* Added button that goes back to original look in maker (How it looked when loaded)
+* Added Compatibility with Studio (New!)
+* Added character-specific enable toggles that are saved to each card (loading a game with toggle disabled means the character will not be morphed) (New!)
 
 ## Planned
 
 * Adding more sliders over time (i.e. skin colour, voice... etc.)
+* ¯\_(ツ)_/¯
 
 ## How To Use
 
@@ -73,6 +76,9 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 
 ![example gif](https://github.com/Prolo1/Example-images/blob/main/example%20chara%20morph%20v2.gif?raw=true)
 ![HS2 image](https://github.com/Prolo1/Example-images/blob/main/Screenshot%202022-03-29%20191817.png?raw=true)
+![HS2 Studio 1](https://github.com/Prolo1/Example-images/blob/main/CharaMorph/studio%201.png)
+![HS2 Studio 2](https://github.com/Prolo1/Example-images/blob/main/CharaMorph/studio%202.png)
+
 
 ## Known Issues
 
