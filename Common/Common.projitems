@@ -13,12 +13,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)CharaMorpher.Hooks.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CharaMorpherController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CharaMorpherGUI.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)SaveLoadController.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SaveLoadManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Test.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\ultra instinct.jpg">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\studio morph icon.png" />
   </ItemGroup>
 </Project>

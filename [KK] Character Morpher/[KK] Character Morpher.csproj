@@ -54,9 +54,13 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Prefer32Bit>false</Prefer32Bit>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony, Version=2.9.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -83,8 +87,8 @@
       <HintPath>..\packages\ABMX.KKABMX.5.0.2\lib\net35\KKABMX.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="KKAPI, Version=1.34.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionModdingAPI.KKAPI.1.34.0\lib\net35\KKAPI.dll</HintPath>
+    <Reference Include="KKAPI, Version=1.36.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IllusionModdingAPI.KKAPI.1.36.0\lib\net35\KKAPI.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
