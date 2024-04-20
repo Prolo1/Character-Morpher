@@ -156,6 +156,7 @@ namespace Character_Morpher
 		#region Studio
 		internal static Rect winRec = new Rect(105, 535, 440, 455);//{ "x":103, "y":534, "width":439, "height":457 }
 		internal static Texture2D morphTex = null;
+		internal static CharaMorpher_Controller studioMorphCtrl = null;
 		static bool enableStudioUI = false;
 		static UnityEvent customStudioUI = new UnityEvent();
 		#endregion
@@ -189,7 +190,6 @@ namespace Character_Morpher
 		internal static void Initialize()
 		{
 			Cleanup();
-			CharaMorpher_Controller ctrl = null;
 
 			if(InsideStudio)
 			{
@@ -233,12 +233,14 @@ namespace Character_Morpher
 				winRec = new Rect(cfg.studioWinRec.Value);
 				Func<int> dropdown = null;
 
+				string[] searchHits = new string[] { "overall", "abmx" };
+				var tmpSliderLableStyle = (GUIStyle)null;
 				void CreatSlider(string settingName, CharaMorpher_Controller ctrl1, float min = 0, float max = 1)
 				{
 					var visualName = "" + settingName;
-					var visualNameLow = visualName.ToLower();
-					var tmpSliderLableStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.BoldAndItalic };
-					string[] searchHits = new string[] { "overall", "abmx" };
+					if(tmpSliderLableStyle == null)
+						tmpSliderLableStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.BoldAndItalic };
+					//var visualNameLow = visualName.ToLower();
 
 					tmpSliderLableStyle.normal.textColor = Color.cyan;
 
@@ -358,7 +360,7 @@ namespace Character_Morpher
 				{
 					IEnumerator CoUCMD()
 					{
-						yield return ctrl?.StartCoroutine(CoUCMDCommon(ctrl, lastUCMD));
+						yield return studioMorphCtrl?.StartCoroutine(CoUCMDCommon(studioMorphCtrl, lastUCMD));
 
 						lastUCMD = cfg.preferCardMorphDataMaker.Value;//this is needed
 
@@ -366,8 +368,8 @@ namespace Character_Morpher
 					}
 
 					if(tmp != null)
-						ctrl.StopCoroutine(tmp);
-					tmp = ctrl.StartCoroutine(CoUCMD());
+						studioMorphCtrl.StopCoroutine(tmp);
+					tmp = studioMorphCtrl.StartCoroutine(CoUCMD());
 				};
 
 				#endregion
@@ -398,10 +400,11 @@ namespace Character_Morpher
 						#region Toggles
 						topScrollPos = GUILayout.BeginScrollView(topScrollPos, GUILayout.Height(winRec.height * .20f));
 
+						GUILayout.Label("Enables:");
 						var enable = GUILayout.Toggle(cfg.enable.Value, "Enable");
 						var enableABMX = GUILayout.Toggle(cfg.enableABMX.Value, "Enable ABMX");
-						var charEnable = ctrl ? GUILayout.Toggle(ctrl.morphEnable, "Chara. Enable") : true;
-						var charEnableABMX = ctrl ? GUILayout.Toggle(ctrl.morphEnableABMX, "Chara. Enable ABMX") : true;
+						var charEnable = studioMorphCtrl ? GUILayout.Toggle(studioMorphCtrl.morphEnable, "Chara. Enable") : true;
+						var charEnableABMX = studioMorphCtrl ? GUILayout.Toggle(studioMorphCtrl.morphEnableABMX, "Chara. Enable ABMX") : true;
 
 						var linkOverallABMXSliders = GUILayout.Toggle(cfg.linkOverallABMXSliders.Value, "Link Overall Sliders to ABMX Overall Sliders");
 
@@ -416,22 +419,22 @@ namespace Character_Morpher
 								cfg.enableABMX.Value = enableABMX;
 
 							//char enables
-							if(ctrl)
+							if(studioMorphCtrl)
 							{
-								if(charEnable != ctrl.morphEnable)
-									ctrl.Enable = charEnable;
+								if(charEnable != studioMorphCtrl.morphEnable)
+									studioMorphCtrl.Enable = charEnable;
 
-								if(charEnableABMX != ctrl.morphEnableABMX)
-									ctrl.EnableABMX = charEnableABMX;
+								if(charEnableABMX != studioMorphCtrl.morphEnableABMX)
+									studioMorphCtrl.EnableABMX = charEnableABMX;
 							}
 
 							if(linkOverallABMXSliders != cfg.linkOverallABMXSliders.Value)
 							{
 								cfg.linkOverallABMXSliders.Value = linkOverallABMXSliders;
 
-								if(ctrl && ctrl.isInitLoadFinished)
+								if(studioMorphCtrl && studioMorphCtrl.isInitLoadFinished)
 									for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-										ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
+										studioMorphCtrl.StartCoroutine(studioMorphCtrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
 
 							}
 
@@ -440,11 +443,11 @@ namespace Character_Morpher
 								cfg.preferCardMorphDataMaker.Value = preferCardMorphDataMaker;
 
 								string p = Path.Combine(Morph_Util.MakeDirPath(cfg.charDir.Value), Morph_Util.MakeDirPath(cfg.imageName.Value));
-								morphTex = ctrl?.IsUsingExtMorphData ?? false ? ctrl?.m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : p.CreateTexture();
-								if(ctrl)
+								morphTex = studioMorphCtrl?.IsUsingExtMorphData ?? false ? studioMorphCtrl?.m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : p.CreateTexture();
+								if(studioMorphCtrl)
 								{
 									//dim card image
-									if(ctrl.IsUsingExtMorphData)
+									if(studioMorphCtrl.IsUsingExtMorphData)
 									{
 										var pix = morphTex.GetPixels();
 										foreach(var i in pix)
@@ -492,17 +495,17 @@ namespace Character_Morpher
 							if(names.Length > 0 && !names.InRange(selec))
 								selectedTool = selec = Mathf.Clamp(selec, 0, names.Length);
 
-							ctrl = selectedCtrls.InRange(selec) ? selectedCtrls.ElementAt(selec) : null;
+							studioMorphCtrl = selectedCtrls.InRange(selec) ? selectedCtrls.ElementAt(selec) : null;
 
 							//	Morph_Util.Logger.LogMessage(ctrl ? "New Tab Selected" : "No Tab selected");
 
 							//Code Here...
 							string p = Path.Combine(Morph_Util.MakeDirPath(cfg.charDir.Value), Morph_Util.MakeDirPath(cfg.imageName.Value));
-							morphTex = ctrl?.IsUsingExtMorphData ?? false ? ctrl?.m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : p.CreateTexture(); ;
-							if(ctrl)
+							morphTex = studioMorphCtrl?.IsUsingExtMorphData ?? false ? studioMorphCtrl?.m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : p.CreateTexture(); ;
+							if(studioMorphCtrl)
 							{
 								//dim card image
-								if(ctrl.IsUsingExtMorphData)
+								if(studioMorphCtrl.IsUsingExtMorphData)
 								{
 									var pix = morphTex.GetPixels();
 									foreach(var i in pix)
@@ -539,11 +542,11 @@ namespace Character_Morpher
 						{
 							GetNewImageTarget();
 							string p = Path.Combine(Morph_Util.MakeDirPath(cfg.charDir.Value), Morph_Util.MakeDirPath(cfg.imageName.Value));
-							morphTex = ctrl?.IsUsingExtMorphData ?? false ? ctrl?.m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : p.CreateTexture();
-							if(ctrl)
+							morphTex = studioMorphCtrl?.IsUsingExtMorphData ?? false ? studioMorphCtrl?.m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : p.CreateTexture();
+							if(studioMorphCtrl)
 							{
 								//dim card image
-								if(ctrl.IsUsingExtMorphData)
+								if(studioMorphCtrl.IsUsingExtMorphData)
 								{
 									var pix = morphTex.GetPixels();
 									foreach(var i in pix)
@@ -564,9 +567,9 @@ namespace Character_Morpher
 
 						foreach(var cat in Instance.controlCategories[defaultStr])
 							if(cat.dataName.ToLower().Contains("voice"))
-								CreateVoiceSlider(cat.dataName, ctrl);
+								CreateVoiceSlider(cat.dataName, studioMorphCtrl);
 							else
-								CreateShapeSlider(cat.dataName, ctrl);
+								CreateShapeSlider(cat.dataName, studioMorphCtrl);
 
 
 						#endregion
@@ -588,12 +591,12 @@ namespace Character_Morpher
 							CharaMorpher_Controller last = null;
 							dropdown = Morph_Util.GUILayoutDropdownDrawer(
 								scrollHeight: 93 * .5f,
-								content: (ctn, index) => new GUIContent { text = $"Current Slot: {ctrl?.controls?.currentSet ?? cfg.currentControlSetName.Value ?? "None"} " },
+								content: (ctn, index) => new GUIContent { text = $"Current Slot: {studioMorphCtrl?.controls?.currentSet ?? cfg.currentControlSetName.Value ?? "None"} " },
 								listUpdate: (old) =>
 								{
-									if(last != ctrl || !init)
+									if(last != studioMorphCtrl || !init)
 										return
-										(ctrl?.controls?.all?.Keys.ToList() ??
+										(studioMorphCtrl?.controls?.all?.Keys.ToList() ??
 										Instance?.controlCategories?.Keys.ToList())
 										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
 										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
@@ -603,23 +606,23 @@ namespace Character_Morpher
 								},
 								modSelected: (selected) =>
 								{
-									if(last != ctrl)
+									if(last != studioMorphCtrl)
 									{
 										selected = SwitchControlSet((
-										ctrl?.controls?.all?.Keys?.ToList() ??
+										studioMorphCtrl?.controls?.all?.Keys?.ToList() ??
 										Instance?.controlCategories?.Keys.ToList())
 										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
 										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 										.ToArray() ??
-										new string[0], ctrl?.controls?.currentSet);
-										last = ctrl;
+										new string[0], studioMorphCtrl?.controls?.currentSet);
+										last = studioMorphCtrl;
 									}
 
 									return selected;
 								},
 								onSelect: (selected) =>
 								SwitchControlSet((
-										ctrl?.controls?.all?.Keys?.ToList() ??
+										studioMorphCtrl?.controls?.all?.Keys?.ToList() ??
 										Instance?.controlCategories?.Keys.ToList())
 										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
 										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
@@ -632,26 +635,26 @@ namespace Character_Morpher
 						#endregion
 
 						#region Buttons
-						var MorphBackupCtrl = (!ctrl?.IsUsingExtMorphData ?? true ? ctrl?.ctrls1 :
-									(ctrl?.ctrls2 ?? ctrl?.ctrls1));
+						var MorphBackupCtrl = (!studioMorphCtrl?.IsUsingExtMorphData ?? true ? studioMorphCtrl?.ctrls1 :
+									(studioMorphCtrl?.ctrls2 ?? studioMorphCtrl?.ctrls1));
 
 						GUILayout.BeginHorizontal();
-						if(GUILayout.Button("Load From Current Slot") && ctrl)
+						if(GUILayout.Button("Load From Current Slot") && studioMorphCtrl)
 						{
-							ctrl.controls.Copy(MorphBackupCtrl);
-							ctrl.controls.currentSet = cfg.currentControlSetName.Value;
+							studioMorphCtrl.controls.Copy(MorphBackupCtrl);
+							studioMorphCtrl.controls.currentSet = cfg.currentControlSetName.Value;
 
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
-								ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
+								studioMorphCtrl.StartCoroutine(studioMorphCtrl.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
 
-							Morph_Util.Logger.LogMessage($"Loaded CharaMorpher {ctrl.controls.currentSet}");
+							Morph_Util.Logger.LogMessage($"Loaded CharaMorpher {studioMorphCtrl.controls.currentSet}");
 							Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
 						}
 
-						if(GUILayout.Button("Save To Current Slot") && ctrl)
+						if(GUILayout.Button("Save To Current Slot") && studioMorphCtrl)
 						{
-							MorphBackupCtrl.Copy(ctrl.controls);
-							Morph_Util.Logger.LogMessage($"Saved as CharaMorpher {ctrl.controls.currentSet}");
+							MorphBackupCtrl.Copy(studioMorphCtrl.controls);
+							Morph_Util.Logger.LogMessage($"Saved as CharaMorpher {studioMorphCtrl.controls.currentSet}");
 							Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
 						}
 						GUILayout.EndHorizontal();
@@ -659,22 +662,22 @@ namespace Character_Morpher
 						GUILayout.BeginHorizontal();
 						if(GUILayout.Button("Add New Slot"))
 						{
-							AddNewSetting(ctrl1: ctrl);
+							AddNewSetting(ctrl1: studioMorphCtrl);
 
 							//update dropdown list				 
 							//UpdateGUISelectList();
-							SwitchControlSet((ctrl?.controls?.all?.Keys?.ToList() ??
+							SwitchControlSet((studioMorphCtrl?.controls?.all?.Keys?.ToList() ??
 										Instance?.controlCategories?.Keys.ToList())
 										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
 										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 										.ToArray() ??
-										new string[0], ctrl?.controls.currentSet);
+										new string[0], studioMorphCtrl?.controls.currentSet);
 						}
 
 						if(GUILayout.Button("Remove Current Slot"))
 						{
 							//switch control before deletion
-							var list = (ctrl?.controls?.all?.Keys?.ToList() ??
+							var list = (studioMorphCtrl?.controls?.all?.Keys?.ToList() ??
 										Instance?.controlCategories?.Keys.ToList())
 										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
 										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
@@ -685,10 +688,10 @@ namespace Character_Morpher
 							if(select.Value >= list.Length - 1)
 								tmpVal = list.Length - 2;
 
-							RemoveCurrentSetting(ctrl?.controls?.currentSet ?? cfg.currentControlSetName.Value, ctrl);
+							RemoveCurrentSetting(studioMorphCtrl?.controls?.currentSet ?? cfg.currentControlSetName.Value, studioMorphCtrl);
 
 							//UpdateGUISelectList();
-							SwitchControlSet(list, tmpVal, ctrl: ctrl);
+							SwitchControlSet(list, tmpVal, ctrl: studioMorphCtrl);
 						}
 						GUILayout.EndHorizontal();
 

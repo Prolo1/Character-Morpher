@@ -20,7 +20,7 @@
 
 ## Description
 
-This mod allows the user to set a morph target and change any character to look like the target (with a few sliders in character maker). As of now the changes in character maker are applied to every character (may change that later). It also ~~only works on female cards, not actively planning on both genders (I might though)~~ (forgot to change that, it has worked on both for a while now 😜).
+This mod allows the user to set a morph target and change any character to look like the target (with a few sliders in character maker). ~~As of now the changes in character maker are applied to every character (may change that later)~~ (I changed it). It also ~~only works on female cards, not actively planning on both genders (I might though)~~ (forgot to change that, it has worked on both for a while now 😜).
 
 ## Linked Mods
 
@@ -49,16 +49,19 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 * Added Hotkeys to enable/disable mod (changeable)
 * Can choose to enable/disable in-game use (this affects all but male character[s])
 * Can choose to enable/disable use in male maker
-* Morph data can be saved to the card w/o editing the original character data (New!)
-* Can create preset slot saves (New!)
-* Can choose to only morph characters with data saved to them in-game (New!)
-* Cards save "As Seen" when saved (for people that make adjustments before saving) (New!)
-* Added Hotkeys to change between preset slots (changeable) (New!)
-* Added button that goes back to original look in maker (How it looked when loaded) (New!)
+* Morph data can be saved to the card w/o editing the original character data  
+* Can create preset slot saves  
+* Can choose to only morph characters with data saved to them in-game  
+* Cards save "As Seen" when saved (for people that make adjustments before saving)  
+* Added Hotkeys to change between preset slots (changeable)  
+* Added button that goes back to original look in maker (How it looked when loaded)
+* Added Compatibility with Studio (New!)
+* Added character-specific enable toggles that are saved to each card (loading a game with toggle disabled means the character will not be morphed) (New!)
 
 ## Planned
 
 * Adding more sliders over time (i.e. skin colour, voice... etc.)
+* ¯\_(ツ)_/¯
 
 ## How To Use
 
@@ -73,6 +76,9 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 
 ![example gif](https://github.com/Prolo1/Example-images/blob/main/example%20chara%20morph%20v2.gif?raw=true)
 ![HS2 image](https://github.com/Prolo1/Example-images/blob/main/Screenshot%202022-03-29%20191817.png?raw=true)
+![HS2 Studio 1](https://github.com/Prolo1/Example-images/blob/main/CharaMorph/studio%201.png)
+![HS2 Studio 2](https://github.com/Prolo1/Example-images/blob/main/CharaMorph/studio%202.png)
+
 
 ## Known Issues
 
@@ -82,4 +88,4 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 
 ## Issues / Requests? <a name="issues"></a>
 
-Want to request a new feature or report a bug you found? If you find any mod issues, you can add it to the [Git Issues](https://github.com/Prolo1/Character-Morpher/issues) page and if you have any requests or cool ideas add it to the [Discussions](https://github.com/Prolo1/Character-Morpher/discussions) page and I'll see what I can do  
+Want to request a new feature or report a bug you found? If you find any mod issues, you can add it to the [Git Issues](https://github.com/Prolo1/Character-Morpher/issues) page and if you have any requests or cool ideas add it to the [Discussions](https://github.com/Prolo1/Character-Morpher/discussions) page and I'll see what I can do. You can also message me on [discord](https://discordapp.com/users/1067927438836891708) if you so choose.  
