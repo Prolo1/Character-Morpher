@@ -88,4 +88,4 @@ The mod versions used are from the latest versions of [Better Repack](https://dl
 
 ## Issues / Requests? <a name="issues"></a>
 
-Want to request a new feature or report a bug you found? If you find any mod issues, you can add it to the [Git Issues](https://github.com/Prolo1/Character-Morpher/issues) page and if you have any requests or cool ideas add it to the [Discussions](https://github.com/Prolo1/Character-Morpher/discussions) page and I'll see what I can do  
+Want to request a new feature or report a bug you found? If you find any mod issues, you can add it to the [Git Issues](https://github.com/Prolo1/Character-Morpher/issues) page and if you have any requests or cool ideas add it to the [Discussions](https://github.com/Prolo1/Character-Morpher/discussions) page and I'll see what I can do. You can also message me on [discord](https://discordapp.com/users/1067927438836891708) if you so choose.  
