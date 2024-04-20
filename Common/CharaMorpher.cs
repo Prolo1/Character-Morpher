@@ -117,6 +117,7 @@ namespace Character_Morpher
 			//Main
 			public ConfigEntry<bool> enable { set; get; }
 			public ConfigEntry<KeyboardShortcut> enableKey { set; get; }
+			public ConfigEntry<KeyboardShortcut> enableCharKey { set; get; }
 			public ConfigEntry<KeyboardShortcut> prevControlKey { set; get; }
 			public ConfigEntry<KeyboardShortcut> nextControlKey { set; get; }
 			public ConfigEntry<bool> enableInMaleMaker { get; set; }
@@ -374,6 +375,9 @@ namespace Character_Morpher
 				"(e.i. setting value to 10 gives values -10 -> 110)", null,
 				new ConfigurationManagerAttributes { Order = --index, Category = mainx, DefaultValue = true })),
 				enableKey = Config.Bind(main, "Toggle Enable Keybinding", new KeyboardShortcut(KeyCode.Return, KeyCode.RightShift),
+				new ConfigDescription("Enable/Disable toggle button", null,
+				new ConfigurationManagerAttributes { Order = --index, Category = mainx })),
+				enableCharKey = Config.Bind(main, "Toggle Chara. Enable Keybinding", new KeyboardShortcut(KeyCode.Return, KeyCode.RightControl, KeyCode.RightShift),
 				new ConfigDescription("Enable/Disable toggle button", null,
 				new ConfigurationManagerAttributes { Order = --index, Category = mainx })),
 				prevControlKey = Config.Bind(main, "Prev. control Keybinding", new KeyboardShortcut(),
@@ -925,6 +929,18 @@ namespace Character_Morpher
 			if(cfg.enableKey.Value.IsDown())
 			{
 				cfg.enable.Value = !cfg.enable.Value;
+			}
+
+			if(cfg.enableCharKey.Value.IsDown())
+			{
+				var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().FirstOrNull();
+
+				if(MakerAPI.InsideMaker && ctrl)
+					ctrl.Enable = !ctrl.morphEnable;
+
+				else if(StudioAPI.InsideStudio)
+					foreach(var ctrler in StudioAPI.GetSelectedControllers<CharaMorpher_Controller>())
+						ctrler.Enable = !ctrler.morphEnable;
 			}
 
 			if(cfg.enable.Value && (cfg.prevControlKey.Value.IsDown() || cfg.nextControlKey.Value.IsDown()))
