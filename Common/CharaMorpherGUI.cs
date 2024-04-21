@@ -150,7 +150,7 @@ namespace Character_Morpher
 			get => !InsideMaker || m_morphLoadToggle;
 			private set => m_morphLoadToggle = value;
 		}
-		private static MorphMakerDropdown select = null;
+		internal static MorphMakerDropdown select = null;
 		#endregion
 
 		#region Studio
@@ -435,7 +435,6 @@ namespace Character_Morpher
 								if(studioMorphCtrl && studioMorphCtrl.isInitLoadFinished)
 									for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 										studioMorphCtrl.StartCoroutine(studioMorphCtrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
-
 							}
 
 							if(preferCardMorphDataMaker != cfg.preferCardMorphDataMaker.Value)
@@ -461,6 +460,7 @@ namespace Character_Morpher
 							if(loadInitMorphCharacter != cfg.loadInitMorphCharacter.Value)
 								cfg.loadInitMorphCharacter.Value = loadInitMorphCharacter;
 						}
+
 						GUILayout.EndScrollView();
 
 						GUILayout.Space(10);//create space
@@ -1055,7 +1055,7 @@ namespace Character_Morpher
 					abmxIndex = abmxIndex >= 0 ? abmxIndex : sliders.Count;
 					if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"ABMX index: {abmxIndex}");
 
-					return null;
+					//	return null;
 
 				}
 
@@ -1275,7 +1275,7 @@ namespace Character_Morpher
 
 				if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Modes are visible: {val}");
 				for(int a = (int)start; a < modes.Count; ++a)
-					if((bool)sliders?[a]?.ControlObject?.activeSelf)
+					if(sliders?[a]?.ControlObject?.activeSelf ?? false)
 					{
 						if(!val) { modes[a].StoreDefault = modes[a].Value; modes[a].Value = 0; }
 						else modes[a].ApplyStoredSetting();
@@ -1329,97 +1329,11 @@ namespace Character_Morpher
 
 			#region Save/Load Buttons
 
-			IEnumerator ChangeGUILayout(BaseGuiEntry gui)
-			{
-				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("moving object");
-
-				yield return new WaitWhile(() => gui?.ControlObject?.GetComponentInParent<ScrollRect>()?.transform == null);
-
-				var par = gui.ControlObject.GetComponentInParent<ScrollRect>()?.transform;
-
-
-				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Parent: " + par);
-
-				//This fixes the KOI_API rendering issue & enables scrolling over viewport
-#if KOI_API
-				par.GetComponentInChildren<ScrollRect>().GetComponent<Image>().sprite = par.GetComponentInChildren<ScrollRect>().content.GetComponent<Image>()?.sprite;
-				par.GetComponentInChildren<ScrollRect>().GetComponent<Image>().color = (Color)par.GetComponentInChildren<ScrollRect>().content.GetComponent<Image>()?.color;
-
-
-				par.GetComponentInChildren<ScrollRect>().GetComponent<Image>().enabled = true;
-				par.GetComponentInChildren<ScrollRect>().GetComponent<Image>().raycastTarget = true;
-				var img = par.GetComponentInChildren<ScrollRect>().content.GetComponent<Image>();
-				if(!img)
-					img = par.GetComponentInChildren<ScrollRect>().viewport.GetComponent<Image>();
-				img.enabled = false;
-#endif
-
-				//Setup LayoutElements 
-				par.GetComponentInChildren<ScrollRect>().verticalScrollbar.GetOrAddComponent<LayoutElement>().ignoreLayout = true;
-				par.GetComponentInChildren<ScrollRect>().content.GetOrAddComponent<LayoutElement>().ignoreLayout = true;
-				//par.GetComponent<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>().minHeight = par.GetComponent<RectTransform>().rect.height;
-				var viewLE = par.GetComponentInChildren<ScrollRect>().viewport.GetOrAddComponent<LayoutElement>();
-				viewLE.minWidth = par.GetComponentInChildren<ScrollRect>().GetComponent<RectTransform>().rect.width * .95f;
-				//viewLE.transform.Cast<RectTransform>();
-
-				viewLE.flexibleHeight = 0;
-
-
-				var elements = par.GetComponentsInChildren<LayoutElement>();
-				foreach(var ele in elements)
-				{
-					ele.preferredHeight = ele.GetComponent<RectTransform>().rect.height;
-					ele.preferredWidth = ele.GetComponent<RectTransform>().rect.width;
-				}
-				//test
-				elements = par.GetComponentInChildren<ScrollRect>().content.GetComponentsInChildren<LayoutElement>();
-				foreach(var ele in elements)
-				{
-					ele.preferredHeight = ele.GetComponent<RectTransform>().rect.height;
-					ele.preferredWidth = par.GetComponentInChildren<ScrollRect>().GetComponent<RectTransform>().rect.width * .95f;
-				}
-
-
-				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("setting as last");
-				gui.ControlObject.transform.SetParent(par);
-				gui.ControlObject.transform.SetAsLastSibling();
-				var thisLE = gui.ControlObject.GetOrAddComponent<LayoutElement>();
-				thisLE.flexibleWidth = 0;
-				thisLE.preferredWidth = par.GetComponentInChildren<ScrollRect>().content.rect.width * .95f;
-				thisLE.minWidth =
-#if HONEY_API
-					par.GetComponent<RectTransform>().rect.width;
-#else
-					viewLE.minWidth;
-#endif
-
-
-				thisLE.flexibleHeight = 0;
-				thisLE.preferredHeight = gui.ControlObject.GetComponent<RectTransform>().rect.height;
-
-				//setup VerticalLayoutGroup
-				var vlg = par.gameObject.GetOrAddComponent<VerticalLayoutGroup>();
-#if HONEY_API
-				vlg.childAlignment = TextAnchor.UpperCenter;
-#else
-				vlg.childAlignment = TextAnchor.LowerCenter;
-#endif
-				var pad = 10;//(int)cfg.unknownTest.Value;//10
-				vlg.padding = new RectOffset(pad, pad + 5, 0, 0);
-				vlg.childControlHeight = true;
-				vlg.childControlWidth = true;
-				vlg.childForceExpandHeight = false;
-				vlg.childForceExpandWidth = false;
-
-				//Reorder scrollbar
-				par.GetComponentInChildren<ScrollRect>().verticalScrollbar.transform.SetAsLastSibling();
-				yield break;
-			}
-
+			 
 			if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Adding buttons");
 
 			var sep = e.AddControl(new MakerSeparator(category, Instance))
-				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui)));
+				.OnGUIExists((gui) => gui.AddToCustomGUILayout());
 
 			select = e.AddControl(
 				new MorphMakerDropdown("Selected Slot", ControlsList, category, 0, Instance))
@@ -1428,7 +1342,7 @@ namespace Character_Morpher
 				{
 					MorphMakerDropdown mmd = (MorphMakerDropdown)gui;
 
-					Instance.StartCoroutine(ChangeGUILayout(gui));
+					gui.AddToCustomGUILayout();
 					mmd.ValueChanged?.Subscribe((val) =>
 					{
 						mmd.Value = SwitchControlSet(mmd.Options, val);
@@ -1439,7 +1353,7 @@ namespace Character_Morpher
 
 
 			e.AddControl(new MakerButton("Add New Slot", category, Instance))
-				   .OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui))).
+				   .OnGUIExists((gui) => gui.AddToCustomGUILayout(newVertLine:true)).
 				   OnClick.AddListener(() =>
 				   {
 					   AddNewSetting();
@@ -1450,7 +1364,7 @@ namespace Character_Morpher
 
 
 			e.AddControl(new MakerButton("Remove Current Slot", category, Instance))
-				.OnGUIExists((gui) => Instance.StartCoroutine(ChangeGUILayout(gui))).
+				.OnGUIExists((gui) => gui.AddToCustomGUILayout(newVertLine: false)).
 				OnClick.AddListener(() =>
 				{
 
@@ -1467,7 +1381,7 @@ namespace Character_Morpher
 
 
 			e.AddControl(new MakerButton("Save To Slot", category, Instance))
-			   .OnGUIExists((gui) => { Instance.StartCoroutine(ChangeGUILayout(gui)); }).
+			   .OnGUIExists((gui) => { gui.AddToCustomGUILayout(newVertLine: true); }).
 			   OnClick.AddListener(() =>
 			   {
 				   foreach(var slider in sliders)
@@ -1503,7 +1417,7 @@ namespace Character_Morpher
 			e.AddControl(new MakerButton("Load From Slot", category, Instance))
 			   .OnGUIExists((gui) =>
 			   {
-				   Instance.StartCoroutine(ChangeGUILayout(gui));
+				   gui.AddToCustomGUILayout(newVertLine: false);
 				   loadDefaultValues = (bool showMessage, bool playSound, bool runUpdate) =>
 				   {
 					   var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().First();

@@ -83,6 +83,7 @@ namespace Character_Morpher
 	[BepInPlugin(GUID, ModName, Version)]
 	public partial class CharaMorpher_Core : BaseUnityPlugin
 	{
+		#region variables
 
 		// Expose both your GUID and current version to allow other plugins to easily check for your presence and version, for example by using the BepInDependency attribute.
 		// Be careful with public const fields! Read more: https://stackoverflow.com/questions/55984
@@ -93,6 +94,7 @@ namespace Character_Morpher
 
 		public const string strDiv = ":";
 		public const string defaultStr = "(Default)" + strDiv;
+
 
 		internal static CharaMorpher_Core Instance;
 		internal static new ManualLogSource Logger;
@@ -147,7 +149,6 @@ namespace Character_Morpher
 
 			//Advanced
 			public Dictionary<string, Dictionary<string, ConfigEntry<MorphSliderData>>> defaults { set; get; }
-			//public Dictionary<string, Dictionary<string, ConfigEntry<Tuple<string, int>>>> defaultModes { set; get; }
 
 			//Advanced (show up below main) 
 			public ConfigEntry<bool> debug { set; get; }
@@ -156,6 +157,7 @@ namespace Character_Morpher
 			public ConfigEntry<bool> easyMorphBtnOverallSet { set; get; }
 			public ConfigEntry<bool> easyMorphBtnEnableDefaulting { set; get; }
 			public ConfigEntry<bool> oldControlsConversion { set; get; }
+			public ConfigEntry<float> makerViewportUISpace { get; set; }
 
 
 			//tests
@@ -184,7 +186,7 @@ namespace Character_Morpher
 			public List<ConfigEntry<int>> legIndex { set; get; }
 			public List<ConfigEntry<int>> noseIndex { set; get; }
 		}
-
+		#endregion
 
 		void Awake()
 		{
@@ -505,6 +507,17 @@ namespace Character_Morpher
 			{
 
 				cfg.debug.ConfigDefaulter();
+
+				cfg.makerViewportUISpace = Config.Bind(adv, "Viewport UI Space", .43f,
+					new ConfigDescription("Increase / decrease the Fashion Line viewport size ",
+					new AcceptableValueRange<float>(0, 1),
+					new ConfigurationManagerAttributes()
+					{
+						Order = index--,
+						ShowRangeAsPercent = false,
+						IsAdvanced = true,
+						Category = advx
+					})).ConfigDefaulter();
 
 				//Tests
 				cfg.unknownTest = Config.Bind(tst, "Unknown Test value", 20,
@@ -851,6 +864,12 @@ namespace Character_Morpher
 				if(!cfg.studioWinRec.Value.Equals(winRec))
 					winRec = new Rect(cfg.studioWinRec.Value);
 			};
+
+			cfg.makerViewportUISpace.SettingChanged += (m, n) =>
+			{
+				CharaMorpher_GUI.select.ResizeCustomUIViewport();
+			};
+
 			// useCardMorphDataGame()
 			{
 				Coroutine tmp = null;
@@ -967,147 +986,6 @@ namespace Character_Morpher
 		}
 	}
 
-	public class MorphSliderData
-	{
-		public MorphSliderData() { TypeCreator(); }
-		public MorphSliderData(string dataName, float data = 0, MorphCalcType calc = MorphCalcType.LINEAR, bool isABMX = false)
-		{
-			this.dataName = dataName;
-			this.data = data;
-			this.calcType = calc;
-			this.isABMX = isABMX;
-
-			TypeCreator();
-		}
-		public string dataName;
-		public float data = 0;
-		public bool isABMX = false;
-		public MorphCalcType calcType = MorphCalcType.LINEAR;
-
-		static void TypeCreator()
-		{
-			//Adding new Type for Config list!
-			string splitstr = "\\:/";
-			if(!TomlTypeConverter.CanConvert(typeof(MorphSliderData)))
-				TomlTypeConverter.AddConverter(typeof(MorphSliderData),
-					new TypeConverter
-					{
-						ConvertToObject = (s, t) =>
-						{
-							var vals = s.Split(new string[] { splitstr }, StringSplitOptions.None);
-							if(vals.Length > 4)
-								for(int a = 1; a <= (vals.Length - 4); ++a)
-									vals[0] += vals[a];
-							if(vals.Length < 3)
-								return new MorphSliderData
-								{
-									dataName = "",
-									data = float.TryParse(vals[0], out var result1) ? result1 : 0.0f,
-									calcType = int.TryParse(vals[0], out var result2) ? (MorphCalcType)result2 : MorphCalcType.LINEAR,
-								};
-							return new MorphSliderData
-							{
-								dataName = vals[0],
-								data = float.Parse(vals[1]) * 0.01f,
-								calcType = (MorphCalcType)int.Parse(vals[2]),
-								isABMX = bool.Parse(vals.Length == 4 ? vals[3] : "false"),
-							};
-						},
-
-						ConvertToString = (o, t) =>
-						{
-							var val = (MorphSliderData)o;
-
-							return
-							$"{val.dataName}{splitstr}{val.data * 100}{splitstr}" +
-							$"{(int)val.calcType}{splitstr}{val.isABMX}";
-						}
-					});
-		}
-
-		public MorphSliderData SetData(float data) { this.data = data; return this; }
-		public MorphSliderData SetCalcType(MorphCalcType calcType) { this.calcType = calcType; return this; }
-
-		public MorphSliderData Clone() =>
-			new MorphSliderData()
-			{
-				dataName = dataName + "",
-				data = data + 0,
-				calcType = calcType + 0,
-				isABMX = isABMX
-			};
-
-		public void Copy(MorphSliderData src)
-		{
-			var tmp = src.Clone();
-			dataName = tmp.dataName;
-			data = tmp.data;
-			calcType = tmp.calcType;
-			isABMX = tmp.isABMX;
-		}
-	}
-
-	public class OnValueChange<T> : UnityEvent<T> { }
-	public class OnControlSetValueChange : UnityEvent<string[]> { }
-	public class OnNewImage : UnityEvent<string, byte[]> { }
-
-	public class DependencyInfo<T> where T : BaseUnityPlugin
-	{
-		public DependencyInfo(Version minTargetVer = null, Version maxTargetVer = null)
-		{
-			plugin = (T)GameObject.FindObjectOfType(typeof(T));
-			Exists = plugin != null;
-			MinTargetVersion = minTargetVer ?? new Version();
-			MaxTargetVersion = maxTargetVer ?? new Version();
-			InTargetVersionRange = Exists &&
-				((CurrentVersion = plugin?.Info.Metadata.Version
-				?? new Version()) >= MinTargetVersion);
-
-			if(maxTargetVer != null && maxTargetVer >= MinTargetVersion)
-				InTargetVersionRange &= Exists && (CurrentVersion <= MaxTargetVersion);
-		}
-
-		/// <summary>
-		/// plugin reference
-		/// </summary>
-		public readonly T plugin = null;
-		/// <summary>
-		/// does the mod exist
-		/// </summary>
-		public bool Exists { get; } = false;
-		/// <summary>
-		/// Current version matches or exceeds the min target mod version. 
-		/// if a max is set it will also make sure the mod is within range.
-		/// </summary>
-		public bool InTargetVersionRange { get; } = false;
-		/// <summary>
-		/// min version this mod expects
-		/// </summary>
-		public Version MinTargetVersion { get; } = null;
-		/// <summary>
-		/// max version this mod expects
-		/// </summary>
-		public Version MaxTargetVersion { get; } = null;
-		/// <summary>
-		/// version that is actually downloaded in the game
-		/// </summary>
-		public Version CurrentVersion { get; } = null;
-
-		public void PrintExistsMsg()
-		{
-
-		}
-
-		public override string ToString()
-		{
-			return
-				$"Plugin Name: {plugin?.Info.Metadata.Name ?? "Null"}\n" +
-				$"Current version: {CurrentVersion?.ToString() ?? "Null"}\n" +
-				$"Min Target Version: {MinTargetVersion}\n" +
-				$"Max Target Version: {MaxTargetVersion}\n";
-		}
-	}
-
 	public static class Morph_Util
 	{
 		internal static ManualLogSource Logger { get => CharaMorpher_Core.Logger; }
@@ -1175,6 +1053,18 @@ namespace Character_Morpher
 			{ return enu.Count() > 0 ? enu.First(predicate) : (T)(object)null; }
 			catch { return (T)(object)null; }
 		}
+		public static T LastOrNull<T>(this IEnumerable<T> enu)
+		{
+			try
+			{ return enu.Count() > 0 ? enu.Last() : (T)(object)null; }
+			catch { return (T)(object)null; }
+		}     //I love loopholes 🤣
+		public static T LastOrNull<T>(this IEnumerable<T> enu, Func<T, bool> predicate)
+		{
+			try
+			{ return enu.Count() > 0 ? enu.Last(predicate) : (T)(object)null; }
+			catch { return (T)(object)null; }
+		}   //I love loopholes 🤣
 
 		public static bool InRange<T>(this IEnumerable<T> list, int index) => index >= 0 && index < list.Count();
 		public static bool InRange<T>(this T src, T min, T max) where T : IComparable
@@ -2164,7 +2054,457 @@ namespace Character_Morpher
 			});
 		}
 
+		public static GameObject ScaleToParent2D(this GameObject obj, float pwidth = 1, float pheight = 1, bool changewidth = true, bool changeheight = true)
+		{
+			RectTransform rectTrans = null;
+
+			rectTrans = obj?.GetComponent<RectTransform>();
+
+			if(rectTrans == null) return obj;
+
+			//var rectTrans = par.GetComponent<RectTransform>();
+			rectTrans.anchorMin = new Vector2(
+				changewidth ? 0 + (1 - pwidth) : rectTrans.anchorMin.x,
+				changeheight ? 0 + (1 - pheight) : rectTrans.anchorMin.y);
+			rectTrans.anchorMax = new Vector2(
+				changewidth ? 1 - (1 - pwidth) : rectTrans.anchorMax.x,
+				changeheight ? 1 - (1 - pheight) : rectTrans.anchorMax.y);
+
+			rectTrans.localPosition = Vector3.zero;//The location of this line matters
+
+			rectTrans.offsetMin = new Vector2(
+				changewidth ? 0 : rectTrans.offsetMin.x,
+				changeheight ? 0 : rectTrans.offsetMin.y);
+			rectTrans.offsetMax = new Vector2(
+				changewidth ? 0 : rectTrans.offsetMax.x,
+				changeheight ? 0 : rectTrans.offsetMax.y);
+			//rectTrans.pivot = new Vector2(0.5f, 0.5f);
+
+			return obj;
+		}
+
+		public static T ScaleToParent2D<T>(this T comp, float pwidth = 1, float pheight = 1, bool width = true, bool height = true) where T : Component
+		{
+			comp?.gameObject.ScaleToParent2D(pwidth: pwidth, pheight: pheight, changewidth: width, changeheight: height);
+			return comp;
+		}
+
+		public static IEnumerable<T> GetComponentsInChildren<T>(this GameObject obj, int depth) =>
+		 obj.GetComponentsInChildren<T>().Attempt((v1) =>
+		(((Component)(object)v1).transform.HierarchyLevelIndex() - obj.transform.HierarchyLevelIndex()) < (depth + 1) ?
+		v1 : (T)(object)((T)(object)null).GetType());
+		public static IEnumerable<T> GetComponentsInChildren<T>(this Component obj, int depth) =>
+			obj.gameObject.GetComponentsInChildren<T>(depth);
+
+		public static int HierarchyLevelIndex(this Transform obj) => obj.parent ? obj.parent.HierarchyLevelIndex() + 1 : 0;
+		public static int HierarchyLevelIndex(this GameObject obj) => obj.transform.HierarchyLevelIndex();
+
+
+		public static T AddToCustomGUILayout<T>(this T gui, bool topUI = false, float pWidth = -1, float viewpercent = -1, bool newVertLine = true) where T : BaseGuiEntry
+		{
+			gui.OnGUIExists(g =>
+			{
+				Instance.StartCoroutine(g.AddToCustomGUILayoutCO
+				(topUI, pWidth, viewpercent, newVertLine));
+			});
+			return gui;
+		}
+
+		static IEnumerator AddToCustomGUILayoutCO<T>(this T gui, bool topUI = false, float pWidth = -1, float viewpercent = -1, bool newVertLine = true) where T : BaseGuiEntry
+		{
+			if(cfg.debug.Value) Logger.LogDebug("moving object");
+
+			yield return new WaitWhile(() => gui?.ControlObject?.GetComponentInParent<ScrollRect>()?.transform == null);
+
+			//	newVertLine = horizontal ? newVertLine : true;
+#if HONEY_API
+			if(gui is MakerText)
+			{
+				var piv = (Vector2)gui.ControlObject?
+					.GetComponentInChildren<Text>()?
+					.rectTransform.pivot;
+				piv.x = -.5f;
+				piv.y = 1f;
+			}
+#endif
+
+			var ctrlObj = gui.ControlObject;
+
+			var scrollRect = ctrlObj.GetComponentInParent<ScrollRect>();
+			var par = ctrlObj.GetComponentInParent<ScrollRect>().transform;
+
+
+			if(cfg.debug.Value) Logger.LogDebug("Parent: " + par);
+
+
+			//setup VerticalLayoutGroup
+			var vlg = scrollRect.gameObject.GetOrAddComponent<VerticalLayoutGroup>();
+
+#if HONEY_API
+			vlg.childAlignment = TextAnchor.UpperLeft;
+#else
+			vlg.childAlignment = TextAnchor.UpperCenter;
+#endif
+			var pad = 10;//(int)cfg.unknownTest.Value;//10
+			vlg.padding = new RectOffset(pad, pad + 5, 0, 0);
+			vlg.childControlWidth = true;
+			vlg.childControlHeight = true;
+			vlg.childForceExpandWidth = true;
+			vlg.childForceExpandHeight = false;
+
+			//This fixes the KOI_API rendering issue & enables scrolling over viewport (not elements tho)
+			//Also a sizing issue in Honey_API
+#if KOI_API
+			scrollRect.GetComponent<Image>().sprite = scrollRect.content.GetComponent<Image>()?.sprite;
+			scrollRect.GetComponent<Image>().color = (Color)scrollRect.content.GetComponent<Image>()?.color;
+
+
+			scrollRect.GetComponent<Image>().enabled = true;
+			scrollRect.GetComponent<Image>().raycastTarget = true;
+			var img = scrollRect.content.GetComponent<Image>();
+			if(!img)
+				img = scrollRect.viewport.GetComponent<Image>();
+			img.enabled = false;
+#elif HONEY_API
+			//		scrollRect.GetComponent<RectTransform>().sizeDelta =
+			//		  scrollRect.transform.parent.GetComponentInChildren<Image>().rectTransform.sizeDelta;
+#endif
+
+			//Setup LayoutElements 
+			scrollRect.verticalScrollbar.GetOrAddComponent<LayoutElement>().ignoreLayout = true;
+			scrollRect.content.GetOrAddComponent<LayoutElement>().ignoreLayout = true;
+
+			var viewLE = scrollRect.viewport.GetOrAddComponent<LayoutElement>();
+#if !KK
+			viewLE.layoutPriority = 1;
+#endif
+			viewLE.minWidth = -1;
+			viewLE.flexibleWidth = -1;
+			gui.ResizeCustomUIViewport(viewpercent);
+
+
+			Transform layoutObj = null;
+			//Create  LayoutElement
+			//if(horizontal)
+			{
+				//Create Layout Element GameObject
+				par = newVertLine ?
+					GameObject.Instantiate<GameObject>(new GameObject("LayoutElement"), par)?.transform :
+					par.GetComponentsInChildren<HorizontalLayoutGroup>(2)
+					.LastOrNull((elem) => elem.GetComponent<HorizontalLayoutGroup>())?.transform.parent ??
+					GameObject.Instantiate<GameObject>(new GameObject("LayoutElement"), par)?.transform;
+
+				layoutObj = par = par.gameObject.GetOrAddComponent<RectTransform>().transform;//May need this line (I totally do)
+
+
+				//calculate base GameObject sizeing
+				var ele = par.GetOrAddComponent<LayoutElement>();
+				ele.minWidth = -1;
+				ele.minHeight = -1;
+				ele.preferredHeight = Math.Max(ele?.preferredHeight ?? -1, ctrlObj.GetOrAddComponent<LayoutElement>()?.minHeight ?? ele?.preferredHeight ?? -1);
+				ele.preferredWidth =
+#if HONEY_API
+				scrollRect.GetComponent<RectTransform>().rect.width;
+#else
+				//viewLE.minWidth;
+				0;
+#endif
+
+				par.GetComponentInParent<VerticalLayoutGroup>().CalculateLayoutInputHorizontal();
+				par.GetComponentInParent<VerticalLayoutGroup>().CalculateLayoutInputVertical();
+
+
+				//Create and Set Horizontal Layout Settings
+
+				par = par.GetComponentsInChildren<HorizontalLayoutGroup>(2)?
+					.FirstOrNull((elem) => elem.gameObject.GetComponent<HorizontalLayoutGroup>())?.transform ??
+					GameObject.Instantiate<GameObject>(new GameObject("HorizontalLayoutGroup"), par)?.transform;
+				par = par.gameObject.GetOrAddComponent<RectTransform>().transform;//May need this line (I totally do)
+
+
+				var layout = par.GetOrAddComponent<HorizontalLayoutGroup>();
+
+
+				layout.childControlWidth = true;
+				layout.childControlHeight = true;
+				layout.childForceExpandWidth = true;
+				layout.childForceExpandHeight = true;
+				layout.childAlignment = TextAnchor.MiddleCenter;
+
+				par?.ScaleToParent2D();
+
+			}
+
+
+			if(cfg.debug.Value) Logger.LogDebug("setting as first/last");
+
+			//remove extra LayoutElements
+			var rList = ctrlObj.GetComponents<LayoutElement>();
+			for(int a = 1; a < rList.Length; ++a)
+				GameObject.DestroyImmediate(rList[a]);
+
+			//change child layoutelements
+			foreach(var val in ctrlObj.GetComponentsInChildren<LayoutElement>())
+				if(val.gameObject != ctrlObj)
+					val.flexibleWidth = val.minWidth = val.preferredWidth = -1;
+
+
+			//edit layoutgroups
+			foreach(var val in ctrlObj.GetComponentsInChildren<HorizontalLayoutGroup>())
+			//	if(val.gameObject != ctrlObj)
+			{
+				val.childControlWidth = true;
+				val.childForceExpandWidth = true;
+
+			}
+
+			//Set this object's Layout settings
+			ctrlObj.transform.SetParent(par, false);
+			ctrlObj.GetComponent<RectTransform>().pivot = new Vector2(0, 1);
+			var apos = ctrlObj.GetComponent<RectTransform>().anchoredPosition; apos.x = 0;
+			if(topUI)
+			{
+				if(layoutObj?.GetSiblingIndex() != scrollRect.viewport.transform.GetSiblingIndex() - 1)
+					layoutObj?.SetSiblingIndex
+						(scrollRect.viewport.transform.GetSiblingIndex());
+			}
+			else
+				layoutObj?.SetAsLastSibling();
+
+			//if(ctrlObj.GetComponent<LayoutElement>())
+			//	GameObject.Destroy(ctrlObj.GetComponent<LayoutElement>());
+			var thisLE = ctrlObj.GetOrAddComponent<LayoutElement>();
+#if !KK
+			thisLE.layoutPriority = 5;
+#endif
+			thisLE.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+			bool check = thisLE.transform.childCount > 1 &&
+				!thisLE.GetComponent<HorizontalOrVerticalLayoutGroup>();
+			if(check)
+			{
+				var tmp = GameObject.Instantiate(new GameObject(), thisLE.transform);
+				var hlog = tmp.AddComponent<HorizontalLayoutGroup>();
+				hlog.childAlignment = TextAnchor.MiddleLeft;
+				hlog.childControlHeight = true;
+				hlog.childControlWidth = false;
+				hlog.childForceExpandHeight = false;
+				hlog.childForceExpandWidth = true;
+
+				for(int a = 0; a < thisLE.transform.childCount; ++a)
+					if(thisLE.transform.GetChild(a) != tmp.transform)
+						thisLE.transform.GetChild(a--).SetParent(tmp.transform);
+
+			}
+			if(thisLE.transform.childCount == 1)
+				thisLE.transform.GetChild(0).ScaleToParent2D();
+
+
+			thisLE.flexibleWidth = -1;
+			thisLE.flexibleHeight = -1;
+			thisLE.minWidth = -1;
+			//thisLE.minHeight = -1;
+
+			thisLE.preferredWidth =
+#if HONEY_API
+				  pWidth > 0 ? scrollRect.rectTransform.rect.width * pWidth : -1;
+#else
+			//	horizontal && horiScale > 0 ? viewLE.minWidth * horiScale : -1;
+			0;
+#endif
+			//thisLE.preferredHeight = ctrlObj.GetComponent<RectTransform>().rect.height;
+
+
+			//Reorder Scrollbar
+			if(!topUI)
+			{
+				scrollRect.verticalScrollbar?.transform.SetAsLastSibling();
+				scrollRect.horizontalScrollbar?.transform.SetAsLastSibling();
+			}
+
+			vlg.SetLayoutVertical();
+			LayoutRebuilder.MarkLayoutForRebuild(scrollRect.GetComponent<RectTransform>());
+			yield break;
+		}
+
+		static Coroutine resizeco;
+		public static void ResizeCustomUIViewport<T>(this T template, float viewpercent = -1) where T : BaseGuiEntry
+		{
+			if(viewpercent >= 0 && cfg.makerViewportUISpace.Value != viewpercent)
+				cfg.makerViewportUISpace.Value = viewpercent;
+			viewpercent = cfg.makerViewportUISpace.Value;
+
+			if(template != null)
+				template.OnGUIExists((gui) =>
+				{
+					IEnumerator func()
+					{
+
+						var ctrlObj = gui?.ControlObject;
+						if(ctrlObj == null) yield break;
+
+						yield return new WaitUntil(() =>
+						ctrlObj?.GetComponentInParent<ScrollRect>() != null);
+
+						var scrollRect = ctrlObj?.GetComponentInParent<ScrollRect>();
+
+						var viewLE = scrollRect.viewport.GetOrAddComponent<LayoutElement>();
+						float vHeight = Mathf.Abs(scrollRect.rectTransform.rect.height);
+						viewLE.minHeight = vHeight * viewpercent;
+
+						LayoutRebuilder.MarkLayoutForRebuild(scrollRect.rectTransform);
+					}
+
+					if(resizeco != null) Instance.StopCoroutine(resizeco);
+					resizeco = Instance.StartCoroutine(func());
+				});
+
+		}
+
+
 	}
+
+	#region User Classes
+	public class MorphSliderData
+	{
+		public MorphSliderData() { TypeCreator(); }
+		public MorphSliderData(string dataName, float data = 0, MorphCalcType calc = MorphCalcType.LINEAR, bool isABMX = false)
+		{
+			this.dataName = dataName;
+			this.data = data;
+			this.calcType = calc;
+			this.isABMX = isABMX;
+
+			TypeCreator();
+		}
+		public string dataName;
+		public float data = 0;
+		public bool isABMX = false;
+		public MorphCalcType calcType = MorphCalcType.LINEAR;
+
+		static void TypeCreator()
+		{
+			//Adding new Type for Config list!
+			string splitstr = "\\:/";
+			if(!TomlTypeConverter.CanConvert(typeof(MorphSliderData)))
+				TomlTypeConverter.AddConverter(typeof(MorphSliderData),
+					new TypeConverter
+					{
+						ConvertToObject = (s, t) =>
+						{
+							var vals = s.Split(new string[] { splitstr }, StringSplitOptions.None);
+							if(vals.Length > 4)
+								for(int a = 1; a <= (vals.Length - 4); ++a)
+									vals[0] += vals[a];
+							if(vals.Length < 3)
+								return new MorphSliderData
+								{
+									dataName = "",
+									data = float.TryParse(vals[0], out var result1) ? result1 : 0.0f,
+									calcType = int.TryParse(vals[0], out var result2) ? (MorphCalcType)result2 : MorphCalcType.LINEAR,
+								};
+							return new MorphSliderData
+							{
+								dataName = vals[0],
+								data = float.Parse(vals[1]) * 0.01f,
+								calcType = (MorphCalcType)int.Parse(vals[2]),
+								isABMX = bool.Parse(vals.Length == 4 ? vals[3] : "false"),
+							};
+						},
+
+						ConvertToString = (o, t) =>
+						{
+							var val = (MorphSliderData)o;
+
+							return
+							$"{val.dataName}{splitstr}{val.data * 100}{splitstr}" +
+							$"{(int)val.calcType}{splitstr}{val.isABMX}";
+						}
+					});
+		}
+
+		public MorphSliderData SetData(float data) { this.data = data; return this; }
+		public MorphSliderData SetCalcType(MorphCalcType calcType) { this.calcType = calcType; return this; }
+
+		public MorphSliderData Clone() =>
+			new MorphSliderData()
+			{
+				dataName = dataName + "",
+				data = data + 0,
+				calcType = calcType + 0,
+				isABMX = isABMX
+			};
+
+		public void Copy(MorphSliderData src)
+		{
+			var tmp = src.Clone();
+			dataName = tmp.dataName;
+			data = tmp.data;
+			calcType = tmp.calcType;
+			isABMX = tmp.isABMX;
+		}
+	}
+
+	public class OnValueChange<T> : UnityEvent<T> { }
+	public class OnControlSetValueChange : UnityEvent<string[]> { }
+	public class OnNewImage : UnityEvent<string, byte[]> { }
+
+	public class DependencyInfo<T> where T : BaseUnityPlugin
+	{
+		public DependencyInfo(Version minTargetVer = null, Version maxTargetVer = null)
+		{
+			plugin = (T)GameObject.FindObjectOfType(typeof(T));
+			Exists = plugin != null;
+			MinTargetVersion = minTargetVer ?? new Version();
+			MaxTargetVersion = maxTargetVer ?? new Version();
+			InTargetVersionRange = Exists &&
+				((CurrentVersion = plugin?.Info.Metadata.Version
+				?? new Version()) >= MinTargetVersion);
+
+			if(maxTargetVer != null && maxTargetVer >= MinTargetVersion)
+				InTargetVersionRange &= Exists && (CurrentVersion <= MaxTargetVersion);
+		}
+
+		/// <summary>
+		/// plugin reference
+		/// </summary>
+		public readonly T plugin = null;
+		/// <summary>
+		/// does the mod exist
+		/// </summary>
+		public bool Exists { get; } = false;
+		/// <summary>
+		/// Current version matches or exceeds the min target mod version. 
+		/// if a max is set it will also make sure the mod is within range.
+		/// </summary>
+		public bool InTargetVersionRange { get; } = false;
+		/// <summary>
+		/// min version this mod expects
+		/// </summary>
+		public Version MinTargetVersion { get; } = null;
+		/// <summary>
+		/// max version this mod expects
+		/// </summary>
+		public Version MaxTargetVersion { get; } = null;
+		/// <summary>
+		/// version that is actually downloaded in the game
+		/// </summary>
+		public Version CurrentVersion { get; } = null;
+
+		public void PrintExistsMsg()
+		{
+
+		}
+
+		public override string ToString()
+		{
+			return
+				$"Plugin Name: {plugin?.Info.Metadata.Name ?? "Null"}\n" +
+				$"Current version: {CurrentVersion?.ToString() ?? "Null"}\n" +
+				$"Min Target Version: {MinTargetVersion}\n" +
+				$"Max Target Version: {MaxTargetVersion}\n";
+		}
+	}
+
 
 	/// <summary>
 	/// utility to bring process to foreground (used for the file select)
@@ -2201,5 +2541,5 @@ namespace Character_Morpher
 		[DllImport("user32.dll")]
 		static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
 	}
-
+	#endregion
 }
