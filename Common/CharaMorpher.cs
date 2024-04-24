@@ -508,7 +508,7 @@ namespace Character_Morpher
 
 				cfg.debug.ConfigDefaulter();
 
-				cfg.makerViewportUISpace = Config.Bind(adv, "Viewport UI Space", .43f,
+				cfg.makerViewportUISpace = Config.Bind(adv, "Viewport UI Space", .73f,
 					new ConfigDescription("Increase / decrease the Fashion Line viewport size ",
 					new AcceptableValueRange<float>(0, 1),
 					new ConfigurationManagerAttributes()
