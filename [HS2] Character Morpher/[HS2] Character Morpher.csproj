@@ -95,13 +95,14 @@
       <HintPath>..\packages\IllusionLibs.BepInEx.5.4.20\lib\net35\BepInEx.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="HS2ABMX, Version=5.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\ABMX.HS2ABMX.5.1.0\lib\net46\HS2ABMX.dll</HintPath>
+    <Reference Include="HS2ABMX, Version=5.0.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ABMX.HS2ABMX.5.0.6\lib\net46\HS2ABMX.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="HS2API, Version=1.38.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionModdingAPI.HS2API.1.38.0\lib\net46\HS2API.dll</HintPath>
       <Private>False</Private>
+      <Aliases>global</Aliases>
     </Reference>
     <Reference Include="HS2_ExtensibleSaveFormat, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\ExtensibleSaveFormat.HoneySelect2.18.2.0\lib\net46\HS2_ExtensibleSaveFormat.dll</HintPath>
@@ -116,6 +117,13 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="Timeline">
+      <HintPath>..\Misc. Plugins\HS2\BepInEx\plugins\Timeline.dll</HintPath>
+      <Aliases>Timeline</Aliases>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UniRx, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.HoneySelect2.UniRx.2020.5.29.4\lib\net46\UniRx.dll</HintPath>
       <Private>False</Private>

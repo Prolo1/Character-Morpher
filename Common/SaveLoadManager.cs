@@ -145,7 +145,7 @@ namespace Character_Morpher
 		{
 
 			if(data == null)
-				data = ctrl?.GetExtendedData(ctrl.isReloading);
+				data = ctrl?.GetExtendedData(ctrl.IsReloading);
 
 			if(data == null || data.version != Version)
 			{
@@ -164,7 +164,7 @@ namespace Character_Morpher
 			}
 
 			if(data == null)
-				data = ctrl?.GetExtendedData(ctrl.isReloading);
+				data = ctrl?.GetExtendedData(ctrl.IsReloading);
 
 
 			return data;
@@ -209,15 +209,16 @@ namespace Character_Morpher
 
 				data2.abmx.ForceSplitStatus();//needed since split is not saved 😥
 
-				var newValues = values.all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value.Clone()));
+				//	var newValues = values.all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value.Clone()));
 
-				if(ctrl.isReloading)//can only be done when reloading 
+				if(ctrl.IsReloading)//can only be done when reloading 
 					ctrl.SoftSaveControls(CanUseCardMorphData);//keep this here
 
 				//	Morph_Util.Logger.LogDebug("DATA 2");
 				ctrl.m_data2.Copy(data2);
 
-				ctrl.ctrls2 = new MorphControls { all = newValues };
+				values.CorrectAbmxStates();
+				ctrl.ctrls2 = values.Clone();
 
 				if(CanUseCardMorphData)
 					ctrl.controls.Copy(ctrl.ctrls2);
@@ -310,7 +311,7 @@ namespace Character_Morpher
 		{
 
 			if(data == null)
-				data = ctrl?.GetExtendedData(ctrl.isReloading);
+				data = ctrl?.GetExtendedData(ctrl.IsReloading);
 
 			if(data == null || data.version != Version)
 			{
@@ -338,7 +339,7 @@ namespace Character_Morpher
 			}
 
 			if(data == null)
-				data = ctrl?.GetExtendedData(ctrl.isReloading);
+				data = ctrl?.GetExtendedData(ctrl.IsReloading);
 
 			//Todo: next 3 lines can be removed from newer versions (V3+)
 			if(data != null && !data.data.Keys.Contains(DataKeys[((int)LoadDataType.HoldsFigureData)]))
@@ -380,15 +381,16 @@ namespace Character_Morpher
 
 				data2.abmx.ForceSplitStatus();//needed since split is not saved 😥
 
-				var newValues = values.all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value.Clone()));
+				//var newValues = values.all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value.Clone()));
 
-				if(ctrl.isReloading)//can only be done when reloading 
+				if(ctrl.IsReloading)//can only be done when reloading 
 					ctrl.SoftSaveControls(CanUseCardMorphData);//keep this here
 
 				//	Morph_Util.Logger.LogDebug("DATA 2");
 				ctrl.m_data2.Copy(data2);
 
-				ctrl.ctrls2 = new MorphControls { all = newValues };
+				values.CorrectAbmxStates();
+				ctrl.ctrls2 = values.Clone();
 
 				if(CanUseCardMorphData)
 					ctrl.controls.Copy(ctrl.ctrls2);
@@ -538,7 +540,7 @@ namespace Character_Morpher
 
 				public void Populate(CharaMorpher_Controller morphControl, bool morph = false)
 				{
-					if(!ABMXDependency.InTargetVersionRange) return;
+					if(!ABMXDependency.IsInTargetVersionRange) return;
 
 					var boneCtrl = morph ? MorphTarget.extraCharacter?.GetComponent<BoneController>() : morphControl?.GetComponent<BoneController>();
 					var charaCtrl = morphControl?.ChaControl;
@@ -556,10 +558,10 @@ namespace Character_Morpher
 
 						var newModifiers = data.ReadBoneModifiers();
 						//body bonemods on
-						if(morph || bodyBonemodTgl)
+						if(morph || BodyBonemodTgl)
 							body = new List<BoneModifier>(newModifiers);
 						//face bonemods on
-						if(morph || faceBonemodTgl)
+						if(morph || FaceBonemodTgl)
 							face = new List<BoneModifier>(newModifiers);
 
 						isLoaded = !!boneCtrl;//it can be shortened to just "boneCtrl" if I want
@@ -578,7 +580,7 @@ namespace Character_Morpher
 				//split up body & head bones
 				public void BoneSplit(CharaMorpher_Controller charaControl, ChaControl bodyCharaCtrl, bool morph = false)
 				{
-					if(!ABMXDependency.InTargetVersionRange) return;
+					if(!ABMXDependency.IsInTargetVersionRange) return;
 
 					var ChaControl = charaControl?.GetComponent<ChaControl>();
 					var ChaFileControl = ChaControl?.chaFile;
@@ -594,11 +596,11 @@ namespace Character_Morpher
 					var headBones = new HashSet<string>(headRoot.GetComponentsInChildren<Transform>().Select(x => x.name)) { /*Additional*/headRoot.name };
 
 					//Load Body
-					if(morph || bodyBonemodTgl)
+					if(morph || BodyBonemodTgl)
 						body.RemoveAll(x => headBones.Contains(x.BoneName));
 
 					//Load face
-					if(morph || faceBonemodTgl)
+					if(morph || FaceBonemodTgl)
 					{
 						var bodyBones = new HashSet<string>(bodyCharaCtrl.objTop.transform.
 							GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
@@ -614,9 +616,9 @@ namespace Character_Morpher
 				public void Clear()
 				{
 
-					if(bodyBonemodTgl)
+					if(BodyBonemodTgl)
 						body?.Clear();
-					if(faceBonemodTgl)
+					if(FaceBonemodTgl)
 						face?.Clear();
 
 
@@ -710,7 +712,7 @@ namespace Character_Morpher
 		{
 
 			if(data == null)
-				data = ctrl?.GetExtendedData(ctrl.isReloading);
+				data = ctrl?.GetExtendedData(ctrl.IsReloading);
 
 			return data;
 		}

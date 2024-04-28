@@ -251,7 +251,7 @@ namespace Character_Morpher
 						if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"ABMX index: {abmxIndex}");
 
 						tmpSliderLableStyle.normal.textColor = Color.yellow;
-						if(!cfg.enableABMX.Value || !ABMXDependency.InTargetVersionRange) return;
+						if(!cfg.enableABMX.Value || !ABMXDependency.IsInTargetVersionRange) return;
 					}
 
 					//add space after separator
@@ -259,7 +259,8 @@ namespace Character_Morpher
 					{
 						GUILayout.Space(20);//create space
 
-						string part = Regex.Replace(visualName, searchHits[0], visualName.ToLower().Contains(searchHits[1]) ? "" : "Base", RegexOptions.IgnoreCase).
+						string part = Regex.Replace(visualName, searchHits[0], visualName.ToLower().
+							Contains(searchHits[1]) ? "" : "Base", RegexOptions.IgnoreCase).
 							Replace("  ", " ").Trim();
 
 						GUILayout.Label($"{part} Controls", tmpSliderLableStyle);
@@ -302,7 +303,6 @@ namespace Character_Morpher
 									$"{ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data:f2}", GUILayout.Width(w2), GUILayout.ExpandHeight(true)),
 									out var result))
 							{
-
 								if(ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data != result)
 								{
 									ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data = result;
@@ -403,9 +403,9 @@ namespace Character_Morpher
 						GUILayout.Label("Enables:");
 						var enable = GUILayout.Toggle(cfg.enable.Value, "Enable");
 						var enableABMX = GUILayout.Toggle(cfg.enableABMX.Value, "Enable ABMX");
-						var charEnable = studioMorphCtrl ? GUILayout.Toggle(studioMorphCtrl.morphEnable, "Chara. Enable") : true;
-						var charEnableABMX = studioMorphCtrl ? GUILayout.Toggle(studioMorphCtrl.morphEnableABMX, "Chara. Enable ABMX") : true;
-
+						var charEnable = studioMorphCtrl ? GUILayout.Toggle(studioMorphCtrl.morphEnable, "Chara. Enable") : false;
+						var charEnableABMX = studioMorphCtrl ? GUILayout.Toggle(studioMorphCtrl.morphEnableABMX, "Chara. Enable ABMX") : false;
+						var saveExtData = GUILayout.Toggle(cfg.saveExtData.Value, "Save Ext. Data");
 						var linkOverallABMXSliders = GUILayout.Toggle(cfg.linkOverallABMXSliders.Value, "Link Overall Sliders to ABMX Overall Sliders");
 
 						var preferCardMorphDataMaker = GUILayout.Toggle(cfg.preferCardMorphDataMaker.Value, "Use Card Morph Data");
@@ -428,11 +428,14 @@ namespace Character_Morpher
 									studioMorphCtrl.EnableABMX = charEnableABMX;
 							}
 
+							if(saveExtData != cfg.saveExtData.Value)
+								cfg.saveExtData.Value = saveExtData;
+
 							if(linkOverallABMXSliders != cfg.linkOverallABMXSliders.Value)
 							{
 								cfg.linkOverallABMXSliders.Value = linkOverallABMXSliders;
 
-								if(studioMorphCtrl && studioMorphCtrl.isInitLoadFinished)
+								if(studioMorphCtrl && studioMorphCtrl.IsInitLoadFinished)
 									for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 										studioMorphCtrl.StartCoroutine(studioMorphCtrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
 							}
@@ -466,8 +469,7 @@ namespace Character_Morpher
 						GUILayout.Space(10);//create space
 						#endregion
 
-						#region Tabs
-
+						#region Tabs 
 						var names = selectedCtrls.Attempt(a => TranslationHelper.TryTranslate(a.ChaFileControl.parameter.fullname, out var trans) ? trans : a.ChaFileControl.parameter.fullname).ToArray();
 						var h = 25.0f;
 						var bar = 15.0f;
@@ -871,7 +873,7 @@ namespace Character_Morpher
 					  ShowEnabledSliders();
 				  });
 
-			if(ABMXDependency.InTargetVersionRange)
+			if(ABMXDependency.IsInTargetVersionRange)
 				e.AddControl(new MakerToggle(category, "Enable ABMX", cfg.enableABMX.Value, Instance))
 				  .OnGUIExists((gui) =>
 				  cfg.enableABMX.SettingChanged +=
@@ -908,7 +910,7 @@ namespace Character_Morpher
 						});
 			  });
 
-			if(ABMXDependency.InTargetVersionRange)
+			if(ABMXDependency.IsInTargetVersionRange)
 				e.AddControl(new MakerToggle(category, "Chara. Enable ABMX", true, Instance))
 				  .OnGUIExists((gui) =>
 				  {
@@ -949,7 +951,7 @@ namespace Character_Morpher
 			  ((ctrl) => cfg.linkOverallABMXSliders.Value,
 			  (ctrl, val) =>
 			  {
-				  if(!ctrl || !ctrl.isInitLoadFinished) return;
+				  if(!ctrl || !ctrl.IsInitLoadFinished) return;
 				  cfg.linkOverallABMXSliders.Value = val;
 				  for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					  ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
@@ -1089,7 +1091,7 @@ namespace Character_Morpher
 						{
 							//	Morph_Util.Logger.LogDebug($"called slider");
 							if(!ctrl) return;
-							if(!ctrl.isInitLoadFinished || ctrl.isReloading) return;
+							if(!ctrl.IsInitLoadFinished || ctrl.IsReloading) return;
 							if(ctrl.controls.all[ctrl.controls.currentSet][settingName].data == (float)Math.Round(val, 2)) return;
 
 							if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"ctrl.controls.all[{ctrl.controls.currentSet}][{settingName}]");
@@ -1112,7 +1114,7 @@ namespace Character_Morpher
 						(ctrl, val) =>
 						{
 							if(!ctrl) return;
-							if(!ctrl.isInitLoadFinished || ctrl.isReloading) return;
+							if(!ctrl.IsInitLoadFinished || ctrl.IsReloading) return;
 							if((int)ctrl.controls.all[ctrl.controls.currentSet][settingName].calcType == val) return;
 
 							if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"{settingName} Value: {val}");
@@ -1220,7 +1222,7 @@ namespace Character_Morpher
 				{
 
 					yield return new WaitWhile(
-						() => ABMXDependency.InTargetVersionRange && GetCharacterControl().GetComponent<BoneController>().NeedsFullRefresh);
+						() => ABMXDependency.IsInTargetVersionRange && GetCharacterControl().GetComponent<BoneController>().NeedsFullRefresh);
 					charaCustom.PlayVoice();
 				}
 
@@ -1309,7 +1311,7 @@ namespace Character_Morpher
 			void ShowEnabledSliders()
 			{
 				inst.StartCoroutine(CoSliderDisable(cfg.enable.Value, start: 0));
-				inst.StartCoroutine(CoSliderDisable(cfg.enable.Value && cfg.enableABMX.Value && ABMXDependency.InTargetVersionRange,
+				inst.StartCoroutine(CoSliderDisable(cfg.enable.Value && cfg.enableABMX.Value && ABMXDependency.IsInTargetVersionRange,
 					start: (uint)abmxIndex, end: int.MaxValue));
 			}
 
@@ -1329,7 +1331,7 @@ namespace Character_Morpher
 
 			#region Save/Load Buttons
 
-			 
+
 			if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Adding buttons");
 
 			var sep = e.AddControl(new MakerSeparator(category, Instance))
@@ -1353,7 +1355,7 @@ namespace Character_Morpher
 
 
 			e.AddControl(new MakerButton("Add New Slot", category, Instance))
-				   .OnGUIExists((gui) => gui.AddToCustomGUILayout(newVertLine:true)).
+				   .OnGUIExists((gui) => gui.AddToCustomGUILayout(newVertLine: true)).
 				   OnClick.AddListener(() =>
 				   {
 					   AddNewSetting();
@@ -1620,12 +1622,12 @@ namespace Character_Morpher
 
 			{
 				//	Morph_Util.Logger.LogDebug($"lastUCMD: {lastUCMD}");
-				yield return new WaitWhile(() => ctrl.isReloading);
+				yield return new WaitWhile(() => ctrl.IsReloading);
 
 				var tmpCtrls =
 				!cfg.preferCardMorphDataMaker.Value ?
 				ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1);
-				tmpCtrls.currentSet = ctrl.controls.currentSet;
+				tmpCtrls.currentSet = ctrl.controls.currentSet + "";
 
 				ctrl.controls.Copy(!lastUCMD ? ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1));
 

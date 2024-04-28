@@ -1,4 +1,7 @@
-﻿using System;
+﻿
+
+using System;
+using System.Xml;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,12 +9,10 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-//using System.Threading.Tasks;
 
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-//using BepInEx.Preloader.Patching;
 using KKAPI;
 using KKAPI.Chara;
 using KKAPI.Maker;
@@ -20,6 +21,9 @@ using KKAPI.Utilities;
 using KKAPI.Maker.UI;
 using KKABMX.Core;
 using ExtensibleSaveFormat;
+using MessagePack.Resolvers;
+using MessagePack;
+using Studio;
 //using HarmonyLib;
 
 using UnityEngine;
@@ -41,6 +45,7 @@ using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpher_GUI;
 using static Character_Morpher.Morph_Util;
 using static BepInEx.Logging.LogLevel;
+using MessagePack.Unity;
 
 /***********************************************
   Features:
@@ -66,6 +71,7 @@ using static BepInEx.Logging.LogLevel;
  */
 namespace Character_Morpher
 {
+
 	#region Dependencies
 	[
 	// Tell BepInEx that we need KKAPI to run, and that we need the latest version of it.
@@ -77,12 +83,14 @@ namespace Character_Morpher
 	// Tell BepInEx that we need KKABMX to run, and that we need the latest version of it.
 	// Check documentation of KoikatuAPI.VersionConst for more info.
 	BepInDependency(KKABMX.Core.KKABMX_Core.GUID, BepInDependency.DependencyFlags.SoftDependency),
+
 	]
 	#endregion
 	// Specify this as a plugin that gets loaded by BepInEx
 	[BepInPlugin(GUID, ModName, Version)]
 	public partial class CharaMorpher_Core : BaseUnityPlugin
 	{
+
 		#region variables
 
 		// Expose both your GUID and current version to allow other plugins to easily check for your presence and version, for example by using the BepInDependency attribute.
@@ -103,6 +111,8 @@ namespace Character_Morpher
 		internal static OnControlSetValueChange OnInternalControlListChanged = new OnControlSetValueChange();
 
 		internal static DependencyInfo<KKABMX_Core> ABMXDependency;
+
+		//	internal static DependencyInfo<Tline.Timeline> TimelineDependency;
 
 		internal static Texture2D UIGoku = null;
 		internal static Texture2D iconBG = null;
@@ -199,11 +209,13 @@ namespace Character_Morpher
 			{
 				ABMXDependency = new DependencyInfo<KKABMX_Core>(new Version(KKABMX_Core.Version));
 
-				if(!ABMXDependency.InTargetVersionRange)
+
+				if(!ABMXDependency.IsInTargetVersionRange)
 					Logger.Log(Warning | Message, $"Some [{ModName}] functionality may be locked due to the " +
 						$"absence of [{nameof(KKABMX_Core)}] " +
 						$"or the use of an incorrect version\n" +
 						$"{ABMXDependency}");
+
 			}
 
 			//Embedded Resources
@@ -287,6 +299,8 @@ namespace Character_Morpher
 							   float.Parse(values[3]));
 					   },
 				   });
+
+
 			}
 
 
@@ -301,7 +315,7 @@ namespace Character_Morpher
 
 			int index = 0, secIndex = 0, secIndex2 = 99;//easier to input index order values
 
-
+			#region config alias
 			string main =
 			"__Main__";
 			string mainx =
@@ -317,6 +331,7 @@ namespace Character_Morpher
 			string adv = "_Advanced_";
 			string advx =
 			$"{secIndex2--:d2}. " + "Advanced";
+			#endregion
 
 			var saveCfgAuto =
 				Instance.Config.SaveOnConfigSet;
@@ -759,6 +774,155 @@ namespace Character_Morpher
 			PopulateDefaultSettings(defaultStr);
 			UpdateDefaultsList();
 
+
+			//init Timeline 
+
+			if(TimelineCompatibility.IsTimelineAvailable())
+			{
+
+				CompositeResolver.Register(
+					UnityResolver.Instance,
+					StandardResolver.Instance,
+					BuiltinResolver.Instance,
+					//default resolver
+					ContractlessStandardResolver.Instance
+					);
+
+				TimelineCompatibility.AddCharaFunctionInterpolable<MorphControls, CharaMorpher_Controller>(
+						owner: ModName.Replace(" ", ""),
+						id: GUID,
+						name: $"Morph All",
+						interpolateBefore: (oci, ctrl, l, r, factor) =>
+						{
+							try
+							{
+
+								foreach(var val in ctrl.controls.all[ctrl.controls.currentSet])
+									val.Value.data = Mathf.LerpUnclamped
+									(l.all[l.currentSet][val.Key].data,
+									r.all[r.currentSet][val.Key].data, factor);
+
+								ctrl?.StartCoroutine(ctrl?.CoMorphChangeUpdate(0));
+							}
+							catch(Exception e)
+							{
+								Logger.LogError($"Timeline: Morph values could not be changed\n{e}");
+							}
+						},
+						interpolateAfter: null,
+
+					 	getValue: (oci, ctrl) =>
+						{
+							return ctrl?.controls?.Clone();
+						},
+
+						readValueFromXml: (ctrl, node) =>
+						{
+							try
+							{
+								var data = LZ4MessagePackSerializer.Deserialize<MorphControls>
+							   (node.Attributes["value"].Value.Split(' ').Select(s => byte.Parse(s)).ToArray(), CompositeResolver.Instance);
+
+								return data;
+							}
+							catch(Exception e)
+							{
+								Logger.LogError($"Timeline: Can not read value from XML\n{e}");
+								return default;
+							}
+						},
+						writeValueToXml: (ctrl, writer, o) =>
+						{
+							try
+							{
+								var data = ((MorphControls)o);
+
+								writer.WriteAttributeString("value",
+								   string.Join(" ", LZ4MessagePackSerializer.Serialize(data, CompositeResolver.Instance).Select(a => a.ToString()).ToArray()));
+							}
+							catch(Exception e)
+							{
+								Logger.LogError($"Timeline: Can not save value to XML\n{e}");
+							}
+						}
+					);
+
+				foreach(var cat in controlCategories[defaultStr])
+					TimelineCompatibility.AddInterpolableModelDynamic<float, string>(
+					   owner: ModName.Replace(" ", ""),
+					   id: GUID,
+					   getParameter: _ => cat.dataName,
+					   name: $"{Regex.Replace(cat.dataName, "overall", cat.dataName.ToLower().Contains("abmx") ? "" : "Base", RegexOptions.IgnoreCase).Replace("  ", " ").Trim()} morph value",
+
+					   interpolateBefore: (oci, parameter, leftValue, rightValue, factor) =>
+					   {
+						   try
+						   {
+							   var ctrl = ((OCIChar)oci).charInfo.GetComponent<CharaMorpher_Controller>();
+
+							   var val = Mathf.LerpUnclamped(leftValue, rightValue, factor);
+
+							   if(val == ctrl.controls.all[ctrl.controls.currentSet][cat.dataName].data) return;
+
+							   ctrl.controls.all[ctrl.controls.currentSet][cat.dataName].data = val;
+
+
+							   ctrl?.StartCoroutine(ctrl?.CoMorphChangeUpdate(0));
+						   }
+						   catch(Exception e)
+						   {
+							   Logger.LogError($"Timeline: Morph values could not be changed\n{e}");
+						   }
+					   },
+					   interpolateAfter: null,
+
+					   isCompatibleWithTarget: (oci) => ((OCIChar)oci).charInfo?.GetComponent<CharaMorpher_Controller>() ?? false,
+					   getValue: (oci, parameter) =>
+					   {
+						   var ctrl = ((OCIChar)oci).charInfo.GetComponent<CharaMorpher_Controller>();
+						   return ctrl.controls.all[ctrl.controls.currentSet][cat.dataName].data;
+					   },
+
+					   readValueFromXml: (parameter, node) =>
+					   {
+						   try
+						   {
+							   var data = LZ4MessagePackSerializer.Deserialize<float>
+							  (node.Attributes["value"].Value.Split(' ').Select(s => byte.Parse(s)).ToArray(), CompositeResolver.Instance);
+
+
+							   return data;
+						   }
+						   catch(Exception e)
+						   {
+							   Logger.LogError($"Timeline: Can not read value from XML\n{e}");
+							   return default;
+						   }
+					   },
+					   writeValueToXml: (parameter, writer, o) =>
+					   {
+						   try
+						   {
+							   var data = o;
+
+							   writer.WriteAttributeString("value",
+								  string.Join(" ", LZ4MessagePackSerializer.Serialize(data, CompositeResolver.Instance).Select(a => a.ToString()).ToArray()));
+						   }
+						   catch(Exception e)
+						   {
+							   Logger.LogError($"Timeline: Can not save value to XML\n{e}");
+						   }
+					   },
+
+					   readParameterFromXml: (oci, node) => node.Attributes["Param"].Value,
+					   writeParameterToXml: (oci, writer, peram) => { writer.WriteAttributeString("Param", peram); }
+					  //getFinalName: (name, oci, param) => $"{Regex.Replace((string)param, "overall", ((string)param).ToLower().Contains("abmx") ? "" : "Base", RegexOptions.IgnoreCase).Replace("  ", " ").Trim()} value"
+
+
+					  );
+			}
+
+
 			//if it's needed
 			if(cfg.unknownTest != null)
 				cfg.unknownTest.SettingChanged += (m, n) =>
@@ -775,7 +939,7 @@ namespace Character_Morpher
 				foreach(var ctrl in Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>())
 				{
 					if(File.Exists(path))
-						if(ctrl.isInitLoadFinished)
+						if(ctrl.IsInitLoadFinished)
 							ctrl?.StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 				}
 			};
@@ -787,7 +951,7 @@ namespace Character_Morpher
 				foreach(var ctrl in Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>())
 				{
 					if(File.Exists(path))
-						if(ctrl.isInitLoadFinished)
+						if(ctrl.IsInitLoadFinished)
 							ctrl?.StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 				}
 			};
@@ -801,7 +965,7 @@ namespace Character_Morpher
 			{
 				if(MakerAPI.InsideMaker || StudioAPI.InsideStudio)
 					foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
-						if(ctrl.isInitLoadFinished)
+						if(ctrl.IsInitLoadFinished)
 							ctrl?.StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 			};
 
@@ -809,7 +973,7 @@ namespace Character_Morpher
 			{
 				if(!MakerAPI.InsideMaker && !StudioAPI.InsideStudio)
 					foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
-						if(ctrl.isInitLoadFinished)
+						if(ctrl.IsInitLoadFinished)
 							ctrl?.StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 			};
 
@@ -843,7 +1007,7 @@ namespace Character_Morpher
 
 			cfg.enableABMX.SettingChanged += (m, n) =>
 			{
-				if(!ABMXDependency.InTargetVersionRange)
+				if(!ABMXDependency.IsInTargetVersionRange)
 				{
 					//if(cfg.enableABMX.Value)
 					//	cfg.enableABMX.Value = false;
@@ -896,7 +1060,7 @@ namespace Character_Morpher
 
 
 							//Logger.LogDebug($"lastUCMD: {lastUCMD}");
-							yield return new WaitWhile(() => ctrl.isReloading);
+							yield return new WaitWhile(() => ctrl.IsReloading);
 
 							var tmpCtrls =
 							!cfg.preferCardMorphDataGame.Value ?
@@ -2434,13 +2598,14 @@ namespace Character_Morpher
 				isABMX = isABMX
 			};
 
-		public void Copy(MorphSliderData src)
+		public void Copy(MorphSliderData src, bool copyAbmxState = true)
 		{
 			var tmp = src.Clone();
 			dataName = tmp.dataName;
 			data = tmp.data;
 			calcType = tmp.calcType;
-			isABMX = tmp.isABMX;
+			if(copyAbmxState)
+				isABMX = tmp.isABMX;
 		}
 	}
 
@@ -2456,12 +2621,12 @@ namespace Character_Morpher
 			Exists = plugin != null;
 			MinTargetVersion = minTargetVer ?? new Version();
 			MaxTargetVersion = maxTargetVer ?? new Version();
-			InTargetVersionRange = Exists &&
+			IsInTargetVersionRange = Exists &&
 				((CurrentVersion = plugin?.Info.Metadata.Version
 				?? new Version()) >= MinTargetVersion);
 
 			if(maxTargetVer != null && maxTargetVer >= MinTargetVersion)
-				InTargetVersionRange &= Exists && (CurrentVersion <= MaxTargetVersion);
+				IsInTargetVersionRange &= Exists && (CurrentVersion <= MaxTargetVersion);
 		}
 
 		/// <summary>
@@ -2476,7 +2641,7 @@ namespace Character_Morpher
 		/// Current version matches or exceeds the min target mod version. 
 		/// if a max is set it will also make sure the mod is within range.
 		/// </summary>
-		public bool InTargetVersionRange { get; } = false;
+		public bool IsInTargetVersionRange { get; } = false;
 		/// <summary>
 		/// min version this mod expects
 		/// </summary>

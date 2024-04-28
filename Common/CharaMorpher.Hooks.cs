@@ -44,7 +44,7 @@ namespace Character_Morpher
 					foreach(CharaMorpher_Controller ctrl in Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>())
 					{
 						if(!ctrl) continue;
-						if(ctrl.isInitLoadFinished && !ctrl.isReloading)
+						if(ctrl.IsInitLoadFinished && !ctrl.IsReloading)
 							ctrl.MorphChangeUpdate(forceReset: forcereset);
 					}
 			}
@@ -166,7 +166,7 @@ namespace Character_Morpher
 				if(__instance.GetTextFromTextComponent()?.ToLower().Contains("face bonemod") ?? false)
 				{
 					if(cfg.debug.Value) Logger.LogDebug("Change to face bonemod toggle");
-					CharaMorpher_Controller.faceBonemodTgl = __instance.isOn;
+					CharaMorpher_Controller.FaceBonemodTgl = __instance.isOn;
 				}
 
 			}
@@ -176,7 +176,7 @@ namespace Character_Morpher
 				if(__instance.GetTextFromTextComponent()?.ToLower().Contains("body bonemod") ?? false)
 				{
 					if(cfg.debug.Value) Logger.LogDebug("Change to body bonemod toggle");
-					CharaMorpher_Controller.bodyBonemodTgl = __instance.isOn;
+					CharaMorpher_Controller.BodyBonemodTgl = __instance.isOn;
 				}
 			}
 

@@ -43,35 +43,51 @@ namespace Character_Morpher
 	public class CharaMorpher_Controller : CharaCustomFunctionController
 	{
 		#region Data
+
+		#region private
 		private PluginData m_extData = null;
 		private static string lastCharDir = "";
 		private static DateTime lastDT = new DateTime();
+		private static bool m_faceBonemodTgl = true, m_bodyBonemodTgl = true;
+		#endregion
 
+		#region internal
 		internal static MorphData morphCharData = null;
 		internal MorphControls
 			controls = new MorphControls(),
 			ctrls1 = null, ctrls2 = null;
-		//internal static readonly MorphTarget morphTarget = new MorphTarget();
-		private static bool m_faceBonemodTgl = true, m_bodyBonemodTgl = true;
-		internal static bool faceBonemodTgl
+		internal static bool FaceBonemodTgl
 		{
 			get { return !MakerAPI.InsideMaker || m_faceBonemodTgl; }
 			set { m_faceBonemodTgl = value; }
 		}
-		internal static bool bodyBonemodTgl
+		internal static bool BodyBonemodTgl
 		{
 			get { return !MakerAPI.InsideMaker || m_bodyBonemodTgl; }
 			set { m_bodyBonemodTgl = value; }
 		}
-		static bool regesteredResolver = false;
+		internal bool ResetCheck
+		{
+			get
+			{
+				bool reset = !Enable && !IsReloading;
+				return KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame ?
+						(reset || !cfg.enableInGame.Value) : reset;
+			}
+		}
+		internal readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData(), m_initalData = new MorphData();
+		internal bool morphEnable = false;
+		internal bool morphEnableABMX = false;
+		#endregion
 
-		public readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData(), m_initalData = new MorphData();
+		#region public
 		public static bool CanUseCardMorphData
 		{
 			get => ((MakerAPI.InsideMaker || StudioAPI.InsideStudio) ?
 				cfg.preferCardMorphDataMaker.Value :
 				cfg.preferCardMorphDataGame.Value);
 		}
+
 		public bool IsUsingExtMorphData
 		{
 			get => ((MakerAPI.InsideMaker || StudioAPI.InsideStudio) ?
@@ -80,16 +96,13 @@ namespace Character_Morpher
 				m_extData != null;
 		}
 
-		internal bool morphEnable = true;
-		internal bool morphEnableABMX = true;
-
 		public bool Enable
 		{
 			get => cfg.enable.Value && morphEnable;
 			set
 			{
 				morphEnable = value;
-				if(isInitLoadFinished)
+				if(IsInitLoadFinished)
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
 			}
@@ -101,7 +114,7 @@ namespace Character_Morpher
 			set
 			{
 				morphEnableABMX = value;
-				if(isInitLoadFinished)
+				if(IsInitLoadFinished)
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
 			}
@@ -110,27 +123,17 @@ namespace Character_Morpher
 		/// <summary>
 		/// Called after the model has finished being loaded for the first time
 		/// </summary>
-		public bool isInitLoadFinished { get; private set; } = false;
+		public bool IsInitLoadFinished { get; private set; } = false;
 
 		/// <summary>
 		/// In the process of reloading. set to false after complete
 		/// </summary>
-		public bool isReloading { get; internal set; } = true;
+		public bool IsReloading { get; internal set; } = true;
 
 		/// <summary>
 		/// makes sure most main functions don't run when creating template character
 		/// </summary>
-		public bool isDummy { get; internal set; } = false;
-
-		internal bool ResetCheck
-		{
-			get
-			{
-				bool reset = !Enable && !isReloading;
-				return KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame ?
-						(reset || !cfg.enableInGame.Value) : reset;
-			}
-		}
+		public bool IsDummy { get; internal set; } = false;
 
 		#region I don't want to see this
 #if KOI_API
@@ -689,14 +692,16 @@ namespace Character_Morpher
 #endif
 ;
 		#endregion
+		#endregion
 
 		#endregion
 
+		#region Unity Func.
 		protected override void Awake()
 		{
 			base.Awake();
 
-			if(isDummy) return;
+			if(IsDummy) return;
 
 			var core = Instance;
 
@@ -729,13 +734,13 @@ namespace Character_Morpher
 
 		public void LateUpdate()
 		{
-			if(isDummy) return;
+			if(IsDummy) return;
 
 			if((!m_data1.abmx.isSplit || !m_data2.abmx.isSplit)
-				&& isInitLoadFinished && BoneSplitCheck())
-				MorphChangeUpdate();
+				&& IsInitLoadFinished && BoneSplitCheck() && Enable)
+				MorphChangeUpdate();//should only happen once
 		}
-
+		#endregion
 
 		/// <summary>
 		/// Called whenever base character data needs to be updated for calculations
@@ -744,8 +749,8 @@ namespace Character_Morpher
 		/// <param name="abmxOnly">Only change ABMX data for current character (base character data is not changed)</param>
 		public void OnCharaReload(GameMode currentGameMode)
 		{
-			if(isReloading || isDummy) return;
-			isReloading = true;
+			if(IsReloading || IsDummy) return;
+			IsReloading = true;
 
 			var boneCtrl = GetComponent<BoneController>();
 			int val = (int)cfg.reloadTest.Value;
@@ -760,7 +765,7 @@ namespace Character_Morpher
 				m_data1.Clear();
 				m_data2.Clear();
 				//ctrls1 = null;
-				morphEnable = morphEnableABMX = true;
+				morphEnable = morphEnableABMX = false;
 				ctrls2 = null;
 				m_extData = null;
 				m_initalData.Clear();
@@ -787,14 +792,13 @@ namespace Character_Morpher
 #endif
 			m_initalData.Copy(m_data1);
 
-			if((MakerAPI.InsideMaker && isInitLoadFinished) || !MakerAPI.InsideMaker)//for the initial character in maker
+			if((MakerAPI.InsideMaker && IsInitLoadFinished) || !MakerAPI.InsideMaker)//for the initial character in maker
 			{
 				MorphTargetUpdate();
 				MorphChangeUpdate(initReset: true, updateValues: true, abmx: true);
 			}
 
 			#endregion
-
 
 			ResetHeight();
 
@@ -804,16 +808,18 @@ namespace Character_Morpher
 			{
 				if(cfg.debug.Value) Morph_Util.Logger.LogMessage("CoReload Started");
 
-				isReloading = true;//just in case
+				IsReloading = true;//just in case
 				for(int a = -1; a < delayFrames; ++a)
 					yield return null;
 
-
+				morphEnable = morphEnableABMX = StudioAPI.InsideStudio;
 				MorphTargetUpdate();
 
 
-				isInitLoadFinished = true;
-				isReloading = false;
+				IsInitLoadFinished = true;
+				IsReloading = false;
+
+
 				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					StartCoroutine(CoMorphChangeUpdate(a + 1));
 
@@ -840,6 +846,138 @@ namespace Character_Morpher
 			StartCoroutine(CoReloadComplete(val));//I just need to do this stuff later
 		}
 
+		#region Character Updates
+
+		/// <summary>
+		/// Gets the slider data for each part of the body
+		/// </summary> 
+		private MorphSliderData GetControlValue(string contain, bool abmx = false, bool overall = false, bool fullVal = false)
+		{
+			var tmp = controls.all[controls.currentSet];
+			var val = tmp.First(kvp =>
+			  Regex.IsMatch(kvp.Key, contain, RegexOptions.IgnoreCase)
+			&& overall == Regex.IsMatch(kvp.Key, "overall", RegexOptions.IgnoreCase)
+			&& kvp.Value.isABMX == abmx).Value;
+
+			return fullVal ? val : new MorphSliderData { dataName = val.dataName + "", data = 1, calcType = val.calcType, isABMX = val.isABMX };
+		}
+
+		/// <summary>
+		/// Makes sure both ABMX lists have the same data
+		/// </summary>
+		/// <param name="data1"></param>
+		/// <param name="data2"></param>
+		public void MergeABMXLists(MorphData data1 = null, MorphData data2 = null)
+		{
+			if(!ABMXDependency.IsInTargetVersionRange) return;
+
+			var charaCtrl = ChaControl;
+			var boneCtrl = charaCtrl.GetComponent<BoneController>();
+			data1 = data1 ?? m_data1;
+			data2 = data2 ?? m_data2;
+
+			//add non-existent bones to other lists
+			if(BoneSplitCheck(true))
+			{
+				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("balancing bone lists...");
+
+				//Body
+				if(!data1.abmx.body.SequenceEqual(data2.abmx.body))
+				{
+					BoneModifierMatching(ref data1.abmx.body, ref data2.abmx.body);
+					BoneModifierMatching(ref data2.abmx.body, ref data1.abmx.body);
+				}
+
+				//Face
+				if(!data1.abmx.face.SequenceEqual(data2.abmx.face))
+				{
+					BoneModifierMatching(ref data1.abmx.face, ref data2.abmx.face);
+					BoneModifierMatching(ref data2.abmx.face, ref data1.abmx.face);
+				}
+
+				//current body
+
+				BoneModifierMatching(ref boneCtrl, data1.abmx.body);
+				BoneModifierMatching(ref boneCtrl, data1.abmx.face);
+
+				//sort list
+				if(!data1.abmx.body.SequenceEqual(data2.abmx.body))
+				{
+					data1.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+					data2.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+				}
+
+				if(!data1.abmx.face.SequenceEqual(data2.abmx.face))
+				{
+					data1.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+					data2.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
+				}
+#if KOI_API
+				charaCtrl.LateUpdateForce();
+#endif
+			}
+		}
+
+		/// <summary>
+		/// Update bones/shapes whenever a change is made to the sliders and balances internal lists
+		/// </summary>
+		/// <param name="forceReset: ">reset regardless of other perimeters</param>
+		public void MorphChangeUpdate(bool forceReset = false, bool initReset = false, bool updateValues = true, bool abmx = true)
+		{
+			if(IsDummy) return;
+
+			//var currGameMode = KoikatuAPI.GetCurrentGameMode();
+
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"is data copied check?");
+
+			if(m_data1?.main == null) return;
+
+			MergeABMXLists(null, null);
+
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("update values check?");
+
+			if(!updateValues) return;
+
+			MorphValuesUpdate(forceReset || ResetCheck, initReset: initReset, abmx: abmx);
+		}
+
+		public void ResetOriginalShape(MorphData data = null)
+		{
+
+			if(data == null)
+				data = m_initalData;
+
+			MergeABMXLists(null, data);
+
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("mod enabled check?");
+			if(!Enable) return;
+
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("not male in main game check?");
+			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) && ChaControl.sex != 1/*(allowed in maker as of now)*/)
+				return;
+
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("not male in maker check?");
+			if(MakerAPI.InsideMaker && ChaControl.sex != 1
+				&& !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
+
+			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Morph only character with save data in game check?");
+			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) &&
+				cfg.onlyMorphCharWithDataInGame.Value &&
+				!IsUsingExtMorphData) return;
+
+			ObscureUpdateValues(false, replace: true, mainData2: data?.main);
+			MainUpdateValues(false, replace: true, mainData2: data?.main);
+			AbmxUpdateValues(false, replace: true, abmxData2: data?.abmx);
+
+			ChaControl.updateShape = true;//this should update the model better
+
+			//Slider Defaults set
+			if(MakerAPI.InsideMaker)
+				SetDefaultSliders();
+
+			//This may be needed (it is for keeping the character on the ground)
+			if(!IsReloading) ResetHeight();
+		}
 
 		/// <summary>
 		/// updates the morph target to a specified target if path has changed or card has been updated
@@ -847,7 +985,7 @@ namespace Character_Morpher
 		/// <param name="ctrl"></param>
 		public void MorphTargetUpdate()
 		{
-			if(isDummy) return;
+			if(IsDummy) return;
 
 			//create path to morph target
 			string path = Path.Combine(Morph_Util.MakeDirPath(cfg.charDir.Value), Morph_Util.MakeDirPath(cfg.imageName.Value));
@@ -904,132 +1042,6 @@ namespace Character_Morpher
 			CharaMorpher_GUI.UpdateGUISelectList();
 		}
 
-
-		#region Character Updates
-
-		/// <summary>
-		/// Gets the slider data for each part of the body
-		/// </summary>
-		/// <param name="contain"></param>
-		/// <param name="abmx"></param>
-		/// <returns></returns>
-		private MorphSliderData GetControlValue(string contain, bool abmx = false, bool overall = false, bool fullVal = false)
-		{
-			var tmp = controls.all[controls.currentSet].ToList();
-			if(fullVal)
-				tmp = controls.fullVal[controls.currentSet].ToList();
-			if(overall)
-				tmp = tmp.Where(p => p.Key.ToLower().Contains("overall")).ToList();
-
-			return (abmx ?
-				tmp.Find(m => m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase)) :
-				tmp.Find(m => !m.Key.ToLower().Contains("abmx") && Regex.IsMatch(m.Key, contain, RegexOptions.IgnoreCase))).Value
-				;
-		}
-
-		/// <summary>
-		/// Makes sure both ABMX lists have the same data
-		/// </summary>
-		/// <param name="data1"></param>
-		/// <param name="data2"></param>
-		public void MergeABMXLists(MorphData data1 = null, MorphData data2 = null)
-		{
-			if(!ABMXDependency.InTargetVersionRange) return;
-
-			var charaCtrl = ChaControl;
-			var boneCtrl = charaCtrl.GetComponent<BoneController>();
-			data1 = data1 ?? m_data1;
-			data2 = data2 ?? m_data2;
-			//add non-existent bones to other lists
-			if(BoneSplitCheck(true))
-			{
-
-				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("balancing bone lists...");
-
-				//Body
-				BoneModifierMatching(ref data1.abmx.body, ref data2.abmx.body);
-				BoneModifierMatching(ref data2.abmx.body, ref data1.abmx.body);
-
-				//Face
-				BoneModifierMatching(ref data1.abmx.face, ref data2.abmx.face);
-				BoneModifierMatching(ref data2.abmx.face, ref data1.abmx.face);
-
-				//current body
-				BoneModifierMatching(ref boneCtrl, data1.abmx.body);
-				BoneModifierMatching(ref boneCtrl, data1.abmx.face);
-
-				//sort list
-				data1.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
-				data2.abmx.body.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
-				data1.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
-				data2.abmx.face.Sort((a, b) => a.BoneName.CompareTo(b.BoneName));
-
-#if KOI_API
-				charaCtrl.LateUpdateForce();
-#endif
-			}
-		}
-
-		/// <summary>
-		/// Update bones/shapes whenever a change is made to the sliders and balances internal lists
-		/// </summary>
-		/// <param name="forceReset: ">reset regardless of other perimeters</param>
-		public void MorphChangeUpdate(bool forceReset = false, bool initReset = false, bool updateValues = true, bool abmx = true)
-		{
-			if(isDummy) return;
-
-			var currGameMode = KoikatuAPI.GetCurrentGameMode();
-
-			if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"is data copied check?");
-			if(m_data1?.main == null) return;
-
-			MergeABMXLists(null, null);
-
-			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("update values check?");
-			if(!updateValues) return;
-
-
-			MorphValuesUpdate(forceReset || ResetCheck, initReset: initReset, abmx: abmx);
-		}
-
-		public void ResetOriginalShape(MorphData data = null)
-		{
-
-			if(data == null)
-				data = m_initalData;
-
-			MergeABMXLists(null, data);
-
-			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("mod enabled check?");
-			if(!Enable) return;
-
-			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("not male in main game check?");
-			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) && ChaControl.sex != 1/*(allowed in maker as of now)*/)
-				return;
-
-			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("not male in maker check?");
-			if(MakerAPI.InsideMaker && ChaControl.sex != 1
-				&& !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
-
-			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Morph only character with save data in game check?");
-			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) &&
-				cfg.onlyMorphCharWithDataInGame.Value &&
-				!IsUsingExtMorphData) return;
-
-			ObscureUpdateValues(false, replace: true, mainData2: data?.main);
-			MainUpdateValues(false, replace: true, mainData2: data?.main);
-			AbmxUpdateValues(false, replace: true, abmxData2: data?.abmx);
-
-			ChaControl.updateShape = true;//this should update the model better
-
-			//Slider Defaults set
-			if(MakerAPI.InsideMaker)
-				SetDefaultSliders();
-
-			//This may be needed (it is for keeping the character on the ground)
-			if(!isReloading) ResetHeight();
-		}
-
 		Coroutine coTexUpdate = null;
 		/// <summary>
 		/// Update values for the entire body (use MorphChangeUpdate() instead to make sure lists are balanced)
@@ -1039,7 +1051,7 @@ namespace Character_Morpher
 		/// <param name="abmx"></param>
 		private void MorphValuesUpdate(bool reset, bool initReset = false, bool abmx = true)
 		{
-			var currGameMode = KoikatuAPI.GetCurrentGameMode();
+			//var currGameMode = KoikatuAPI.GetCurrentGameMode();
 
 			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("not male in main game check?");
 			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) && ChaControl.sex != 1/*(allowed in maker as of now)*/)
@@ -1089,7 +1101,7 @@ namespace Character_Morpher
 			if(cfg.debug.Value)
 				Morph_Util.Logger.LogDebug($"setting ABMX values");
 
-			charDisabled |= !EnableABMX;
+			charDisabled = charDisabled || !EnableABMX;
 			//ABMX
 			if(abmx)
 				AbmxUpdateValues(reset || charDisabled, initReset);
@@ -1101,7 +1113,7 @@ namespace Character_Morpher
 				SetDefaultSliders();
 
 			//This may be needed (it is for keeping the character on the ground)
-			if(!isReloading) ResetHeight();
+			if(!IsReloading) ResetHeight();
 		}
 
 		/// <summary>
@@ -1168,7 +1180,7 @@ namespace Character_Morpher
 					Morph_Util.Logger.LogDebug($"gets here");
 
 				//colour update
-				if(isInitLoadFinished && newcol)
+				if(IsInitLoadFinished && newcol)
 				{
 					chaCtrl.AddUpdateCMBodyColorFlags
 #if HONEY_API
@@ -1432,7 +1444,7 @@ namespace Character_Morpher
 		/// <param name="initReset"></param>
 		private void AbmxUpdateValues(bool reset, bool initReset = false, bool replace = false, MorphData.AMBXSections abmxData1 = null, MorphData.AMBXSections abmxData2 = null)
 		{
-			if(!ABMXDependency.InTargetVersionRange) return;
+			if(!ABMXDependency.IsInTargetVersionRange) return;
 
 			abmxData1 = abmxData1 ?? m_data1?.abmx;
 			abmxData2 = abmxData2 ?? m_data2?.abmx;
@@ -1649,7 +1661,7 @@ namespace Character_Morpher
 			//	var facecustum = CharaMorpher_GUI.faceCustom;
 			//	var boobcustum = CharaMorpher_GUI.boobCustom;
 
-			if(mkBase && !isReloading)
+			if(mkBase && !IsReloading)
 			{
 				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Resetting CVS Sliders");
 
@@ -1688,7 +1700,7 @@ namespace Character_Morpher
 		/// <param name="bone2"></param>
 		private void BoneModifierMatching(ref List<BoneModifier> bone1, ref List<BoneModifier> bone2)
 		{
-			if(!ABMXDependency.InTargetVersionRange) return;
+			if(!ABMXDependency.IsInTargetVersionRange) return;
 			foreach(var bone in bone2)
 			{
 				string content = bone.BoneName.Trim().ToLower();
@@ -1711,7 +1723,7 @@ namespace Character_Morpher
 		/// <param name="bone2"></param>
 		private void BoneModifierMatching(ref BoneController bone1, List<BoneModifier> bone2)
 		{
-			if(!ABMXDependency.InTargetVersionRange) return;
+			if(!ABMXDependency.IsInTargetVersionRange) return;
 			foreach(var bone in bone2)
 			{
 				string content = bone.BoneName.Trim().ToLower();
@@ -1742,7 +1754,7 @@ namespace Character_Morpher
 		/// <param name="enable"></param>
 		private void UpdateBoneModifier(ref BoneModifier current, BoneModifier bone1, BoneModifier bone2, MorphSliderData modVal, bool reset, float sectVal = 1, float enable = 1, int index = 0)
 		{
-			if(!ABMXDependency.InTargetVersionRange) return;
+			if(!ABMXDependency.IsInTargetVersionRange) return;
 			try
 			{
 				var lerpVal = (reset ? enable : (
@@ -1831,11 +1843,11 @@ namespace Character_Morpher
 		{
 			if(keepState) return;
 
-			if(initReset && !isInitLoadFinished)
-				initReset = isReloading = false;
+			if(initReset && !IsInitLoadFinished)
+				initReset = IsReloading = false;
 
 			//for in game load correction
-			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) && isInitLoadFinished)
+			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) && IsInitLoadFinished)
 				MorphChangeUpdate(forceReset: true);
 
 			//if(!isReloading)
@@ -1890,12 +1902,12 @@ namespace Character_Morpher
 
 			yield return null;
 
-			if(isReloading) yield break;
+			if(IsReloading) yield break;
 
 			for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 			{
-				if(isReloading)
-					yield return new WaitWhile(() => isReloading);
+				if(IsReloading)
+					yield return new WaitWhile(() => IsReloading);
 				MorphChangeUpdate(updateValues: updateValues, initReset: initReset);
 			}
 
@@ -1908,14 +1920,14 @@ namespace Character_Morpher
 			for(int a = 0; a < delay; ++a)
 				yield return null;
 
-			if(!isReloading || forceChange)
+			if(!IsReloading || forceChange)
 			{
 				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
 			}
 			else
 			{
-				if(isReloading)
-					yield return new WaitWhile(() => isReloading);
+				if(IsReloading)
+					yield return new WaitWhile(() => IsReloading);
 				MorphChangeUpdate(forceReset: forceReset, initReset: initReset);
 			}
 
@@ -2001,7 +2013,7 @@ namespace Character_Morpher
 			IEnumerator CoAfterReset(byte state)
 #endif
 			{
-				if(isReloading)
+				if(IsReloading)
 					for(int a = -1; a < (int)cfg.reloadTest.Value; ++a)
 						yield return new WaitForEndOfFrame();
 #if KOI_API
@@ -2079,7 +2091,7 @@ namespace Character_Morpher
 				{
 					if(!m_data1.abmx.isLoaded)
 						m_data1.abmx.Populate(this, false);
-					m_data1.abmx.BoneSplit(this, ChaControl);
+					m_data1.abmx.BoneSplit(this, ChaControl, false);
 				}
 				if(!m_data2.abmx.isSplit)
 				{
@@ -2101,7 +2113,7 @@ namespace Character_Morpher
 
 			//if(!ctrl) return;//return if ctrl is null
 
-			if(saveCMD && isReloading)
+			if(saveCMD && IsReloading)
 				ctrls2 = controls.Clone();//needs to be done this way (to get initialized)
 
 			var tmp = controls.Clone();
@@ -2172,7 +2184,7 @@ namespace Character_Morpher
 						Character.Instance?.DeleteChara(_extraCharacter, entryOnly: true);
 #endif
 
-						if(ABMXDependency.InTargetVersionRange)
+						if(ABMXDependency.IsInTargetVersionRange)
 							_bonectrl = _extraCharacter?.GetComponent<BoneController>();
 
 						//This is needed so extracharacter is not immediately destroyed
@@ -2181,7 +2193,7 @@ namespace Character_Morpher
 						{
 
 							if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Destroying dummy chara controller");
-							ctrler.isDummy = true;
+							ctrler.IsDummy = true;
 							ctrler.enabled = false;
 							GameObject.Destroy(ctrler);//change back to Destroy if issues arise
 						}
@@ -2224,7 +2236,7 @@ namespace Character_Morpher
 
 			public void Populate(CharaMorpher_Controller morphControl, bool useTargetData = false)
 			{
-				if(!ABMXDependency.InTargetVersionRange) return;
+				if(!ABMXDependency.IsInTargetVersionRange) return;
 
 				var boneCtrl = useTargetData ? MorphTarget.extraCharacter?.GetComponent<BoneController>() : morphControl?.GetComponent<BoneController>();
 				var charaCtrl = morphControl?.ChaControl;
@@ -2242,10 +2254,10 @@ namespace Character_Morpher
 
 					var newModifiers = data.ReadBoneModifiers();
 					//body bonemods on
-					if(useTargetData || bodyBonemodTgl)
+					if(useTargetData || BodyBonemodTgl)
 						body = new List<BoneModifier>(newModifiers);
 					//face bonemods on
-					if(useTargetData || faceBonemodTgl)
+					if(useTargetData || FaceBonemodTgl)
 						face = new List<BoneModifier>(newModifiers);
 
 					isLoaded = !!boneCtrl;//it can be shortened to just "boneCtrl" if I want
@@ -2264,7 +2276,7 @@ namespace Character_Morpher
 			//split up body & head bones
 			public void BoneSplit(CharaMorpher_Controller charaControl, ChaControl bodyCharaCtrl, bool useTargetData = false)
 			{
-				if(!ABMXDependency.InTargetVersionRange) return;
+				if(!ABMXDependency.IsInTargetVersionRange) return;
 
 				var ChaControl = charaControl?.GetComponent<ChaControl>();
 				var ChaFileControl = ChaControl?.chaFile;
@@ -2280,11 +2292,11 @@ namespace Character_Morpher
 				var headBones = new HashSet<string>(headRoot.GetComponentsInChildren<Transform>().Select(x => x.name)) { /*Additional*/headRoot.name };
 
 				//Load Body
-				if(useTargetData || bodyBonemodTgl)
+				if(useTargetData || BodyBonemodTgl)
 					body.RemoveAll(x => headBones.Contains(x.BoneName));
 
 				//Load face
-				if(useTargetData || faceBonemodTgl)
+				if(useTargetData || FaceBonemodTgl)
 				{
 					var bodyBones = new HashSet<string>(bodyCharaCtrl.objTop.transform.
 						GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
@@ -2300,9 +2312,9 @@ namespace Character_Morpher
 			public void Clear()
 			{
 
-				if(bodyBonemodTgl)
+				if(BodyBonemodTgl)
 					body?.Clear();
-				if(faceBonemodTgl)
+				if(FaceBonemodTgl)
 					face?.Clear();
 
 
@@ -2412,76 +2424,15 @@ namespace Character_Morpher
 				if(_all == null)
 				{
 					_all = new Dictionary<string, Dictionary<string, MorphSliderData>>();
-					_lastAll = new Dictionary<string, Dictionary<string, MorphSliderData>>();
 				}
 
-				IEnumerator CoPost()
-				{
-					for(int a = -1; a < cfg.multiUpdateEnableTest.Value + 10; ++a)
-						yield return null;
 
-					try
-					{
-						bool Check()
-						{
-							if(_all.Count != _lastAll.Count)
-								return true;
-
-							if(!_all.TryGetValue(currentSet, out var tmp1)) return true;
-
-							if(_all[currentSet].Count != _lastAll[currentSet].Count)
-								return true;
-
-							for(int a = 0; a < _all[currentSet].Count; ++a)
-							{
-								var name = _all[currentSet].Keys.ElementAt(a);
-								if(_lastAll.ContainsKey(currentSet) && _lastAll[currentSet].ContainsKey(name))
-								{
-									//if(_all[currentSet].TryGetValue(_all[currentSet].Keys.ElementAt(a), out var tmp2))
-									if(_all[currentSet][name].data !=
-										_lastAll[currentSet][name].data)
-										return true;
-								}
-								else return true;
-							}
-
-							return false;
-						};
-
-						if(_all == null) yield break;
-
-						bool check = Check();
-						_lastAll = _all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value.Clone()));
-
-						//	Morph_Util.Logger.LogInfo($"The change check returned: {check}");
-						if(check)
-							OnInternalSliderValueChange.Invoke(this);
-
-					}
-					catch(Exception e)
-					{
-						Morph_Util.Logger.LogError($"CoPost failed:\n{e}");
-					}
-
-					yield break;
-				}
-
-				if(!StudioAPI.InsideStudio)
-				{
-					if(post != null)
-						Instance.StopCoroutine(post);
-
-					if(setIsMainControls)
-						post = Instance.StartCoroutine(CoPost());
-				}
 
 				return _all;
 			}
 			set
 			{
 				_all = value;
-				if(_lastAll == null)
-					_lastAll = new Dictionary<string, Dictionary<string, MorphSliderData>>();
 			}
 		}
 
@@ -2519,7 +2470,7 @@ namespace Character_Morpher
 		public IEnumerable<KeyValuePair<string, MorphSliderData>> overall
 		{
 			get
-			=> all[currentSet].Where((p) => Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
+			=> all[currentSet].Where((p) => p.Key.ToLower().Contains("overall"));
 		}
 
 		/// <summary>
@@ -2529,6 +2480,14 @@ namespace Character_Morpher
 		{
 			get
 			=> all[currentSet].Where((p) => !Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
+		}
+
+		public void CorrectAbmxStates()
+		{
+			foreach(var kvp in all)
+				foreach(var correct in cfg.defaults[defaultStr])
+					if(kvp.Value.TryGetValue(correct.Key, out var value))
+						value.isABMX = correct.Value.Value.isABMX;
 		}
 
 		public void Clear()
@@ -2543,11 +2502,8 @@ namespace Character_Morpher
 		public MorphControls Clone() =>
 		 new MorphControls
 		 {
-			 _all = _all?.ToDictionary((x) => x.Key, (y) => y.Value.ToDictionary(x => x.Key, v => v.Value.Clone()))
+			 _all = _all?.ToDictionary((x) => x.Key, (y) => y.Value.ToDictionary(x => x.Key + "", v => v.Value.Clone()))
 			 ?? new Dictionary<string, Dictionary<string, MorphSliderData>>(),
-			 _lastAll = _lastAll?.ToDictionary((x) => x.Key, (y) => y.Value.ToDictionary(x => x.Key, v => v.Value.Clone()))
-			 ?? new Dictionary<string, Dictionary<string, MorphSliderData>>(),
-
 			 currentSet = currentSet + "",
 			 setIsMainControls = setIsMainControls,
 		 };
@@ -2557,7 +2513,6 @@ namespace Character_Morpher
 			if(cpy == null) return false;
 			var tmp = cpy.Clone();
 			_all = tmp._all;
-			_lastAll = tmp._lastAll;
 			currentSet = tmp.currentSet;
 
 			//	Morph_Util.Logger.LogDebug($"Current Save: {currentSet}");
@@ -2565,6 +2520,11 @@ namespace Character_Morpher
 			//	Morph_Util.Logger.LogDebug($"List Counts: [{string.Join(", ", all.Values.Attempt((k) => k.Count.ToString()).ToArray())}]");
 
 			return true;
+		}
+
+		public override string ToString()
+		{
+			return $"[{string.Join(", ", all[currentSet].Attempt((v) => $"{{{v.Key.ToString()}, {v.Value.data}}}").ToArray())}]";
 		}
 	}
 
