@@ -4,11 +4,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 //using System.Text;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 using UnityEngine;
 
 using KKAPI;
+using KKAPI.Studio; 
 using KKAPI.Utilities;
 using KKAPI.Chara;
 using KKAPI.Maker;
@@ -35,8 +37,6 @@ using static Character_Morpher.Morph_Util;
 using static Character_Morpher.CharaMorpher_Controller;
 using static Character_Morpher.CharaMorpher_GUI;
 using static Character_Morpher.CurrentSaveLoadManager;
-using KKAPI.Studio;
-using System.ComponentModel;
 
 namespace Character_Morpher
 {
@@ -46,8 +46,8 @@ namespace Character_Morpher
 
 		#region private
 		private PluginData m_extData = null;
-		private static string lastCharDir = "";
-		private static DateTime lastDT = new DateTime();
+		private static string m_lastCharDir = "";
+		private static DateTime m_lastDT = new DateTime();
 		private static bool m_faceBonemodTgl = true, m_bodyBonemodTgl = true;
 		#endregion
 
@@ -997,13 +997,13 @@ namespace Character_Morpher
 
 			if((File.Exists(path)) &&
 				(!MorphTarget.initalize ||
-				lastCharDir != path ||
-				File.GetLastWriteTime(path).Ticks != lastDT.Ticks))
+				m_lastCharDir != path ||
+				File.GetLastWriteTime(path).Ticks != m_lastDT.Ticks))
 			{
 				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Initializing secondary character");
 
-				lastDT = File.GetLastWriteTime(path);
-				lastCharDir = path;
+				m_lastDT = File.GetLastWriteTime(path);
+				m_lastCharDir = path;
 				morphCharData = new MorphData();
 
 				//initialize secondary model
@@ -2284,8 +2284,7 @@ namespace Character_Morpher
 				if(!bodyCharaCtrl?.objHeadBone) return;
 				if(isSplit || !isLoaded) return;
 
-				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Splitting bones apart (this is gonna hurt)");
-
+				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Splitting bones apart (this is gonna hurt 🤣🤣)");
 
 				var headRoot = bodyCharaCtrl.objHeadBone.transform.parent.parent;
 
@@ -2531,128 +2530,32 @@ namespace Character_Morpher
 	internal static class ABMXUtils
 	{
 
+		static bool init = false;
+		static MethodInfo _abmxReadModifiers = null;
+		static MethodInfo AbmxReadModifiers
+		{
+			get
+			{
+				  _abmxReadModifiers = init ? _abmxReadModifiers : ABMXDependency.IsInTargetVersionRange ?
+				typeof(BoneController).GetMethod("ReadModifiers",
+				System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+				null, new[] { typeof(PluginData) }, null) : null;
+				init = true;
+
+				return _abmxReadModifiers;
+			}
+		}
+
 		/// <summary>
-		/// Taken from ABMX to get the data from card more easily 
+		/// A function taken from ABMX to read Bonemod data from PluginData directly
 		/// </summary>
 		/// <param name="data"></param>
 		/// <returns></returns>
-		internal static List<BoneModifier> ReadBoneModifiers(this PluginData data)
-		{
-			if(data != null)
-			{
-				try
-				{
-					switch(data.version)
-					{
-					case 2:
-						return MessagePack.LZ4MessagePackSerializer.Deserialize<List<BoneModifier>>(
-								(byte[])data.data["boneData"]);
-					//TODO: get the old data converter
-#if KK || EC || KKS
-					case 1:
-						if(cfg.debug.Value) Morph_Util.Logger.LogDebug("[KKABMX] Loading legacy embedded ABM data");
-						return ABMXOldDataConverterKoiAPI.MigrateOldExtData(data);
-#endif
+		internal static List<BoneModifier> ReadBoneModifiers(this PluginData data) =>
 
-					default:
-						throw new NotSupportedException($"[KKABMX] Save version {data.version} is not supported");
-					}
-				}
-				catch(Exception ex)
-				{
-					if(cfg.debug.Value) Morph_Util.Logger.LogError("[KKABMX] Failed to load extended data - " + ex);
-				}
-			}
-			return new List<BoneModifier>();
-		}
-
+		(List<BoneModifier>)AbmxReadModifiers?.Invoke(null, new[] { data }) ?? new List<BoneModifier>();
 	}
 
-	/// <summary>
-	/// Needed to copy this class from ABMX in case old card is loaded 
-	/// (Taken directly from source: 
-	/// https://github.com/ManlyMarco/ABMX/blob/v5.0.2/Shared_KKEC/Core/OldDataConverter.cs)
-	/// </summary> 
-	internal static class ABMXOldDataConverterKoiAPI
-	{
-		private const string ExtDataBoneDataKey = "boneData";
-
-		public static List<BoneModifier> MigrateOldExtData(PluginData pluginData)
-		{
-			if(pluginData == null) return null;
-			if(!pluginData.data.TryGetValue(ExtDataBoneDataKey, out var value)) return null;
-			if(!(value is string textData)) return null;
-
-			return MigrateOldStringData(textData);
-		}
-
-		public static List<BoneModifier> MigrateOldStringData(string textData)
-		{
-			if(string.IsNullOrEmpty(textData)) return null;
-			return DeserializeToModifiers(textData.Split());
-		}
-
-		private static List<BoneModifier> DeserializeToModifiers(IEnumerable<string> lines)
-		{
-			string GetTrimmedName(string[] splitValues)
-			{
-				// Turn cf_d_sk_top__1 into cf_d_sk_top 
-				var boneName = splitValues[1];
-				return boneName[boneName.Length - 2] == '_' && boneName[boneName.Length - 3] == '_'
-					? boneName.Substring(0, boneName.Length - 3)
-					: boneName;
-			}
-
-			var query = from lineText in lines
-						let trimmedText = lineText?.Trim()
-						where !string.IsNullOrEmpty(trimmedText)
-						let splitValues = trimmedText.Split(',')
-						where splitValues.Length >= 6
-						group splitValues by GetTrimmedName(splitValues);
-
-			var results = new List<BoneModifier>();
-
-			foreach(var groupedBoneDataEntries in query)
-			{
-				var groupedOrderedEntries = groupedBoneDataEntries.OrderBy(x => x[1]).ToList();
-
-				var coordinateModifiers = new List<BoneModifierData>(groupedOrderedEntries.Count);
-
-				foreach(var singleEntry in groupedOrderedEntries)
-				{
-					try
-					{
-						//var boneName = singleEntry[1];
-						//var isEnabled = bool.Parse(singleEntry[2]);
-						var x = float.Parse(singleEntry[3]);
-						var y = float.Parse(singleEntry[4]);
-						var z = float.Parse(singleEntry[5]);
-
-						var lenMod = singleEntry.Length > 6 ? float.Parse(singleEntry[6]) : 1f;
-
-						coordinateModifiers.Add(new BoneModifierData(new Vector3(x, y, z), lenMod));
-					}
-					catch(Exception ex)
-					{
-						Morph_Util.Logger.LogError($"ABMX: Failed to load legacy line \"{string.Join(",", singleEntry)}\" - {ex.Message}");
-					}
-				}
-
-				if(coordinateModifiers.Count == 0)
-					continue;
-
-				const int kkCoordinateCount = 7;
-				if(coordinateModifiers.Count > kkCoordinateCount)
-					coordinateModifiers.RemoveRange(0, coordinateModifiers.Count - kkCoordinateCount);
-				if(coordinateModifiers.Count > 1 && coordinateModifiers.Count < kkCoordinateCount)
-					coordinateModifiers.RemoveRange(0, coordinateModifiers.Count - 1);
-
-				results.Add(new BoneModifier(groupedBoneDataEntries.Key, BoneLocation.Unknown, coordinateModifiers.ToArray()));
-			}
-
-			return results;
-		}
-	}
 	#endregion
 
 }
