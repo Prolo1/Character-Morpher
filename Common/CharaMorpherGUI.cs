@@ -33,12 +33,12 @@ using ChaCustom;
 #endif
 
 using static Character_Morpher.CharaMorpher_Core;
-using static Character_Morpher.Morph_Util;
 using static KKAPI.Maker.MakerAPI;
 using static KKAPI.Studio.StudioAPI;
 
 namespace Character_Morpher
 {
+	using static Character_Morpher.Morph_Util;//leave it here
 	class CharaMorpher_GUI : MonoBehaviour
 	{
 		#region Classes
@@ -207,7 +207,8 @@ namespace Character_Morpher
 						{
 							enableStudioUI = val;
 							//init = false;
-						}).OnGUIExists(gui =>
+						}).
+						OnGUIExists(gui =>
 						{
 							//Toggle image bi-pass
 							iconBG.filterMode = FilterMode.Bilinear;
@@ -248,7 +249,7 @@ namespace Character_Morpher
 					if(settingName.ToLower().Contains(searchHits[1]))
 					{
 						abmxIndex = abmxIndex >= 0 ? abmxIndex : sliders.Count;
-						if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"ABMX index: {abmxIndex}");
+						//if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"ABMX index: {abmxIndex}");
 
 						tmpSliderLableStyle.normal.textColor = Color.yellow;
 						if(!cfg.enableABMX.Value || !ABMXDependency.IsInTargetVersionRange) return;
@@ -303,7 +304,8 @@ namespace Character_Morpher
 									$"{ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data:f2}", GUILayout.Width(w2), GUILayout.ExpandHeight(true)),
 									out var result))
 							{
-								if(ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data != result)
+								if((ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data != result) &&
+									!TimelineCompatibility.GetIsPlaying())
 								{
 									ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data = result;
 									for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
@@ -377,10 +379,13 @@ namespace Character_Morpher
 				//var allCtrls = (IEnumerable<CharaMorpher_Controller>)null;
 				var selectedCtrls = (IEnumerable<CharaMorpher_Controller>)null;
 				var refcomp = new UnityObjRefEqualsCompare<CharaMorpher_Controller>();//required
-
+				int skipFrames = 0;
 				//Update Loop
 				customStudioUI.AddListener(() =>
 				{
+					if((skipFrames = Math.Max(-1, --skipFrames)) > -1)
+						return;
+
 					try
 					{
 						GUILayout.BeginVertical();
@@ -497,8 +502,9 @@ namespace Character_Morpher
 							if(names.Length > 0 && !names.InRange(selec))
 								selectedTool = selec = Mathf.Clamp(selec, 0, names.Length);
 
-							studioMorphCtrl = selectedCtrls.InRange(selec) ? selectedCtrls.ElementAt(selec) : null;
-
+							var mctrl = selectedCtrls.InRange(selec) ? selectedCtrls.ElementAt(selec) : null;
+							skipFrames = (studioMorphCtrl == null) != (mctrl == null) ? 3 : 0;
+							studioMorphCtrl = mctrl;
 							//	Morph_Util.Logger.LogMessage(ctrl ? "New Tab Selected" : "No Tab selected");
 
 							//Code Here...
@@ -506,19 +512,18 @@ namespace Character_Morpher
 							morphTex = studioMorphCtrl?.IsUsingExtMorphData ?? false ? studioMorphCtrl?.m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : p.CreateTexture(); ;
 							if(studioMorphCtrl)
 							{
-								//dim card image
-								if(studioMorphCtrl.IsUsingExtMorphData)
-								{
-									var pix = morphTex.GetPixels();
-									foreach(var i in pix)
-										i.AlphaMultiplied(.5f);
-									morphTex.SetPixels(pix);
-									morphTex.Apply();
-								}
+								////dim card image
+								//	if(studioMorphCtrl.IsUsingExtMorphData)
+								//	{
+								//		var pix = morphTex.GetPixels();
+								//		foreach(var i in pix)
+								//			i.AlphaMultiplied(.5f);
+								//		morphTex.SetPixels(pix);
+								//		morphTex.Apply();
+								//	}
 							}
 						}
 
-						//GUILayout.EndHorizontal();
 						GUILayout.EndScrollView();
 
 						#endregion
