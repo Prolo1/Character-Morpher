@@ -34,7 +34,7 @@ using ChaCustom;
 
 using static Character_Morpher.CharaMorpher_Core;
 using static KKAPI.Maker.MakerAPI;
-using static KKAPI.Studio.StudioAPI;
+using static KKAPI.Studio.StudioAPI; 
 
 namespace Character_Morpher
 {
@@ -236,6 +236,9 @@ namespace Character_Morpher
 
 				string[] searchHits = new string[] { "overall", "abmx" };
 				var tmpSliderLableStyle = (GUIStyle)null;
+				var tmpSliderValStyle = (GUIStyle)null;
+
+
 				void CreatSlider(string settingName, CharaMorpher_Controller ctrl1, float min = 0, float max = 1)
 				{
 					var visualName = "" + settingName;
@@ -294,20 +297,38 @@ namespace Character_Morpher
 
 							GUILayout.Label($"{visualName}:", GUILayout.Width(w));
 
+
+							var dat = ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data;
+
 							ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data =
 								GUILayout.HorizontalSlider(ctrl1
 								.controls.all[ctrl1
 								.controls.currentSet][settingName].data, min, max);
 
+							if(tmpSliderValStyle == null)
+								tmpSliderValStyle = new GUIStyle(GUI.skin.textField);
+							tmpSliderValStyle.alignment = TextAnchor.MiddleRight;
 
-							if(float.TryParse(GUILayout.TextField(
-									$"{ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data:f2}", GUILayout.Width(w2), GUILayout.ExpandHeight(true)),
-									out var result))
+
+							var txtval = GUILayout.TextField
+									($"{ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data * 100:00.}",
+									tmpSliderValStyle, GUILayout.Width(w2), GUILayout.ExpandHeight(true));
+							if(double.TryParse(txtval, out var val))
 							{
-								if((ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data != result) &&
+								//val.ToString(); 
+								var slideUpdate = dat != ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data;
+								var valUpdate = dat != ((float)(val * .01));
+								if((valUpdate || slideUpdate) &&
 									!TimelineCompatibility.GetIsPlaying())
 								{
-									ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data = result;
+									//var dif = (ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data * 100) - val;
+									//val += dif;
+									//val=Mathf.Round(val);
+
+									Logger.LogInfo($"{visualName}: {(dat)}:{((float)(val * .01))}");
+
+									ctrl1.controls.all[ctrl1.controls.currentSet][settingName].SetData((float)(val * .01));
+
 									for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 										ctrl1?.StartCoroutine(ctrl1?.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
 

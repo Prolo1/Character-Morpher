@@ -1039,7 +1039,7 @@ namespace Character_Morpher
 			else
 				Task.WaitAll(MorphValuesUpdate(forceReset || ResetCheck, initReset: initReset, abmx: abmx, async: async));
 
-			Logger.LogInfo("MorphChangeUpdate func Complete");
+			//Logger.LogInfo("MorphChangeUpdate func Complete");
 		}
 
 		public void ResetOriginalShape(MorphData data = null)
@@ -1342,7 +1342,7 @@ namespace Character_Morpher
 
 			}
 
-			Logger.LogInfo("ObscureUpdateValues func Complete");
+		//	Logger.LogInfo("ObscureUpdateValues func Complete");
 		}
 
 		/// <summary>
@@ -1564,7 +1564,7 @@ namespace Character_Morpher
 				ChaControl.updateShapeFace = face;
 			}
 
-			Logger.LogInfo("MainUpdateValues func Complete");
+		//	Logger.LogInfo("MainUpdateValues func Complete");
 
 		}
 
@@ -1792,7 +1792,7 @@ namespace Character_Morpher
 
 			}
 
-			Logger.LogInfo("AbmxUpdateValues func Complete");
+		//	Logger.LogInfo("AbmxUpdateValues func Complete");
 		}
 
 		/// <summary>
@@ -1837,7 +1837,7 @@ namespace Character_Morpher
 				}
 			}
 
-			Logger.LogInfo("SetDefaultSliders func Complete");
+	//		Logger.LogInfo("SetDefaultSliders func Complete");
 		}
 		#endregion
 
@@ -2042,7 +2042,7 @@ namespace Character_Morpher
 		protected override void Update()
 		{
 
-			if(DateTime.Now > m_colourUpdateDelay && m_colourTexUpdate)
+			if(m_colourTexUpdate)
 			{
 				CustomTextureControl body = ChaControl.customTexCtrlBody;
 				CustomTextureControl face = ChaControl.customTexCtrlFace;
@@ -2053,7 +2053,7 @@ namespace Character_Morpher
 
 				face.createCustomTex[0].SetColor(ChaShader.SkinColor, ChaControl.fileBody.skinColor);
 				face.createCustomTex[0].SetColor(ChaShader.SunburnColor, ChaControl.fileBody.sunburnColor);
-				
+
 				body.SetNewCreateTexture(0, ChaShader.SkinTex);
 				face.SetNewCreateTexture(0, ChaShader.SkinTex);
 #else
