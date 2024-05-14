@@ -6,6 +6,7 @@ using System.Linq;
 //using System.Text;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 using UnityEngine;
 
@@ -38,7 +39,6 @@ using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpher_Controller;
 using static Character_Morpher.CharaMorpher_GUI;
 using static Character_Morpher.CurrentSaveLoadManager;
-using System.Threading.Tasks;
 
 namespace Character_Morpher
 {
@@ -55,7 +55,8 @@ namespace Character_Morpher
 		private static DateTime m_lastDT = new DateTime();
 		private static bool m_faceBonemodTgl = true, m_bodyBonemodTgl = true;
 		private DateTime m_colourUpdateDelay = DateTime.Now;
-		bool m_colourTexUpdate = false;
+		bool m_texColourUpdate = false;
+		bool m_bodyUpdate = false, m_bustUpdate = false, m_faceUpdate = false;
 		#endregion
 
 		#region internal
@@ -797,11 +798,11 @@ namespace Character_Morpher
 #endif
 			m_initalData.Copy(m_data1);
 
-			if((MakerAPI.InsideMaker && IsInitLoadFinished) || !MakerAPI.InsideMaker)//for the initial character in maker
-			{
-				MorphTargetUpdate();
-				MorphChangeUpdate(initReset: true, updateValues: true, abmx: true);
-			}
+			//if((MakerAPI.InsideMaker && IsInitLoadFinished) || (!MakerAPI.InsideMaker && !StudioAPI.InsideStudio))//for the initial character in maker
+			//{
+			//	MorphTargetUpdate();
+			//	MorphChangeUpdate(initReset: true, updateValues: true, abmx: true);
+			//}
 
 			#endregion
 
@@ -830,7 +831,7 @@ namespace Character_Morpher
 				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					StartCoroutine(CoMorphChangeUpdate(a + 1));
 
-				if(IsUsingExtMorphData && cfg.loadInitMorphCharacter.Value)
+				if(IsUsingExtMorphData /*&& cfg.loadInitMorphCharacter.Value*/)
 				{
 					var isCurData = LZ4MessagePackSerializer.Deserialize<bool>
 					((byte[])m_extData.data[saveLoad.DataKeys[((int)LoadDataType.HoldsFigureData)]], CompositeResolver.Instance);
@@ -1052,7 +1053,7 @@ namespace Character_Morpher
 
 			MergeABMXLists(null, data);
 
-			Task.WaitAll(MorphValuesUpdate(false, replace: true, data2: data));
+			Task.WaitAll(MorphValuesUpdate(false, replace: true, data2: data, async: false));
 		}
 
 		Coroutine coTexUpdate = null;
@@ -1062,7 +1063,7 @@ namespace Character_Morpher
 		/// <param name="reset"></param>
 		/// <param name="initReset"></param>
 		/// <param name="abmx"></param>
-		private async Task MorphValuesUpdate(bool reset, bool initReset = false, bool abmx = true, bool replace = false, MorphData data1 = null, MorphData data2 = null, bool async = true)
+		private async Task MorphValuesUpdate(bool reset, bool initReset = false, bool abmx = true, bool replace = false, MorphData data1 = null, MorphData data2 = null, bool async = false)
 		{
 			//var currGameMode = KoikatuAPI.GetCurrentGameMode();
 
@@ -1265,7 +1266,7 @@ namespace Character_Morpher
 
 					//reset the textures in game
 
-					m_colourTexUpdate = true;
+					m_texColourUpdate = true;
 
 
 					//		yield break;
@@ -1342,7 +1343,7 @@ namespace Character_Morpher
 
 			}
 
-		//	Logger.LogInfo("ObscureUpdateValues func Complete");
+			//	Logger.LogInfo("ObscureUpdateValues func Complete");
 		}
 
 		/// <summary>
@@ -1559,12 +1560,17 @@ namespace Character_Morpher
 					}
 				}
 
-				ChaControl.updateBustSize = boobs;
-				ChaControl.updateShapeBody = body;
-				ChaControl.updateShapeFace = face;
+				//ChaControl.updateBustSize = boobs;
+				//ChaControl.updateShapeBody = body;
+				//ChaControl.updateShapeFace = face;
+
+				m_bustUpdate = boobs;
+				m_bodyUpdate = body;
+				m_faceUpdate = face;
+
 			}
 
-		//	Logger.LogInfo("MainUpdateValues func Complete");
+			//	Logger.LogInfo("MainUpdateValues func Complete");
 
 		}
 
@@ -1792,7 +1798,7 @@ namespace Character_Morpher
 
 			}
 
-		//	Logger.LogInfo("AbmxUpdateValues func Complete");
+			//	Logger.LogInfo("AbmxUpdateValues func Complete");
 		}
 
 		/// <summary>
@@ -1837,7 +1843,7 @@ namespace Character_Morpher
 				}
 			}
 
-	//		Logger.LogInfo("SetDefaultSliders func Complete");
+			//		Logger.LogInfo("SetDefaultSliders func Complete");
 		}
 		#endregion
 
@@ -2042,7 +2048,7 @@ namespace Character_Morpher
 		protected override void Update()
 		{
 
-			if(m_colourTexUpdate)
+			if(m_texColourUpdate)
 			{
 				CustomTextureControl body = ChaControl.customTexCtrlBody;
 				CustomTextureControl face = ChaControl.customTexCtrlFace;
@@ -2067,13 +2073,17 @@ namespace Character_Morpher
 				face.SetNewCreateTexture();
 #endif
 
-				m_colourTexUpdate = false;
+				m_texColourUpdate = false;
 				m_colourUpdateDelay = DateTime.Now + TimeSpan.FromMilliseconds(500);
 			}
 
+			if(m_bodyUpdate)
+				ChaControl.sibBody.Update();
+			if(m_faceUpdate)
+				ChaControl.sibFace.Update();
 
-
-
+			ChaControl.updateBustSize = m_bustUpdate || ChaControl.updateBustSize;//in-case of async 
+			m_bustUpdate = false;
 
 			base.Update();
 		}

@@ -34,7 +34,7 @@ using ChaCustom;
 
 using static Character_Morpher.CharaMorpher_Core;
 using static KKAPI.Maker.MakerAPI;
-using static KKAPI.Studio.StudioAPI; 
+using static KKAPI.Studio.StudioAPI;
 
 namespace Character_Morpher
 {
@@ -311,9 +311,9 @@ namespace Character_Morpher
 
 
 							var txtval = GUILayout.TextField
-									($"{ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data * 100:00.}",
+									($"{ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data * 100:0.}",
 									tmpSliderValStyle, GUILayout.Width(w2), GUILayout.ExpandHeight(true));
-							if(double.TryParse(txtval, out var val))
+							if(double.TryParse(txtval.IsNullOrEmpty() ? "0" : txtval, out var val))
 							{
 								//val.ToString(); 
 								var slideUpdate = dat != ctrl1.controls.all[ctrl1.controls.currentSet][settingName].data;
@@ -325,7 +325,7 @@ namespace Character_Morpher
 									//val += dif;
 									//val=Mathf.Round(val);
 
-									Logger.LogInfo($"{visualName}: {(dat)}:{((float)(val * .01))}");
+									if(cfg.debug.Value) Logger.LogInfo($"{visualName}: {(dat)}:{((float)(val * .01))}");
 
 									ctrl1.controls.all[ctrl1.controls.currentSet][settingName].SetData((float)(val * .01));
 

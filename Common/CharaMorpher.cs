@@ -106,7 +106,7 @@ namespace Character_Morpher
 		// Avoid changing GUID unless absolutely necessary. Plugins that rely on your plugin will no longer recognize it, and if you use it in function controllers you will lose all data saved to cards before the change!
 		public const string ModName = "Character Morpher";
 		public const string GUID = "prolo.chararmorpher";//never change this
-		public const string Version = "1.2.1.1";
+		public const string Version = "1.2.1.2";
 
 		public const string strDiv = ":";
 		public const string defaultStr = "(Default)" + strDiv;
@@ -149,6 +149,7 @@ namespace Character_Morpher
 			public ConfigEntry<bool> preferCardMorphDataGame { set; get; }
 			public ConfigEntry<bool> loadInitMorphCharacter { set; get; }
 			public ConfigEntry<bool> onlyMorphCharWithDataInGame { set; get; }
+			public ConfigEntry<bool> nukeStudio { set; get; }
 			public ConfigEntry<string> resetToOrigShapeBtn { set; get; }
 
 
@@ -469,6 +470,13 @@ namespace Character_Morpher
 
 
 				//Studio
+				nukeStudio = Config.Bind(stud, "Nuke Studio", false,
+				new ConfigDescription("Studio implementation will not work at all (will take affect on next launch)", tags:
+				new ConfigurationManagerAttributes()
+				{
+					Order = --index,
+					Category = studx,
+				})),
 				studioWinRec = Config.Bind(stud, "Studio Win Rec", CharaMorpher_GUI.winRec,
 				new ConfigDescription("", tags:
 				new ConfigurationManagerAttributes()
@@ -960,7 +968,9 @@ namespace Character_Morpher
 			}
 
 
-			//if(StudioAPI.InsideStudio) return;
+			if(StudioAPI.InsideStudio && cfg.nukeStudio.Value) return;
+
+
 
 			/*
 				Register your logic that depends on a character.
