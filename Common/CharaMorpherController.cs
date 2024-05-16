@@ -844,8 +844,7 @@ namespace Character_Morpher
 				}
 
 				if(m_extData != null && !MakerAPI.InsideMaker)
-					CharaMorpher_Core.Logger
-						.LogMessage("Character Morph Data found in this card!");
+					CharaMorpher_Core.Logger.LogMessage("Character Morph Data found in this card!");
 
 
 				if(cfg.debug.Value) Morph_Util.Logger.LogMessage("CoReload Completed");
@@ -1035,10 +1034,7 @@ namespace Character_Morpher
 			if(!updateValues) return;
 
 
-			if(async)
-				await MorphValuesUpdate(forceReset || ResetCheck, initReset: initReset, abmx: abmx, async: async);
-			else
-				Task.WaitAll(MorphValuesUpdate(forceReset || ResetCheck, initReset: initReset, abmx: abmx, async: async));
+			MorphValuesUpdate(forceReset || ResetCheck, initReset: initReset, abmx: abmx, async: async);
 
 			//Logger.LogInfo("MorphChangeUpdate func Complete");
 		}
@@ -1051,9 +1047,11 @@ namespace Character_Morpher
 			if(data == null)
 				data = m_initalData;
 
-			MergeABMXLists(null, data);
 
-			Task.WaitAll(MorphValuesUpdate(false, replace: true, data2: data, async: false));
+
+			MorphValuesUpdate(false, replace: true, abmx: MergeABMXLists(null, data), data2: data, async: false);
+
+
 		}
 
 		Coroutine coTexUpdate = null;
@@ -1063,7 +1061,7 @@ namespace Character_Morpher
 		/// <param name="reset"></param>
 		/// <param name="initReset"></param>
 		/// <param name="abmx"></param>
-		private async Task MorphValuesUpdate(bool reset, bool initReset = false, bool abmx = true, bool replace = false, MorphData data1 = null, MorphData data2 = null, bool async = false)
+		private void MorphValuesUpdate(bool reset, bool initReset = false, bool abmx = true, bool replace = false, MorphData data1 = null, MorphData data2 = null, bool async = false)
 		{
 			//var currGameMode = KoikatuAPI.GetCurrentGameMode();
 
@@ -1102,34 +1100,31 @@ namespace Character_Morpher
 				Morph_Util.Logger.LogDebug($"setting obscure values: {controls.currentSet} {controls.all[controls.currentSet].Count}");
 
 			bool charEnabled = Enable;
-			List<Task> tasks = new List<Task>();
+			//List<Task> tasks = new List<Task>();
 
 			//update obscure values//
-			tasks.Add(ObscureUpdateValues(reset || !charEnabled, initReset, replace: replace, mainData1: data1?.main, mainData2: data2?.main, async: async));
+			ObscureUpdateValues(reset || !charEnabled, initReset, replace: replace, mainData1: data1?.main, mainData2: data2?.main, async: async);
 
 			//value update loops//
 			if(cfg.debug.Value)
 				Morph_Util.Logger.LogDebug($"setting Main values");
 
 			//Main			 
-			tasks.Add(MainUpdateValues(reset || !charEnabled, initReset, replace: replace, mainData1: data1?.main, mainData2: data2?.main, async: async));
+			MainUpdateValues(reset || !charEnabled, initReset, replace: replace, mainData1: data1?.main, mainData2: data2?.main, async: async);
 
 			if(cfg.debug.Value)
 				Morph_Util.Logger.LogDebug($"setting ABMX values");
 
 			charEnabled = charEnabled && EnableABMX;
+
 			//ABMX
 			if(abmx)
-				tasks.Add(AbmxUpdateValues(reset || !charEnabled, initReset, replace: replace, abmxData1: data1?.abmx, abmxData2: data2?.abmx, async: async));
-
+				AbmxUpdateValues(reset || !charEnabled, initReset, replace: replace, abmxData1: data1?.abmx, abmxData2: data2?.abmx, async: async);
 
 			//Slider Defaults set
-
 			if(MakerAPI.InsideMaker)
-			{
-				await Task.WhenAll(tasks[0], tasks[1]);
-				await SetDefaultSliders(async: async);
-			}
+				SetDefaultSliders(async: async);
+
 
 			//This may be needed (it is for keeping the character on the ground)
 			if(!IsReloading && !StudioAPI.InsideStudio) ResetHeight();
@@ -1164,10 +1159,10 @@ namespace Character_Morpher
 			//	Logger.LogDebug($"All Tasks Complete");
 			//}));
 
-			if(async)
-				await Task.WhenAll(tasks);
-			else
-				Task.WaitAll(tasks.ToArray());
+			//if(async)
+			//	await Task.WhenAll(tasks);
+			//else
+			//	Task.WaitAll(tasks.ToArray());
 
 			//GC.Collect(0, GCCollectionMode.Optimized);//may help reduce stutter
 		}
@@ -1181,7 +1176,7 @@ namespace Character_Morpher
 		/// <param name="mainData1"></param>
 		/// <param name="mainData2"></param>
 		//object _lock = new object();
-		private async Task ObscureUpdateValues(bool reset, bool initReset = false, bool replace = false, ChaFileControl mainData1 = null, ChaFileControl mainData2 = null, bool async = false)
+		private void ObscureUpdateValues(bool reset, bool initReset = false, bool replace = false, ChaFileControl mainData1 = null, ChaFileControl mainData2 = null, bool async = false)
 		{
 			var chaCtrl = ChaControl;
 			float enable = (reset ? (initReset ? cfg.initialMorphBodyTest.Value : 0) : 1);
@@ -1189,12 +1184,9 @@ namespace Character_Morpher
 			mainData1 = mainData1 ?? m_data1?.main;
 			mainData2 = mainData2 ?? m_data2?.main;
 
-			//	if(async) await Task.Run(ColourTask);
-			//	else 
 			ColourTask();
 
-			if(async) await Task.Run(BodyTask);
-			else BodyTask();
+			BodyTask();
 
 
 			//Skin Colour
@@ -1354,7 +1346,7 @@ namespace Character_Morpher
 		/// <param name="replace"></param>
 		/// <param name="mainData1"></param>
 		/// <param name="mainData2"></param>
-		private async Task MainUpdateValues(bool reset, bool initReset = false, bool replace = false, ChaFileControl mainData1 = null, ChaFileControl mainData2 = null, bool async = false)
+		private void MainUpdateValues(bool reset, bool initReset = false, bool replace = false, ChaFileControl mainData1 = null, ChaFileControl mainData2 = null, bool async = false)
 		{
 
 
@@ -1365,8 +1357,7 @@ namespace Character_Morpher
 			reset = initReset || reset;
 			float enable;
 
-			if(async) await Task.Run(ValueUpdate);
-			else ValueUpdate();
+			ValueUpdate();
 
 			void ValueUpdate()
 			{
@@ -1579,7 +1570,7 @@ namespace Character_Morpher
 		/// </summary>
 		/// <param name="reset"></param>
 		/// <param name="initReset"></param>
-		private async Task AbmxUpdateValues(bool reset, bool initReset = false, bool replace = false, MorphData.AMBXSections abmxData1 = null, MorphData.AMBXSections abmxData2 = null, bool async = false)
+		private void AbmxUpdateValues(bool reset, bool initReset = false, bool replace = false, MorphData.AMBXSections abmxData1 = null, MorphData.AMBXSections abmxData2 = null, bool async = false)
 		{
 			if(!ABMXDependency.IsInTargetVersionRange) return;
 
@@ -1617,9 +1608,9 @@ namespace Character_Morpher
 			reset = initReset || reset;
 			float enable;
 
-			await ValueUpdate();
+			ValueUpdate();
 
-			async Task ValueUpdate()
+			void ValueUpdate()
 			{
 				//List<Task> tasks = new List<Task>();
 				for(int a = 0; a < Mathf.Max(new float[]
@@ -1706,14 +1697,14 @@ namespace Character_Morpher
 
 						if(cfg.debug.Value) Logger.LogDebug($"Morphing Bone...");
 						if(replace)
-							await UpdateBoneModifier(current, bone1, bone2, modVal, index: a,
-									enable: 1, reset: reset, async: async);
+							UpdateBoneModifier(current, bone1, bone2, modVal, index: a,
+								  enable: 1, reset: reset, async: async);
 						else
-							await UpdateBoneModifier(current, bone1, bone2, modVal, index: a,
-									sectVal: (cfg.linkOverallABMXSliders.Value ?
-									GetControlValue("body", fullVal: initReset, overall: true).data : 1) *
-									GetControlValue("Body", abmx: true, overall: true, fullVal: initReset).data,
-									enable: enable, reset: reset, async: async);
+							UpdateBoneModifier(current, bone1, bone2, modVal, index: a,
+								  sectVal: (cfg.linkOverallABMXSliders.Value ?
+								  GetControlValue("body", fullVal: initReset, overall: true).data : 1) *
+								  GetControlValue("Body", abmx: true, overall: true, fullVal: initReset).data,
+								  enable: enable, reset: reset, async: async);
 
 
 					}
@@ -1781,14 +1772,14 @@ namespace Character_Morpher
 
 						if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Morphing Bone...");
 						if(replace)
-							await UpdateBoneModifier(current, bone1, bone2, modVal, index: a,
-									enable: 1, reset: reset, async: async);
+							UpdateBoneModifier(current, bone1, bone2, modVal, index: a,
+								  enable: 1, reset: reset, async: async);
 						else
-							await UpdateBoneModifier(current, bone1, bone2, modVal, index: a,
-								sectVal: (cfg.linkOverallABMXSliders.Value ?
-								GetControlValue("face", fullVal: initReset, overall: true).data : 1) *
-								GetControlValue("head", abmx: true, fullVal: initReset, overall: true).data,
-								enable: enable, reset: reset, async: async);
+							UpdateBoneModifier(current, bone1, bone2, modVal, index: a,
+							  sectVal: (cfg.linkOverallABMXSliders.Value ?
+							  GetControlValue("face", fullVal: initReset, overall: true).data : 1) *
+							  GetControlValue("head", abmx: true, fullVal: initReset, overall: true).data,
+							  enable: enable, reset: reset, async: async);
 
 					}
 					#endregion
@@ -1804,14 +1795,13 @@ namespace Character_Morpher
 		/// <summary>
 		/// makes sure values are set based on internal values
 		/// </summary>
-		private async Task SetDefaultSliders(bool async = false)
+		private void SetDefaultSliders(bool async = false)
 		{
 			var mkBase = MakerAPI.GetMakerBase();
 			//	var bodycustum = CharaMorpher_GUI.bodyCustom;
 			//	var facecustum = CharaMorpher_GUI.faceCustom;
 			//	var boobcustum = CharaMorpher_GUI.boobCustom;
-			if(async) await Task.Run(UIUpdate);
-			else UIUpdate();
+			UIUpdate();
 
 			void UIUpdate()
 			{
@@ -1907,12 +1897,11 @@ namespace Character_Morpher
 		/// <param name="modVal">target amount (0 -> 1)</param>
 		/// <param name="sectVal">control target amount (optional)</param>
 		/// <param name="enable"></param>
-		private async Task UpdateBoneModifier(BoneModifier current, BoneModifier bone1, BoneModifier bone2, MorphSliderData modVal, bool reset, float sectVal = 1, float enable = 1, int index = 0, bool async = false)
+		private void UpdateBoneModifier(BoneModifier current, BoneModifier bone1, BoneModifier bone2, MorphSliderData modVal, bool reset, float sectVal = 1, float enable = 1, int index = 0, bool async = false)
 		{
 			if(!ABMXDependency.IsInTargetVersionRange) return;
 
-			if(async) await Task.Run(BoneUpdate);
-			else BoneUpdate();
+			BoneUpdate();
 
 			void BoneUpdate()
 			{
@@ -2294,7 +2283,7 @@ namespace Character_Morpher
 			Reset(val * 2);
 			Reset(-val);
 			if(ResetCheck || forceReset)
-				Task.WaitAll(MorphValuesUpdate(true, abmx: false));
+				MorphValuesUpdate(true, abmx: false);
 		}
 
 		/// <summary>
