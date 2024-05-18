@@ -163,6 +163,9 @@ namespace Character_Morpher
 					data.data[DataKeys[((int)LoadDataType.Enable)]] = LZ4MessagePackSerializer.Serialize(true, CompositeResolver.Instance);
 					data.data[DataKeys[((int)LoadDataType.EnableABMX)]] = LZ4MessagePackSerializer.Serialize(true, CompositeResolver.Instance);
 
+					//Todo: next line can be removed from newer versions (V4+)
+					if(!data.data.ContainsKey(DataKeys[((int)LoadDataType.HoldsFigureData)]))
+						data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]] = LZ4MessagePackSerializer.Serialize(false, CompositeResolver.Instance);
 
 					data.version = Version;
 				}
@@ -230,6 +233,7 @@ namespace Character_Morpher
 
 				//get original 
 				data1.abmx.ForceSplitStatus();
+
 				//	Morph_Util.Logger.LogDebug("DATA 1");
 				ctrl.m_data1.Copy(data1);
 			}
@@ -353,7 +357,6 @@ namespace Character_Morpher
 
 			return data;
 		}
-
 	}
 
 	/// <inheritdoc/>
@@ -631,8 +634,7 @@ namespace Character_Morpher
 			return data;
 		}
 
-		public override PluginData Load(CharaMorpher_Controller ctrl, PluginData data = null)
-		{ throw new NotImplementedException(); }
+		public override PluginData Load(CharaMorpher_Controller ctrl, PluginData data = null) { throw new NotImplementedException(); }
 
 		public override PluginData Save(CharaMorpher_Controller ctrl, PluginData data = null) { throw new NotImplementedException(); }
 

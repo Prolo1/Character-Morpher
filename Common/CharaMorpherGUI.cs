@@ -34,7 +34,7 @@ using ChaCustom;
 
 using static Character_Morpher.CharaMorpher_Core;
 using static KKAPI.Maker.MakerAPI;
-using static KKAPI.Studio.StudioAPI;
+using static KKAPI.Studio.StudioAPI; 
 
 namespace Character_Morpher
 {
@@ -193,35 +193,21 @@ namespace Character_Morpher
 
 			if(InsideStudio)
 			{
-
-				StudioLoadedChanged += (m, n) =>
+				OnNewTargetImage.AddListener((str, data) =>
 				{
-					var obj = new GameObject();
-					obj.AddComponent<CharaMorpher_GUI>();
-					obj.transform.SetAsLastSibling();
-					obj.name = "CharaMorpher_GUI";
+					morphTex = str?.CreateTexture(data);
 
-					CustomToolbarButtons.AddLeftToolbarToggle
-						(new Texture2D(32, 32),
-						onValueChanged: val =>
-						{
-							enableStudioUI = val;
-							//init = false;
-						}).
-						OnGUIExists(gui =>
-						{
-							//Toggle image bi-pass
-							iconBG.filterMode = FilterMode.Bilinear;
+					if((!studioMorphCtrl?.IsUsingExtMorphData) ?? true) return;
 
-							var btn = gui.ControlObject.GetComponentInChildren<Button>();
-							btn.image.sprite =
-							Sprite.Create(iconBG,
-							new Rect(0, 0, iconBG.width, iconBG.height),
-							Vector2.one * .5f);
 
-							btn.image.color = Color.white;
-						});
-				};
+					var pix = morphTex.GetPixels();
+					for(var i = 0; i < pix.Length; ++i)
+						pix[i] = pix[i].AlphaMultiplied(.5f);
+					morphTex.SetPixels(pix);
+					morphTex.Apply();
+
+				});
+
 
 				#region Init Stuff
 
@@ -397,6 +383,35 @@ namespace Character_Morpher
 
 				#endregion
 
+				StudioLoadedChanged += (m, n) =>
+				{
+					var obj = new GameObject();
+					obj.AddComponent<CharaMorpher_GUI>();
+					obj.transform.SetAsLastSibling();
+					obj.name = "CharaMorpher_GUI";
+
+					CustomToolbarButtons.AddLeftToolbarToggle
+						(new Texture2D(32, 32),
+						onValueChanged: val =>
+						{
+							enableStudioUI = val;
+							//init = false;
+						}).
+						OnGUIExists(gui =>
+						{
+							//Toggle image bi-pass
+							iconBG.filterMode = FilterMode.Bilinear;
+
+							var btn = gui.ControlObject.GetComponentInChildren<Button>();
+							btn.image.sprite =
+							Sprite.Create(iconBG,
+							new Rect(0, 0, iconBG.width, iconBG.height),
+							Vector2.one * .5f);
+
+							btn.image.color = Color.white;
+						});
+				};
+
 				//var allCtrls = (IEnumerable<CharaMorpher_Controller>)null;
 				var selectedCtrls = (IEnumerable<CharaMorpher_Controller>)null;
 				var refcomp = new UnityObjRefEqualsCompare<CharaMorpher_Controller>();//required
@@ -470,20 +485,8 @@ namespace Character_Morpher
 							{
 								cfg.preferCardMorphDataMaker.Value = preferCardMorphDataMaker;
 
-								string p = Path.Combine(Morph_Util.MakeDirPath(cfg.charDir.Value), Morph_Util.MakeDirPath(cfg.imageName.Value));
-								morphTex = studioMorphCtrl?.IsUsingExtMorphData ?? false ? studioMorphCtrl?.m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : p.CreateTexture();
-								if(studioMorphCtrl)
-								{
-									//dim card image
-									if(studioMorphCtrl.IsUsingExtMorphData)
-									{
-										var pix = morphTex.GetPixels();
-										foreach(var i in pix)
-											i.AlphaMultiplied(.5f);
-										morphTex.SetPixels(pix);
-										morphTex.Apply();
-									}
-								}
+
+
 							}
 
 							if(loadInitMorphCharacter != cfg.loadInitMorphCharacter.Value)
@@ -530,19 +533,9 @@ namespace Character_Morpher
 
 							//Code Here...
 							string p = Path.Combine(Morph_Util.MakeDirPath(cfg.charDir.Value), Morph_Util.MakeDirPath(cfg.imageName.Value));
-							morphTex = studioMorphCtrl?.IsUsingExtMorphData ?? false ? studioMorphCtrl?.m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : p.CreateTexture(); ;
-							if(studioMorphCtrl)
-							{
-								////dim card image
-								//	if(studioMorphCtrl.IsUsingExtMorphData)
-								//	{
-								//		var pix = morphTex.GetPixels();
-								//		foreach(var i in pix)
-								//			i.AlphaMultiplied(.5f);
-								//		morphTex.SetPixels(pix);
-								//		morphTex.Apply();
-								//	}
-							}
+							OnNewTargetImage.Invoke(p, studioMorphCtrl?.IsUsingExtMorphData ?? false ? studioMorphCtrl?.m_data2?.main?.pngData : null);
+
+
 						}
 
 						GUILayout.EndScrollView();
@@ -567,23 +560,10 @@ namespace Character_Morpher
 						GUILayout.Box(morphTex, GUILayout.Width(w), GUILayout.Height(w * 1.333f));
 
 						if(GUILayout.Button("Set New Morph Target"))
-						{
 							GetNewImageTarget();
-							string p = Path.Combine(Morph_Util.MakeDirPath(cfg.charDir.Value), Morph_Util.MakeDirPath(cfg.imageName.Value));
-							morphTex = studioMorphCtrl?.IsUsingExtMorphData ?? false ? studioMorphCtrl?.m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : p.CreateTexture();
-							if(studioMorphCtrl)
-							{
-								//dim card image
-								if(studioMorphCtrl.IsUsingExtMorphData)
-								{
-									var pix = morphTex.GetPixels();
-									foreach(var i in pix)
-										i.AlphaMultiplied(.5f);
-									morphTex.SetPixels(pix);
-									morphTex.Apply();
-								}
-							}
-						}
+
+						if(GUILayout.Button("Clear Morph Target"))
+							studioMorphCtrl.MorphTargetUpdate(clearTarget: true);
 
 						GUILayout.EndVertical();
 						GUILayout.FlexibleSpace();
@@ -722,7 +702,6 @@ namespace Character_Morpher
 							SwitchControlSet(list, tmpVal, ctrl: studioMorphCtrl);
 						}
 						GUILayout.EndHorizontal();
-
 						#endregion
 
 						GUILayout.EndVertical();
@@ -1533,13 +1512,25 @@ namespace Character_Morpher
 					Instance.StartCoroutine(CoSetTexture(path, png));
 				});
 
-			var button = e.AddControl(new MakerButton($"Set New Morph Target", category, owner));
-			button.OnClick.AddListener(() =>
-			{
-				ForeGrounder.SetCurrentForground();
+			e.AddControl(new MakerButton($"Set New Morph Target", category, owner))
+				.OnGUIExists(gui =>
+				{
+					gui.OnClick.AddListener(() =>
+					{
+						ForeGrounder.SetCurrentForground();
+						GetNewImageTarget();
+					});
+				});
 
-				GetNewImageTarget();
-			});
+			e.AddControl(new MakerButton($"Clear Morph Target", category, owner))
+				.OnGUIExists(gui =>
+				{
+					gui.OnClick.AddListener(() =>
+					{
+						var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().First();
+						ctrl.MorphTargetUpdate(clearTarget: true);
+					});
+				});
 
 			e.AddControl(new MakerSeparator(category, Instance));
 		}
@@ -1717,6 +1708,10 @@ namespace Character_Morpher
 
 			cfg.charDir.Value = Path.GetDirectoryName(texPath).MakeDirPath();
 			cfg.imageName.Value = texPath.Substring(texPath.LastIndexOf('/') + 1).MakeDirPath();//not sure why this happens on hs2?
+
+			foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+				if(ctrl.IsInitLoadFinished)
+					ctrl.StartCoroutine(ctrl.CoMorphTargetUpdate(5));
 
 			if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Exit accept");
 		}

@@ -6,7 +6,7 @@ using System.Linq;
 //using System.Text;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+//using System.Threading.Tasks;
 
 using UnityEngine;
 
@@ -831,7 +831,7 @@ namespace Character_Morpher
 				for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 					StartCoroutine(CoMorphChangeUpdate(a + 1));
 
-				if(IsUsingExtMorphData /*&& cfg.loadInitMorphCharacter.Value*/)
+				if(IsUsingExtMorphData && cfg.loadInitMorphCharacter.Value)
 				{
 					var isCurData = LZ4MessagePackSerializer.Deserialize<bool>
 					((byte[])m_extData.data[saveLoad.DataKeys[((int)LoadDataType.HoldsFigureData)]], CompositeResolver.Instance);
@@ -839,8 +839,7 @@ namespace Character_Morpher
 
 					if(isCurData)
 						for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
-							StartCoroutine(CoResetOriginalBody(
-								(int)cfg.multiUpdateEnableTest.Value + a + 1, data: m_initalData));
+							StartCoroutine(CoResetOriginalBody((int)cfg.multiUpdateEnableTest.Value + a + 1, data: m_initalData));
 				}
 
 				if(m_extData != null && !MakerAPI.InsideMaker)
@@ -859,12 +858,12 @@ namespace Character_Morpher
 		/// updates the morph target to a specified target if path has changed or card has been updated
 		/// </summary>
 		/// <param name="ctrl"></param>
-		public void MorphTargetUpdate()
+		public void MorphTargetUpdate(bool clearTarget = false)
 		{
 			if(IsDummy) return;
 
 			//create path to morph target
-			string path = Path.Combine(Morph_Util.MakeDirPath(cfg.charDir.Value), Morph_Util.MakeDirPath(cfg.imageName.Value));
+			string path = clearTarget ? null : Path.Combine(Morph_Util.MakeDirPath(cfg.charDir.Value), Morph_Util.MakeDirPath(cfg.imageName.Value));
 
 
 			//load Ext. card data
@@ -896,24 +895,45 @@ namespace Character_Morpher
 			if(cfg.debug.Value) Morph_Util.Logger.LogDebug("replace data 2");
 
 			ctrls2 = null;
-			m_extData = this.LoadExtData(m_extData);
+			m_extData = clearTarget ? null : this.LoadExtData(m_extData);
 
 
 			if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Morph check status: {IsUsingExtMorphData}");
 			if(!IsUsingExtMorphData)
 				m_data2.Copy(morphCharData);
+
+			if(clearTarget) m_data2.Clear();
+
 			//	this.LoadExtData();
 
-			morphTex = IsUsingExtMorphData ? m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : path.CreateTexture();
-			//dim card image
-			if(IsUsingExtMorphData)
+			//morphTex = IsUsingExtMorphData ? m_data2.main.pngData?.LoadTexture() ?? Texture2D.blackTexture : path.CreateTexture();
+			//
+			////dim card image
+			//if(IsUsingExtMorphData)
+			//{
+			//	var pix = morphTex.GetPixels();
+			//	foreach(var i in pix)
+			//		i.AlphaMultiplied(.5f);
+			//	morphTex.SetPixels(pix);
+			//	morphTex.Apply();
+			//}
+
+			//update card image
 			{
-				var pix = morphTex.GetPixels();
-				foreach(var i in pix)
-					i.AlphaMultiplied(.5f);
-				morphTex.SetPixels(pix);
-				morphTex.Apply();
+				//	path = Path.Combine(
+				//  cfg.charDir.Value.MakeDirPath(),
+				//  cfg.imageName.Value.MakeDirPath());
+
+
+				//if(!check)
+				//	tmp = null;
+
+				if(cfg.debug.Value)
+					Logger.LogDebug($"Load check status: {IsUsingExtMorphData}");
+
+				OnNewTargetImage.Invoke(path, IsUsingExtMorphData ? m_data2?.main?.pngData : null);
 			}
+
 
 			CharaMorpher_GUI.UpdateGUISelectList();
 		}
@@ -1010,7 +1030,7 @@ namespace Character_Morpher
 		/// Update bones/shapes whenever a change is made to the sliders and balances internal lists
 		/// </summary>
 		/// <param name="forceReset: ">reset regardless of other perimeters</param>
-		public async void MorphChangeUpdate(bool forceReset = false, bool initReset = false, bool updateValues = true, bool abmx = true, bool async = false)
+		public void MorphChangeUpdate(bool forceReset = false, bool initReset = false, bool updateValues = true, bool abmx = true, bool async = false)
 		{
 
 			if(IsDummy) return;
@@ -1047,9 +1067,13 @@ namespace Character_Morpher
 			if(data == null)
 				data = m_initalData;
 
-
-
+			try
+			{
 			MorphValuesUpdate(false, replace: true, abmx: MergeABMXLists(null, data), data2: data, async: false);
+
+			}
+			catch { }
+
 
 
 		}
@@ -1100,7 +1124,6 @@ namespace Character_Morpher
 				Morph_Util.Logger.LogDebug($"setting obscure values: {controls.currentSet} {controls.all[controls.currentSet].Count}");
 
 			bool charEnabled = Enable;
-			//List<Task> tasks = new List<Task>();
 
 			//update obscure values//
 			ObscureUpdateValues(reset || !charEnabled, initReset, replace: replace, mainData1: data1?.main, mainData2: data2?.main, async: async);
@@ -1627,7 +1650,9 @@ namespace Character_Morpher
 
 						var bone1 = abmxData1.body[a];
 						var bone2 = abmxData2.body[a];
-						var current = modifiers.First((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
+						var current = modifiers.FirstOrNull((k) => k.BoneName.Trim().ToLower().Contains(bone1.BoneName.Trim().ToLower()));
+
+
 
 						var modVal = (MorphSliderData)null;
 
@@ -1653,7 +1678,7 @@ namespace Character_Morpher
 
 
 
-							if(ending1 == "_l" || ending1 == "_r" || Regex.IsMatch(ending2 = ending2, @"l_\d\d") || Regex.IsMatch(ending2 = ending2, @"r_\d\d"))
+							if(ending1 == "_l" || ending1 == "_r" || Regex.IsMatch(ending2 , @"l_\d\d") || Regex.IsMatch(ending2 , @"r_\d\d"))
 								content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
 
 #if KOI_API

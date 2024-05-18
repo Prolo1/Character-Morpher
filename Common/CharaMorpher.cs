@@ -50,8 +50,8 @@ using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpher_GUI;
 using static Character_Morpher.Morph_Util;
 using static BepInEx.Logging.LogLevel;
-using System.Threading;
-using System.Threading.Tasks;
+//using System.Threading;
+//using System.Threading.Tasks;
 //using Unity.Jobs;
 //using System.Runtime.CompilerServices;
 
@@ -114,18 +114,18 @@ namespace Character_Morpher
 
 		internal static CharaMorpher_Core Instance;
 		internal static new ManualLogSource Logger;
-		internal static OnNewImage OnNewTargetImage = new OnNewImage();
-		internal static OnValueChange<MorphControls> OnInternalSliderValueChange = new OnValueChange<MorphControls>();
-		internal static OnControlSetValueChange OnInternalControlListChanged = new OnControlSetValueChange();
+		internal readonly static OnNewImage OnNewTargetImage = new OnNewImage();
+		internal readonly static OnValueChange<MorphControls> OnInternalSliderValueChange = new OnValueChange<MorphControls>();
+		internal readonly static OnControlSetValueChange OnInternalControlListChanged = new OnControlSetValueChange();
 
 		internal static DependencyInfo<KKABMX_Core> ABMXDependency;
 
-		//	internal static DependencyInfo<Tline.Timeline> TimelineDependency;
+		internal static DependencyInfo<BaseUnityPlugin> TimelineDependency;
 
 		internal static Texture2D UIGoku = null;
 		internal static Texture2D iconBG = null;
 
-		public Dictionary<string, List<MorphSliderData>> controlCategories = new Dictionary<string, List<MorphSliderData>>();
+		public readonly Dictionary<string, List<MorphSliderData>> controlCategories = new Dictionary<string, List<MorphSliderData>>();
 		public static MorphConfig cfg;
 
 		public struct MorphConfig
@@ -224,13 +224,13 @@ namespace Character_Morpher
 			//Soft dependency variables
 			{
 				ABMXDependency = new DependencyInfo<KKABMX_Core>(new Version(KKABMX_Core.Version));
-
-
 				if(!ABMXDependency.IsInTargetVersionRange)
 					Logger.Log(Warning | Message, $"Some [{ModName}] functionality may be locked due to the " +
 						$"absence of [{nameof(KKABMX_Core)}] " +
 						$"or the use of an incorrect version\n" +
 						$"{ABMXDependency}");
+
+				
 
 			}
 
@@ -823,7 +823,7 @@ namespace Character_Morpher
 			{
 
 				string path = Path.Combine(Morph_Util.MakeDirPath(cfg.charDir.Value), Morph_Util.MakeDirPath(cfg.imageName.Value));
-				foreach(var ctrl in Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>())
+				foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
 				{
 					if(File.Exists(path))
 						if(ctrl.IsInitLoadFinished)
@@ -968,7 +968,7 @@ namespace Character_Morpher
 			}
 
 
-			if(StudioAPI.InsideStudio && cfg.nukeStudio.Value) return;
+			if(StudioAPI.InsideStudio && cfg.nukeStudio.Value) return;//this is one of my favourite lines 🤣
 
 
 
@@ -983,9 +983,18 @@ namespace Character_Morpher
 			Hooks.Init();
 		}
 
-		HashSet<CharaMorpher_Controller> m_timelineUpdateList = new HashSet<CharaMorpher_Controller>();
+		readonly HashSet<CharaMorpher_Controller> m_timelineUpdateList = new HashSet<CharaMorpher_Controller>();
 		void Start()
 		{
+			if(!StudioAPI.InsideStudio) return;
+
+			TimelineDependency = new DependencyInfo<BaseUnityPlugin>(Type.GetType("Timeline.Timeline,Timeline", throwOnError: false));
+			if(!TimelineDependency.IsInTargetVersionRange)
+				Logger.Log(Warning | Message, $"Some [{ModName}] functionality may be locked due to the " +
+					$"absence of [Timeline] " +
+					$"or the use of an incorrect version\n" +
+					$"{TimelineDependency}");
+
 			//init Timeline 
 			if(TimelineCompatibility.IsTimelineAvailable())
 			{
@@ -2067,19 +2076,6 @@ namespace Character_Morpher
 			if(cfg.debug.Value)
 				Logger.LogDebug("extended data loaded");
 
-			string path = Path.Combine(
-				cfg.charDir.Value.MakeDirPath(),
-				cfg.imageName.Value.MakeDirPath());
-
-
-			//if(!check)
-			//	tmp = null;
-
-			if(cfg.debug.Value)
-				Logger.LogDebug($"Load check status: {ctrl.IsUsingExtMorphData}");
-
-			var ctrler = (CharaMorpher_Controller)ctrl;
-			OnNewTargetImage.Invoke(path, ctrl.IsUsingExtMorphData ? ctrler?.m_data2?.main?.pngData : null);
 
 			return tmp;
 		}
@@ -2683,9 +2679,14 @@ namespace Character_Morpher
 	}
 	public class DependencyInfo<T> where T : BaseUnityPlugin
 	{
+
+
 		public DependencyInfo(Version minTargetVer = null, Version maxTargetVer = null)
+			: this(typeof(T), minTargetVer, maxTargetVer) { }
+
+		public DependencyInfo(Type type, Version minTargetVer = null, Version maxTargetVer = null)
 		{
-			plugin = (T)GameObject.FindObjectOfType(typeof(T));
+			plugin = (T)GameObject.FindObjectOfType(type);
 			Exists = plugin != null;
 			MinTargetVersion = minTargetVer ?? new Version();
 			MaxTargetVersion = maxTargetVer ?? new Version();
