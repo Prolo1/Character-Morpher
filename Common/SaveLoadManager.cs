@@ -235,11 +235,12 @@ namespace Character_Morpher
 				data1.abmx.ForceSplitStatus();
 
 				//	Morph_Util.Logger.LogDebug("DATA 1");
-				ctrl.m_data1.Copy(data1);
+				if(cfg.loadInitMorphCharacter.Value)
+					ctrl.m_data1.Copy(data1);
 			}
 			catch(Exception e)
 			{
-				Morph_Util.Logger.Log(Error | Message, $"Could not load PluginData:\n{e}\n");
+				Logger.Log(Error | Message, $"Could not load PluginData:\n{e}\n");
 				return null;
 			}
 
@@ -254,23 +255,34 @@ namespace Character_Morpher
 
 			try
 			{
+
 				if(!ctrl.m_data2.abmx.isSplit) throw new Exception("Target card data was not fully initialized");
 
-				data.data[DataKeys[((int)LoadDataType.Enable)]] = LZ4MessagePackSerializer.Serialize(ctrl.morphEnable, CompositeResolver.Instance);
-				data.data[DataKeys[((int)LoadDataType.EnableABMX)]] = LZ4MessagePackSerializer.Serialize(ctrl.morphEnableABMX, CompositeResolver.Instance);
-				data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]] = LZ4MessagePackSerializer.Serialize(true, CompositeResolver.Instance);
+				byte[] check;
+				bool pass = true;
+				data.data[DataKeys[((int)LoadDataType.Enable)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.morphEnable, CompositeResolver.Instance);
+				pass &= check.IsNullOrEmpty();
+				data.data[DataKeys[((int)LoadDataType.EnableABMX)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.morphEnableABMX, CompositeResolver.Instance);
+				pass &= check.IsNullOrEmpty();
+				data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]] = check = LZ4MessagePackSerializer.Serialize(true, CompositeResolver.Instance);
+				pass &= check.IsNullOrEmpty();
 
-				data.data[DataKeys[((int)LoadDataType.Values)]] = LZ4MessagePackSerializer.Serialize(ctrl.controls, CompositeResolver.Instance);
-				data.data[DataKeys[((int)LoadDataType.TargetCard)]] = LZ4MessagePackSerializer.Serialize(ctrl.m_data2, CompositeResolver.Instance);
+				data.data[DataKeys[((int)LoadDataType.Values)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.controls, CompositeResolver.Instance);
+				pass &= check.IsNullOrEmpty();
+				data.data[DataKeys[((int)LoadDataType.TargetCard)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.m_data2, CompositeResolver.Instance);
+				pass &= check.IsNullOrEmpty();
 
 				if(ctrl.m_data2.main.pngData.IsNullOrEmpty()) throw new Exception("png data does not exist...");
-				data.data[DataKeys[((int)LoadDataType.TargetPng)]] = ctrl.m_data2.main.pngData;
-				data.data[DataKeys[((int)LoadDataType.OrigSize)]] = LZ4MessagePackSerializer.Serialize(ctrl.m_data1, CompositeResolver.Instance);
+				data.data[DataKeys[((int)LoadDataType.TargetPng)]] = check = ctrl.m_data2.main.pngData;
+				pass &= check.IsNullOrEmpty();
+				data.data[DataKeys[((int)LoadDataType.OrigSize)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.m_data1, CompositeResolver.Instance);
+				pass &= check.IsNullOrEmpty();
 
+				if(!pass) throw new ArgumentException("there was no data in one or more parameters");
 			}
 			catch(Exception e)
 			{
-				Morph_Util.Logger.Log(Error | Message, $"Could not save PluginData: \n {e} ");
+				Logger.Log(Error | Message, $"Could not save PluginData: \n {e} ");
 				return null;
 			}
 
@@ -440,6 +452,7 @@ namespace Character_Morpher
 			}
 
 		}
+
 		[Serializable]
 		public class OldMorphData
 		{

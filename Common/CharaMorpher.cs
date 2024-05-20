@@ -106,7 +106,7 @@ namespace Character_Morpher
 		// Avoid changing GUID unless absolutely necessary. Plugins that rely on your plugin will no longer recognize it, and if you use it in function controllers you will lose all data saved to cards before the change!
 		public const string ModName = "Character Morpher";
 		public const string GUID = "prolo.chararmorpher";//never change this
-		public const string Version = "1.2.1.3";
+		public const string Version = "1.2.1.5";
 
 		public const string strDiv = ":";
 		public const string defaultStr = "(Default)" + strDiv;
@@ -230,7 +230,7 @@ namespace Character_Morpher
 						$"or the use of an incorrect version\n" +
 						$"{ABMXDependency}");
 
-				
+
 
 			}
 
@@ -2072,10 +2072,11 @@ namespace Character_Morpher
 			//ImageConversion.LoadImage
 			if(cfg.debug.Value)
 				Logger.LogDebug("loading extended data...");
+		
 			var tmp = CharaMorpher_GUI.MorphLoadToggle ? saveLoad.Load(ctrl, data) : null;
+			
 			if(cfg.debug.Value)
 				Logger.LogDebug("extended data loaded");
-
 
 			return tmp;
 		}
