@@ -1069,7 +1069,7 @@ namespace Character_Morpher
 
 			try
 			{
-			MorphValuesUpdate(false, replace: true, abmx: MergeABMXLists(null, data), data2: data, async: false);
+				MorphValuesUpdate(false, replace: true, abmx: MergeABMXLists(null, data), data2: data, async: false);
 
 			}
 			catch { }
@@ -1678,7 +1678,7 @@ namespace Character_Morpher
 
 
 
-							if(ending1 == "_l" || ending1 == "_r" || Regex.IsMatch(ending2 , @"l_\d\d") || Regex.IsMatch(ending2 , @"r_\d\d"))
+							if(ending1 == "_l" || ending1 == "_r" || Regex.IsMatch(ending2, @"l_\d\d") || Regex.IsMatch(ending2, @"r_\d\d"))
 								content = content.Substring(0, content.LastIndexOf(((ending1 == "_l" || ending1 == "_r") ? ending1 : ending2)));
 
 #if KOI_API

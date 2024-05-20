@@ -34,7 +34,7 @@ using ChaCustom;
 
 using static Character_Morpher.CharaMorpher_Core;
 using static KKAPI.Maker.MakerAPI;
-using static KKAPI.Studio.StudioAPI; 
+using static KKAPI.Studio.StudioAPI;
 
 namespace Character_Morpher
 {
