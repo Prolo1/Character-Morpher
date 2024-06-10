@@ -107,6 +107,7 @@ namespace Character_Morpher
 		public const string ModName = "Character Morpher";
 		public const string GUID = "prolo.chararmorpher";//never change this
 		public const string Version = "1.2.1.5";
+		private const bool testing = false;
 
 		public const string strDiv = ":";
 		public const string defaultStr = "(Default)" + strDiv;
@@ -149,6 +150,7 @@ namespace Character_Morpher
 			public ConfigEntry<bool> preferCardMorphDataGame { set; get; }
 			public ConfigEntry<bool> loadInitMorphCharacter { set; get; }
 			public ConfigEntry<bool> onlyMorphCharWithDataInGame { set; get; }
+			public ConfigEntry<bool> enableTooltips { set; get; }
 			public ConfigEntry<bool> nukeStudio { set; get; }
 			public ConfigEntry<string> resetToOrigShapeBtn { set; get; }
 
@@ -316,7 +318,7 @@ namespace Character_Morpher
 					   },
 				   });
 
-
+				MorphSliderData.CreateTypeConverter();
 			}
 
 
@@ -388,6 +390,10 @@ namespace Character_Morpher
 				new ConfigDescription("Allows the mod to use data from card instead of default data " +
 				"(If false card uses default Morph card data) \nNote: the image will go dark if using card data", null,
 				new ConfigurationManagerAttributes { Order = --index, Category = mainx })),
+				enableTooltips = Config.Bind(main, "Enable Tooltips", true,
+				new ConfigDescription("Enables tooltips in Maker and Studio so you can see whatever the hell these buttons do", null,
+				new ConfigurationManagerAttributes { Order = --index, Category = mainx })),
+
 				loadInitMorphCharacter = Config.Bind(main, "Load Init. Character", true,
 				new ConfigDescription("If the character had extra work done to it before it was saved, " +
 				"when loaded you will see those changes", null,
@@ -540,13 +546,17 @@ namespace Character_Morpher
 				new ConfigurationManagerAttributes { Order = --index, Category = advx, IsAdvanced = true })),
 			};
 
-			bool testing = true;
 			//Advanced
 			{
 
 				cfg.debug.ConfigDefaulter();
 
-				cfg.makerViewportUISpace = Config.Bind(adv, "Viewport UI Space", .73f,
+				cfg.makerViewportUISpace = Config.Bind(adv, "Viewport UI Space",
+#if HONEY_API
+					.73f,
+#elif KOI_API
+					.86f,
+#endif
 					new ConfigDescription("Increase / decrease the Fashion Line viewport size ",
 					new AcceptableValueRange<float>(0, 1),
 					new ConfigurationManagerAttributes()
@@ -1262,31 +1272,31 @@ namespace Character_Morpher
 			public int GetHashCode(ConfigDefinition obj) => obj.GetHashCode();
 		}
 
-		public static T FirstOrNull<T>(this IEnumerable<T> enu)
+		public static T FirstOrNull<T>(this IEnumerable<T> enu) where T : class
 		{
 			//I love loopholes 🤣
 			try
-			{ return enu.Count() > 0 ? enu.First() : (T)(object)null; }
-			catch { return (T)(object)null; }
+			{ return enu.Count() > 0 ? enu.First() : null; }
+			catch { return null; }
 		}
-		public static T FirstOrNull<T>(this IEnumerable<T> enu, Func<T, bool> predicate)
+		public static T FirstOrNull<T>(this IEnumerable<T> enu, Func<T, bool> predicate) where T : class
 		{
 			//I love loopholes 🤣
 			try
-			{ return enu.Count() > 0 ? enu.First(predicate) : (T)(object)null; }
-			catch { return (T)(object)null; }
+			{ return enu.Count() > 0 ? enu.First(predicate) : null; }
+			catch { return null; }
 		}
-		public static T LastOrNull<T>(this IEnumerable<T> enu)
+		public static T LastOrNull<T>(this IEnumerable<T> enu) where T : class
 		{
 			try
-			{ return enu.Count() > 0 ? enu.Last() : (T)(object)null; }
-			catch { return (T)(object)null; }
+			{ return enu.Count() > 0 ? enu.Last() : null; }
+			catch { return null; }
 		}     //I love loopholes 🤣
-		public static T LastOrNull<T>(this IEnumerable<T> enu, Func<T, bool> predicate)
+		public static T LastOrNull<T>(this IEnumerable<T> enu, Func<T, bool> predicate) where T : class
 		{
 			try
-			{ return enu.Count() > 0 ? enu.Last(predicate) : (T)(object)null; }
-			catch { return (T)(object)null; }
+			{ return enu.Count() > 0 ? enu.Last(predicate) : null; }
+			catch { return null; }
 		}   //I love loopholes 🤣
 
 		public static bool InRange<T>(this IEnumerable<T> list, int index) => index >= 0 && index < list.Count();
@@ -2037,9 +2047,9 @@ namespace Character_Morpher
 		/// <returns>An Texture2D created from path if passed, else a black texture</returns>
 		public static Texture2D CreateTexture(this string path, byte[] data = null) =>
 			(!data.IsNullOrEmpty() || !File.Exists(path)) ?
-			data?.LoadTexture(TextureFormat.RGBA32) ?? Texture2D.blackTexture :
+			data?.LoadTexture(TextureFormat.RGBA32) ?? Texture2D.blackTexture.ToTexture2D() :
 			File.ReadAllBytes(path)?.LoadTexture(TextureFormat.RGBA32) ??
-			Texture2D.blackTexture;
+			Texture2D.blackTexture.ToTexture2D();
 
 		/// <summary>
 		/// 
@@ -2072,9 +2082,9 @@ namespace Character_Morpher
 			//ImageConversion.LoadImage
 			if(cfg.debug.Value)
 				Logger.LogDebug("loading extended data...");
-		
+
 			var tmp = CharaMorpher_GUI.MorphLoadToggle ? saveLoad.Load(ctrl, data) : null;
-			
+
 			if(cfg.debug.Value)
 				Logger.LogDebug("extended data loaded");
 
@@ -2326,7 +2336,7 @@ namespace Character_Morpher
 			var ctrlObj = gui.ControlObject;
 
 			var scrollRect = ctrlObj.GetComponentInParent<ScrollRect>();
-			var par = ctrlObj.GetComponentInParent<ScrollRect>().transform;
+			var par = scrollRect.transform;
 
 
 			if(cfg.debug.Value) Logger.LogDebug("Parent: " + par);
@@ -2389,7 +2399,7 @@ namespace Character_Morpher
 					.LastOrNull((elem) => elem.GetComponent<HorizontalLayoutGroup>())?.transform.parent ??
 					GameObject.Instantiate<GameObject>(new GameObject("LayoutElement"), par)?.transform;
 
-				layoutObj = par = par.gameObject.GetOrAddComponent<RectTransform>().transform;//May need this line (I totally do)
+				layoutObj = par = par.GetOrAddComponent<RectTransform>().transform;//May need this line (I totally do)
 
 
 				//calculate base GameObject sizeing
@@ -2431,7 +2441,13 @@ namespace Character_Morpher
 			}
 
 
-			if(cfg.debug.Value) Logger.LogDebug("setting as first/last");
+
+			//Add layout elements to control object children
+			for(int a = 0; a < ctrlObj.transform.childCount; ++a)
+			{
+				var ele = ctrlObj.transform.GetChild(a).GetOrAddComponent<LayoutElement>();
+				ele.preferredHeight = ele.GetComponent<RectTransform>().rect.height;
+			}
 
 			//remove extra LayoutElements
 			var rList = ctrlObj.GetComponents<LayoutElement>();
@@ -2454,6 +2470,7 @@ namespace Character_Morpher
 			}
 
 			//Set this object's Layout settings
+			if(cfg.debug.Value) Logger.LogDebug("setting as first/last");
 			ctrlObj.transform.SetParent(par, false);
 			ctrlObj.GetComponent<RectTransform>().pivot = new Vector2(0, 1);
 			var apos = ctrlObj.GetComponent<RectTransform>().anchoredPosition; apos.x = 0;
@@ -2521,12 +2538,50 @@ namespace Character_Morpher
 			yield break;
 		}
 
-		static Coroutine resizeco;
-		public static void ResizeCustomUIViewport<T>(this T template, float viewpercent = -1) where T : BaseGuiEntry
+		public static void OnUIEnter<T>(this T gui, UnityAction enterAct) where T : UIBehaviour
+			=> gui.gameObject.OnUIEnter(enterAct);
+		public static void OnUIEnter(this GameObject gui, UnityAction enterAct)
 		{
-			if(viewpercent >= 0 && cfg.makerViewportUISpace.Value != viewpercent)
-				cfg.makerViewportUISpace.Value = viewpercent;
-			viewpercent = cfg.makerViewportUISpace.Value;
+			var tmp = gui.GetOrAddComponent<EventTriggerNoScroll>();
+			tmp.triggers.AddNReturn(new EventTriggerNoScroll.Entry { eventID = EventTriggerType.PointerEnter })
+				.callback.AddListener(_ => enterAct());
+		}
+
+		public static void OnUIExit<T>(this T gui, UnityAction endAct) where T : UIBehaviour
+			=> gui.gameObject.OnUIExit(endAct);
+		public static void OnUIExit(this GameObject gui, UnityAction endAct)
+		{
+			var tmp = gui.GetOrAddComponent<EventTriggerNoScroll>();
+
+			tmp.triggers.AddNReturn(new EventTriggerNoScroll.Entry { eventID = EventTriggerType.PointerExit })
+				.callback.AddListener(_ => endAct());
+		}
+
+
+		public static void OnUIStay<T>(this T gui, UnityAction stayAct, UnityAction enterAct = null, UnityAction endAct = null) where T : UIBehaviour
+			=> gui.gameObject.OnUIStay(stayAct, enterAct, endAct);
+		public static void OnUIStay(this GameObject gui, UnityAction stayAct, UnityAction enterAct = null, UnityAction endAct = null)
+		{
+
+			Coroutine co = null;
+			IEnumerator Func(UnityAction acti)
+			{
+				yield return new WaitWhile(() =>
+				{
+					acti?.Invoke();
+					return true;
+				});
+			}
+			gui.OnUIEnter(() => { enterAct?.Invoke(); co = Instance.StartCoroutine(Func(stayAct)); });
+			gui.OnUIExit(() => { if(co != null) endAct?.Invoke(); Instance.StopCoroutine(co); });
+		}
+
+		static Coroutine resizeco;
+		public static void ResizeCustomUIViewport<T>(this T template, float viewPercent = -1) where T : BaseGuiEntry
+		{
+			if(viewPercent >= 0 && cfg.makerViewportUISpace.Value != viewPercent)
+				cfg.makerViewportUISpace.Value = viewPercent;
+			viewPercent = cfg.makerViewportUISpace.Value;
 
 			if(template != null)
 				template.OnGUIExists((gui) =>
@@ -2544,7 +2599,7 @@ namespace Character_Morpher
 
 						var viewLE = scrollRect.viewport.GetOrAddComponent<LayoutElement>();
 						float vHeight = Mathf.Abs(scrollRect.rectTransform.rect.height);
-						viewLE.minHeight = vHeight * viewpercent;
+						viewLE.minHeight = vHeight * viewPercent;
 
 						LayoutRebuilder.MarkLayoutForRebuild(scrollRect.rectTransform);
 					}
@@ -2559,18 +2614,29 @@ namespace Character_Morpher
 	}
 
 	#region User Classes
+
+	public class PointerEnter : MonoBehaviour, IPointerEnterHandler
+	{
+		public void OnPointerEnter(PointerEventData eventData)
+		{
+		}
+	}
+	public class PointerExit : MonoBehaviour, IPointerExitHandler
+	{
+		public void OnPointerExit(PointerEventData eventData)
+		{
+		}
+	}
 	[Serializable]
 	public class MorphSliderData
 	{
-		public MorphSliderData() { TypeCreator(); }
+		public MorphSliderData() { }
 		public MorphSliderData(string dataName, float data = 0, MorphCalcType calc = MorphCalcType.LINEAR, bool isABMX = false)
 		{
 			this.dataName = dataName;
 			this.data = data;
 			this.calcType = calc;
 			this.isABMX = isABMX;
-
-			TypeCreator();
 		}
 		public string dataName;
 		public float data = 0;
@@ -2578,7 +2644,7 @@ namespace Character_Morpher
 		public MorphCalcType calcType = MorphCalcType.LINEAR;
 		object _lock = new object();
 
-		static void TypeCreator()
+		public static void CreateTypeConverter()
 		{
 			//Adding new Type for Config list!
 			string splitstr = "\\:/";

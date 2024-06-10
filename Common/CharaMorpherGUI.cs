@@ -39,6 +39,8 @@ using static KKAPI.Studio.StudioAPI;
 namespace Character_Morpher
 {
 	using static Character_Morpher.Morph_Util;//leave it here
+											  //	using static Illusion.Utils;
+
 	class CharaMorpher_GUI : MonoBehaviour
 	{
 		#region Classes
@@ -105,7 +107,8 @@ namespace Character_Morpher
 
 		#endregion
 
-		#region Data
+		#region Data 
+		static string tooltip = null;
 
 		#region Main Game
 		private static MakerCategory category;
@@ -141,10 +144,17 @@ namespace Character_Morpher
 		static EventHandler currentControlNameEvent = null;
 		static EventHandler easyMorphOverallEvent = null;
 		static EventHandler easyMorphDefaultingEvent = null;
+		static EventHandler enableTooltipsEvent = null;
 		static UnityAction<string[]> controlSetChangedAct = null;
 		static UnityAction<bool, bool, bool> loadDefaultValues = null;
 
 		private static bool m_morphLoadToggle = true;
+		private static bool m_morphCharaSpecificEnablesToggle = false;
+		public static bool MorphCharaSpecificEnablesToggle
+		{
+			get => !InsideMaker || m_morphCharaSpecificEnablesToggle;
+			private set => m_morphCharaSpecificEnablesToggle = value;
+		}
 		public static bool MorphLoadToggle
 		{
 			get => !InsideMaker || m_morphLoadToggle;
@@ -163,8 +173,45 @@ namespace Character_Morpher
 
 		#endregion
 
+		GUIStyle tmpSty;
 		void OnGUI()
 		{
+			if(MakerAPI.InsideAndLoaded && cfg.enableTooltips.Value && !tooltip.IsNullOrEmpty())
+			{
+				if(tmpSty == null)
+				{
+					var tex = new Texture2D(1, 1);
+					tex.SetPixel(0, 0, new Color(0, 0, 0, .5f));
+					tex.Apply();
+					tmpSty = new GUIStyle(GUI.skin.label)
+					{
+						normal = new GUIStyleState
+						{
+							textColor = Color.cyan,
+							background = tex
+						},
+						wordWrap = true,
+						alignment = TextAnchor.MiddleCenter,
+					};
+				}
+
+				tmpSty.fontSize = 16;
+				var content = GUIContent.Temp(tooltip);
+				var size = new Vector2(winRec.width * .5f, tmpSty.CalcHeight(content, winRec.width * .5f) + 10);
+				var pos = Event.current.mousePosition;
+				pos -= new Vector2(size.x * .5f, size.y + 10);//Copy vector 
+
+				pos.x = ((pos.x + size.x) > winRec.xMax ? winRec.xMax - size.x : pos.x);
+				pos.y = (pos.y < winRec.yMin ? winRec.yMin : pos.y);
+
+				var ymp = new Rect(pos, size);
+				if(tooltip != null)
+				{
+					GUI.Label(ymp, tooltip, tmpSty);
+					Logger.LogInfo($"\nConstraint: {winRec}\nRect info: {ymp}\nTooltip: {tooltip}");
+				}
+			}
+
 			if(!StudioLoaded || !enableStudioUI) return;
 
 			var bgTex = greyTex;
@@ -193,21 +240,35 @@ namespace Character_Morpher
 
 			if(InsideStudio)
 			{
-				OnNewTargetImage.AddListener((str, data) =>
+
+				StudioLoadedChanged += (m, n) =>
 				{
-					morphTex = str?.CreateTexture(data);
+					var obj = new GameObject();
+					obj.AddComponent<CharaMorpher_GUI>();
+					obj.transform.SetAsLastSibling();
+					obj.name = "CharaMorpher_GUI";
 
-					if((!studioMorphCtrl?.IsUsingExtMorphData) ?? true) return;
+					CustomToolbarButtons.AddLeftToolbarToggle
+						(new Texture2D(32, 32),
+						onValueChanged: val =>
+						{
+							enableStudioUI = val;
+							//init = false;
+						}).
+						OnGUIExists(gui =>
+						{
+							//Toggle image bi-pass
+							iconBG.filterMode = FilterMode.Bilinear;
 
+							var btn = gui.ControlObject.GetComponentInChildren<Button>();
+							btn.image.sprite =
+							Sprite.Create(iconBG,
+							new Rect(0, 0, iconBG.width, iconBG.height),
+							Vector2.one * .5f);
 
-					var pix = morphTex.GetPixels();
-					for(var i = 0; i < pix.Length; ++i)
-						pix[i] = pix[i].AlphaMultiplied(.5f);
-					morphTex.SetPixels(pix);
-					morphTex.Apply();
-
-				});
-
+							btn.image.color = Color.white;
+						});
+				};
 
 				#region Init Stuff
 
@@ -364,6 +425,11 @@ namespace Character_Morpher
 
 				Coroutine tmp = null;
 				bool lastUCMD = cfg.preferCardMorphDataMaker.Value;//this is needed
+																   //var allCtrls = (IEnumerable<CharaMorpher_Controller>)null;
+				var selectedCtrls = (IEnumerable<CharaMorpher_Controller>)null;
+				var refcomp = new UnityObjRefEqualsCompare<CharaMorpher_Controller>();//required
+				int skipFrames = 0;
+
 				cfg.preferCardMorphDataMaker.SettingChanged +=
 				lastUCMDEvent = (s, o) =>
 				{
@@ -381,41 +447,23 @@ namespace Character_Morpher
 					tmp = studioMorphCtrl.StartCoroutine(CoUCMD());
 				};
 
+				OnNewTargetImage.AddListener((str, data) =>
+				{
+					morphTex = str?.CreateTexture(data);
+
+					if((!studioMorphCtrl?.IsUsingExtMorphData) ?? true) return;
+
+
+					var pix = morphTex.GetPixels();
+					for(var i = 0; i < pix.Length; ++i)
+						pix[i] = pix[i].AlphaMultiplied(.5f);
+					morphTex.SetPixels(pix);
+					morphTex.Apply();
+
+				});
+
 				#endregion
 
-				StudioLoadedChanged += (m, n) =>
-				{
-					var obj = new GameObject();
-					obj.AddComponent<CharaMorpher_GUI>();
-					obj.transform.SetAsLastSibling();
-					obj.name = "CharaMorpher_GUI";
-
-					CustomToolbarButtons.AddLeftToolbarToggle
-						(new Texture2D(32, 32),
-						onValueChanged: val =>
-						{
-							enableStudioUI = val;
-							//init = false;
-						}).
-						OnGUIExists(gui =>
-						{
-							//Toggle image bi-pass
-							iconBG.filterMode = FilterMode.Bilinear;
-
-							var btn = gui.ControlObject.GetComponentInChildren<Button>();
-							btn.image.sprite =
-							Sprite.Create(iconBG,
-							new Rect(0, 0, iconBG.width, iconBG.height),
-							Vector2.one * .5f);
-
-							btn.image.color = Color.white;
-						});
-				};
-
-				//var allCtrls = (IEnumerable<CharaMorpher_Controller>)null;
-				var selectedCtrls = (IEnumerable<CharaMorpher_Controller>)null;
-				var refcomp = new UnityObjRefEqualsCompare<CharaMorpher_Controller>();//required
-				int skipFrames = 0;
 				//Update Loop
 				customStudioUI.AddListener(() =>
 				{
@@ -442,15 +490,16 @@ namespace Character_Morpher
 						topScrollPos = GUILayout.BeginScrollView(topScrollPos, GUILayout.Height(winRec.height * .20f));
 
 						GUILayout.Label("Enables:");
-						var enable = GUILayout.Toggle(cfg.enable.Value, "Enable");
-						var enableABMX = GUILayout.Toggle(cfg.enableABMX.Value, "Enable ABMX");
-						var charEnable = studioMorphCtrl ? GUILayout.Toggle(studioMorphCtrl.morphEnable, "Chara. Enable") : false;
-						var charEnableABMX = studioMorphCtrl ? GUILayout.Toggle(studioMorphCtrl.morphEnableABMX, "Chara. Enable ABMX") : false;
-						var saveExtData = GUILayout.Toggle(cfg.saveExtData.Value, "Save Ext. Data");
-						var linkOverallABMXSliders = GUILayout.Toggle(cfg.linkOverallABMXSliders.Value, "Link Overall Sliders to ABMX Overall Sliders");
+						var enable = GUILayout.Toggle(cfg.enable.Value, GUIContent.Temp("Enable", cfg.enable.Description.Description));
+						var enableABMX = GUILayout.Toggle(cfg.enableABMX.Value, new GUIContent { text = "Enable ABMX", tooltip = cfg.enableABMX.Description.Description });
+						var charEnable = studioMorphCtrl ? GUILayout.Toggle(studioMorphCtrl.morphEnable, new GUIContent { text = "Chara. Enable", tooltip = "Character specific enable button (gets saved with card)" }) : false;
+						var charEnableABMX = studioMorphCtrl ? GUILayout.Toggle(studioMorphCtrl.morphEnableABMX, new GUIContent { text = "Chara. Enable ABMX", tooltip = "Character specific enable ABMX button (gets saved with card)" }) : false;
+						var saveExtData = GUILayout.Toggle(cfg.saveExtData.Value, new GUIContent { text = "Save Ext. Data", tooltip = cfg.saveExtData.Description.Description });
+						var linkOverallABMXSliders = GUILayout.Toggle(cfg.linkOverallABMXSliders.Value, new GUIContent { text = "Link Overall Sliders to ABMX Overall Sliders", tooltip = cfg.linkOverallABMXSliders.Description.Description });
 
-						var preferCardMorphDataMaker = GUILayout.Toggle(cfg.preferCardMorphDataMaker.Value, "Use Card Morph Data");
-						var loadInitMorphCharacter = GUILayout.Toggle(cfg.loadInitMorphCharacter.Value, "Load Init. Character");
+						var preferCardMorphDataMaker = GUILayout.Toggle(cfg.preferCardMorphDataMaker.Value, new GUIContent { text = "Use Card Morph Data", tooltip = cfg.preferCardMorphDataMaker.Description.Description });
+						var loadInitMorphCharacter = GUILayout.Toggle(cfg.loadInitMorphCharacter.Value, new GUIContent { text = "Load Init. Character", tooltip = cfg.loadInitMorphCharacter.Description.Description });
+						var enableTooltip = GUILayout.Toggle(cfg.enableTooltips.Value, GUIContent.Temp("Enable Tooltips", cfg.enableTooltips.Description.Description));
 
 						//Update checks
 						{
@@ -491,6 +540,9 @@ namespace Character_Morpher
 
 							if(loadInitMorphCharacter != cfg.loadInitMorphCharacter.Value)
 								cfg.loadInitMorphCharacter.Value = loadInitMorphCharacter;
+
+							if(enableTooltip != cfg.enableTooltips.Value)
+								cfg.enableTooltips.Value = enableTooltip;
 						}
 
 						GUILayout.EndScrollView();
@@ -709,9 +761,13 @@ namespace Character_Morpher
 
 						GUILayout.EndVertical();
 
+
 						init = true;//initial run complete
 					}
 					catch(Exception e) { Morph_Util.Logger.LogError(e); }
+
+					if(cfg.enableTooltips.Value)
+						IMGUIUtils.DrawTooltip(winRec, (int)(winRec.width * .75f));
 				});
 
 			}
@@ -734,6 +790,12 @@ namespace Character_Morpher
 				MakerBaseLoaded += (s, e) => { AddCharaMorpherMenu(e); };
 				MakerFinishedLoading += (s, e) =>
 				{
+					var obj = new GameObject();
+					obj.AddComponent<CharaMorpher_GUI>();
+					obj.transform.SetAsLastSibling();
+					obj.name = "CharaMorpher_GUI";
+
+
 					var allCvs =
 
 #if HONEY_API
@@ -831,6 +893,8 @@ namespace Character_Morpher
 				cfg.easyMorphBtnOverallSet.SettingChanged -= easyMorphOverallEvent;
 			if(easyMorphDefaultingEvent != null)
 				cfg.easyMorphBtnEnableDefaulting.SettingChanged -= easyMorphDefaultingEvent;
+			if(enableTooltipsEvent != null)
+				cfg.enableTooltips.SettingChanged -= enableTooltipsEvent;
 
 			if(controlSetChangedAct != null)
 				OnInternalControlListChanged.RemoveListener(controlSetChangedAct);
@@ -847,18 +911,53 @@ namespace Character_Morpher
 
 			var inst = Instance;
 
-			if(GetMakerSex() == 0 && !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
+			//	if(GetMakerSex() != 0 || !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
+
+			Rect getContainerRect(BaseGuiEntry gui)
+			{
+				Rect tmp = new Rect(gui.ControlObject.GetComponentInParent<ScrollRect>().rectTransform.rect);
+				tmp.position = gui.ControlObject.GetComponentInParent<ScrollRect>().rectTransform.position;
+				tmp.y = Screen.height - (tmp.yMax);
+
+				return tmp;
+			}
+
+			void tooltipMsg(string msg, BaseGuiEntry gui)
+			{
+				var trans = gui.ControlObject.transform;
+				var obj = trans.GetChild(trans.childCount - 1);
+
+				gui.ControlObject.OnUIEnter(() =>
+				{
+					tooltip = msg;
+					winRec = getContainerRect(gui);
+				});
+				gui.ControlObject.OnUIExit(() => tooltip = null);
+			}
 
 			#region Load Toggles
 
-			e.AddLoadToggle(new MakerLoadToggle("Chara Morph."))
+			e.AddLoadToggle(new MakerLoadToggle("Chara Morph.", initialValue: MorphLoadToggle))
 				.OnGUIExists((gui) =>
 				{
-					var tgl = (MakerLoadToggle)gui;
-					tgl.ValueChanged.Subscribe((b) => MorphLoadToggle = b);
+					tooltipMsg("Allows the morph data to be read by mod. If disabled, card will be loaded like normal", gui);
 
-					MorphLoadToggle = tgl.Value;
+					gui.ValueChanged.Subscribe((b) => MorphLoadToggle = b);
+					MorphLoadToggle = gui.Value;
 				});
+
+			e.AddLoadToggle(new MakerLoadToggle("Chara Morph. \nSpecific Enables", initialValue: MorphCharaSpecificEnablesToggle))
+				.OnGUIExists((gui) =>
+				{
+					tooltipMsg("Allows the card specific enables to override the current values (off by default to avoid confusion). " +
+						"If disabled, the \"Chara Enable\" options will not be overridden by card data. " +
+						"If \"Chara Morph.\" is disabled this toggle will also be treated as disabled. "
+						, gui);
+
+					gui.ValueChanged.Subscribe((b) => MorphCharaSpecificEnablesToggle = b);
+					MorphCharaSpecificEnablesToggle = gui.Value;
+				});
+
 			#endregion
 
 			#region Enables
@@ -866,9 +965,13 @@ namespace Character_Morpher
 
 			e.AddControl(new MakerToggle(category, "Enable", cfg.enable.Value, Instance))
 			  .OnGUIExists((gui) =>
-			  cfg.enable.SettingChanged +=
-			  enableEvent = (s, o) =>
-			  gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enable.Value))
+			  {
+				  cfg.enable.SettingChanged +=
+				  enableEvent = (s, o) =>
+				  gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enable.Value);
+
+				  tooltipMsg(cfg.enable.Description.Description, gui);
+			  })
 			  ?.BindToFunctionController<CharaMorpher_Controller, bool>(
 				  (ctrl) => cfg.enable.Value,
 				  (ctrl, val) =>
@@ -881,9 +984,14 @@ namespace Character_Morpher
 			if(ABMXDependency.IsInTargetVersionRange)
 				e.AddControl(new MakerToggle(category, "Enable ABMX", cfg.enableABMX.Value, Instance))
 				  .OnGUIExists((gui) =>
-				  cfg.enableABMX.SettingChanged +=
-				  enableABMXEvent = (s, o) =>
-				  gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableABMX.Value))
+				  {
+					  cfg.enableABMX.SettingChanged +=
+					  enableABMXEvent = (s, o) =>
+					  gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableABMX.Value);
+
+					  tooltipMsg(cfg.enableABMX.Description.Description, gui);
+
+				  })
 				  ?.BindToFunctionController<CharaMorpher_Controller, bool>(
 					  (ctrl) => cfg.enableABMX.Value,
 					  (ctrl, val) =>
@@ -913,6 +1021,9 @@ namespace Character_Morpher
 								ctrl1.Enable = val;
 							ShowEnabledSliders();
 						});
+
+				  tooltipMsg("Character specific enable button (gets saved with card)", gui);
+
 			  });
 
 			if(ABMXDependency.IsInTargetVersionRange)
@@ -934,25 +1045,34 @@ namespace Character_Morpher
 									ctrl1.EnableABMX = val;
 								ShowEnabledSliders();
 							});
+
+
+					  tooltipMsg("Character specific enable ABMX button (gets saved with card)", gui);
 				  });
 
 
 			e.AddControl(new MakerToggle(category, "Save Ext. Data", cfg.saveExtData.Value, Instance))
 			   .OnGUIExists((gui) =>
-			   cfg.saveExtData.SettingChanged +=
-			   saveAsMorphDataEvent = (s, o) =>
-			   gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.saveExtData.Value)
-		  ).BindToFunctionController<CharaMorpher_Controller, bool>
-		  ((ctrl) => cfg.saveExtData.Value,
-		  (ctrl, val) => { if(val != cfg.saveExtData.Value) cfg.saveExtData.Value = val; });
+			   {
+				   cfg.saveExtData.SettingChanged +=
+				   saveAsMorphDataEvent = (s, o) =>
+				   gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.saveExtData.Value);
+
+				   tooltipMsg(cfg.saveExtData.Description.Description, gui);
+			   }).BindToFunctionController<CharaMorpher_Controller, bool>
+			   ((ctrl) => cfg.saveExtData.Value,
+			   (ctrl, val) => { if(val != cfg.saveExtData.Value) cfg.saveExtData.Value = val; });
 
 
 			e.AddControl(new MakerToggle(category, "Link Overall Sliders to ABMX Overall Sliders", cfg.linkOverallABMXSliders.Value, Instance))
 			  .OnGUIExists((gui) =>
-			  cfg.linkOverallABMXSliders.SettingChanged +=
-			  linkOverallSlidersEvent = (s, o) =>
-			  gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.linkOverallABMXSliders.Value))
-		  .BindToFunctionController<CharaMorpher_Controller, bool>
+			  {
+				  cfg.linkOverallABMXSliders.SettingChanged +=
+				  linkOverallSlidersEvent = (s, o) =>
+				  gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.linkOverallABMXSliders.Value);
+
+				  tooltipMsg(cfg.linkOverallABMXSliders.Description.Description, gui);
+			  }).BindToFunctionController<CharaMorpher_Controller, bool>
 			  ((ctrl) => cfg.linkOverallABMXSliders.Value,
 			  (ctrl, val) =>
 			  {
@@ -967,47 +1087,53 @@ namespace Character_Morpher
 
 			var enableQuadManip = e.AddControl(new MakerToggle(category, "Enable Calculation Types", cfg.enableCalcTypes.Value, Instance))
 				.OnGUIExists((gui) =>
+				{
 					cfg.enableCalcTypes.SettingChanged +=
 					enableCalcTypesEvent = (s, o) =>
-					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableCalcTypes.Value)
+					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.enableCalcTypes.Value);
+
+					tooltipMsg(cfg.enableCalcTypes.Description.Description, gui);
+				}
 				);
 
-			e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.preferCardMorphDataMaker.Value, Instance))
-				.OnGUIExists((gui) =>
-				{
-					gui?.ValueChanged?.Subscribe((_1) =>
+			_ = e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.preferCardMorphDataMaker.Value, Instance))
+						.OnGUIExists((gui) =>
+						{
+							gui?.ValueChanged?.Subscribe((_1) =>
 					{
 						if(cfg.preferCardMorphDataMaker.Value != _1)
 							cfg.preferCardMorphDataMaker.Value = _1;
 					});
 
-					Coroutine tmp = null;
-					bool lastUCMD = cfg.preferCardMorphDataMaker.Value;//this is needed
-					cfg.preferCardMorphDataMaker.SettingChanged +=
-					lastUCMDEvent = (s, o) =>
-					{
+							Coroutine tmp = null;
+							bool lastUCMD = cfg.preferCardMorphDataMaker.Value;//this is needed
+							cfg.preferCardMorphDataMaker.SettingChanged +=
+							lastUCMDEvent = (s, o) =>
+							{
 
-						var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>()?.First();
+								var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>()?.First();
 
-						IEnumerator CoUCMD()
-						{
+								IEnumerator CoUCMD()
+								{
 
-							yield return ctrl.StartCoroutine(CoUCMDCommon(ctrl, lastUCMD));
+									yield return ctrl.StartCoroutine(CoUCMDCommon(ctrl, lastUCMD));
 
-							lastUCMD = cfg.preferCardMorphDataMaker.Value;//this is needed
+									lastUCMD = cfg.preferCardMorphDataMaker.Value;//this is needed
 
-							gui?.SetValue(cfg.preferCardMorphDataMaker.Value);
+									gui?.SetValue(cfg.preferCardMorphDataMaker.Value);
 
-							yield break;
-						}
+									yield break;
+								}
 
-						if(tmp != null)
-							ctrl.StopCoroutine(tmp);
-						tmp = ctrl.StartCoroutine(CoUCMD());
-					};
-				});
+								if(tmp != null)
+									ctrl.StopCoroutine(tmp);
+								tmp = ctrl.StartCoroutine(CoUCMD());
+							};
 
-			e.AddControl(new MakerToggle(category, "Load Init. Character", cfg.loadInitMorphCharacter.Value, Instance))
+							tooltipMsg(cfg.preferCardMorphDataMaker.Description.Description, gui);
+						});
+
+			_ = e.AddControl(new MakerToggle(category, "Load Init. Character", cfg.loadInitMorphCharacter.Value, Instance))
 				.OnGUIExists((gui) =>
 				{
 					var tgl = (MakerToggle)gui;
@@ -1024,6 +1150,15 @@ namespace Character_Morpher
 					loadInitMorphCharacterEvent += (m, n) =>
 					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.loadInitMorphCharacter.Value);
 
+					tooltipMsg(cfg.loadInitMorphCharacter.Description.Description, gui);
+				});
+
+			e.AddControl(new MakerToggle(category, "Enable Tooltips", cfg.enableTooltips.Value, Instance))
+				.OnGUIExists(gui =>
+				{
+					cfg.enableTooltips.SettingChanged +=
+					enableTooltipsEvent = (m, n) =>
+					gui.ControlObject.GetComponent<Toggle>().Set(cfg.enableTooltips.Value);
 				});
 
 			e.AddControl(new MakerButton("Reset To Original Shape", category, Instance))
@@ -1036,6 +1171,7 @@ namespace Character_Morpher
 						var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().First();
 						ctrl.ResetOriginalShape();
 					});
+					tooltipMsg("resets shape of character to how it looked when disabled (will not change morph values)", gui);
 				});
 
 			e.AddControl(new MakerSeparator(category, Instance));
@@ -1324,12 +1460,12 @@ namespace Character_Morpher
 
 			enableQuadManip?.BindToFunctionController<CharaMorpher_Controller, bool>(
 				(ctrl) => cfg.enableCalcTypes.Value,
-				(ctrl, val) =>
-				{
-					if(val != cfg.enableCalcTypes.Value)
-						cfg.enableCalcTypes.Value = val;
-					ShowEnabledSliders();
-				});
+						(ctrl, val) =>
+						{
+							if(val != cfg.enableCalcTypes.Value)
+								cfg.enableCalcTypes.Value = val;
+							ShowEnabledSliders();
+						});
 
 			ShowEnabledSliders();
 			#endregion

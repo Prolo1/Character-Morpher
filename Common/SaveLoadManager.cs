@@ -194,11 +194,13 @@ namespace Character_Morpher
 
 				if(png == null) throw new Exception("png data does not exist...");
 
-				ctrl.morphEnable = LZ4MessagePackSerializer.Deserialize<bool>
-					((byte[])data.data[DataKeys[((int)LoadDataType.Enable)]], CompositeResolver.Instance);
+				if(CharaMorpher_GUI.MorphCharaSpecificEnablesToggle)
+					ctrl.morphEnable = LZ4MessagePackSerializer.Deserialize<bool>
+						((byte[])data.data[DataKeys[((int)LoadDataType.Enable)]], CompositeResolver.Instance);
 
-				ctrl.morphEnableABMX = LZ4MessagePackSerializer.Deserialize<bool>
-					((byte[])data.data[DataKeys[((int)LoadDataType.EnableABMX)]], CompositeResolver.Instance);
+				if(CharaMorpher_GUI.MorphCharaSpecificEnablesToggle)
+					ctrl.morphEnableABMX = LZ4MessagePackSerializer.Deserialize<bool>
+						((byte[])data.data[DataKeys[((int)LoadDataType.EnableABMX)]], CompositeResolver.Instance);
 
 
 				var values = LZ4MessagePackSerializer.Deserialize<MorphControls>

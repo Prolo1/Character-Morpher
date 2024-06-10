@@ -109,8 +109,10 @@ namespace Character_Morpher
 			get => cfg.enable.Value && morphEnable;
 			set
 			{
+				bool check = value != morphEnable;
+
 				morphEnable = value;
-				if(IsInitLoadFinished)
+				if(IsInitLoadFinished && check)
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
 			}
@@ -121,8 +123,10 @@ namespace Character_Morpher
 			get => cfg.enableABMX.Value && morphEnableABMX;
 			set
 			{
+				bool check = value != morphEnableABMX;
+
 				morphEnableABMX = value;
-				if(IsInitLoadFinished)
+				if(IsInitLoadFinished && check)
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(CoMorphChangeUpdate(delay: a));//this may be necessary (it is)
 			}
@@ -759,14 +763,16 @@ namespace Character_Morpher
 
 			//make sure to save current controls
 			SoftSaveControls(true, false);
-
+			//	bool en=morphEnable, enAbmx=morphEnableABMX;
 			//clear data 
 			{
 				if(cfg.debug.Value) Morph_Util.Logger.LogDebug("clear data");
 				m_data1.Clear();
 				m_data2.Clear();
 				//ctrls1 = null;
-				morphEnable = morphEnableABMX = false;
+
+
+				//	morphEnable = morphEnableABMX = false;
 				ctrls2 = null;
 				m_extData = null;
 				m_initalData.Clear();
@@ -818,8 +824,8 @@ namespace Character_Morpher
 				for(int a = -1; a < delayFrames; ++a)
 					yield return null;
 
-				morphEnable = !StudioAPI.InsideStudio;
-				morphEnableABMX = true;
+				//morphEnable = !StudioAPI.InsideStudio;
+				//morphEnableABMX = true;
 
 				MorphTargetUpdate();
 
@@ -842,7 +848,7 @@ namespace Character_Morpher
 							StartCoroutine(CoResetOriginalBody((int)cfg.multiUpdateEnableTest.Value + a + 1, data: m_initalData));
 				}
 
-				if(m_extData != null && !MakerAPI.InsideMaker)
+				if(m_extData != null && (MakerAPI.InsideMaker || StudioAPI.InsideStudio))
 					CharaMorpher_Core.Logger.LogMessage("Character Morph Data found in this card!");
 
 
