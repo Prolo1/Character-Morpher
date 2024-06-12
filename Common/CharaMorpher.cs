@@ -106,7 +106,7 @@ namespace Character_Morpher
 		// Avoid changing GUID unless absolutely necessary. Plugins that rely on your plugin will no longer recognize it, and if you use it in function controllers you will lose all data saved to cards before the change!
 		public const string ModName = "Character Morpher";
 		public const string GUID = "prolo.chararmorpher";//never change this
-		public const string Version = "1.2.1.5";
+		public const string Version = "1.2.1.6";
 		private const bool testing = false;
 
 		public const string strDiv = ":";

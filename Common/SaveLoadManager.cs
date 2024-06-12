@@ -23,7 +23,7 @@ using AIChara;
 //using CharaCustom;
 //using AIProject;
 #elif KK
-//using UniRx;
+using UniRx;
 #else
 //using ChaCustom;
 //using static ChaFileDefine;
