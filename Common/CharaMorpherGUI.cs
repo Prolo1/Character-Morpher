@@ -35,6 +35,7 @@ using ChaCustom;
 using static Character_Morpher.CharaMorpher_Core;
 using static KKAPI.Maker.MakerAPI;
 using static KKAPI.Studio.StudioAPI;
+using Studio;
 
 namespace Character_Morpher
 {
@@ -174,7 +175,7 @@ namespace Character_Morpher
 		#endregion
 
 		GUIStyle tmpSty;
-		void OnGUI()
+		internal void OnGUI()
 		{
 			if(MakerAPI.InsideAndLoaded && cfg.enableTooltips.Value && !tooltip.IsNullOrEmpty())
 			{
@@ -208,7 +209,7 @@ namespace Character_Morpher
 				if(tooltip != null)
 				{
 					GUI.Label(ymp, tooltip, tmpSty);
-					Logger.LogInfo($"\nConstraint: {winRec}\nRect info: {ymp}\nTooltip: {tooltip}");
+					//		Logger.LogInfo($"\nConstraint: {winRec}\nRect info: {ymp}\nTooltip: {tooltip}");
 				}
 			}
 
@@ -238,16 +239,21 @@ namespace Character_Morpher
 		{
 			Cleanup();
 
+			void OnLoad(object m, EventArgs n)
+			{
+				var obj = new GameObject();
+				obj.AddComponent<CharaMorpher_GUI>();
+				obj.transform.SetAsLastSibling();
+				obj.name = "CharaMorpher_GUI";
+			};
+			StudioLoadedChanged += OnLoad;
+			MakerBaseLoaded += OnLoad;
+
 			if(InsideStudio)
 			{
 
 				StudioLoadedChanged += (m, n) =>
 				{
-					var obj = new GameObject();
-					obj.AddComponent<CharaMorpher_GUI>();
-					obj.transform.SetAsLastSibling();
-					obj.name = "CharaMorpher_GUI";
-
 					CustomToolbarButtons.AddLeftToolbarToggle
 						(new Texture2D(32, 32),
 						onValueChanged: val =>
@@ -269,6 +275,7 @@ namespace Character_Morpher
 							btn.image.color = Color.white;
 						});
 				};
+
 
 				#region Init Stuff
 
@@ -790,10 +797,6 @@ namespace Character_Morpher
 				MakerBaseLoaded += (s, e) => { AddCharaMorpherMenu(e); };
 				MakerFinishedLoading += (s, e) =>
 				{
-					var obj = new GameObject();
-					obj.AddComponent<CharaMorpher_GUI>();
-					obj.transform.SetAsLastSibling();
-					obj.name = "CharaMorpher_GUI";
 
 
 					var allCvs =
@@ -810,21 +813,18 @@ namespace Character_Morpher
 					boobCustom = (CvsB_ShapeBreast)allCvs.FirstOrNull((p) => p.cvsBase is CvsB_ShapeBreast)?.cvsBase;
 					charaCustom = (CvsO_Type)allCvs.FirstOrNull((p) => p.cvsBase is CvsO_Type)?.cvsBase;
 
-
+					//Force the floating settings window to show up
+					var btn = allCvs?.FirstOrNull(p => p?.btnItem?.gameObject?.GetTextFromTextComponent() == displayName).btnItem;
+					btn?.onClick?.AddListener(() => GetMakerBase().drawMenu.ChangeMenuFunc());
+ 
 #else
-				0;//don't remove this!
+					0;//don't remove this!
 					bodyCustom = (CvsBodyShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsBodyShapeAll))[0];
 					faceCustom = (CvsFaceShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsFaceShapeAll))[0];
 					boobCustom = (CvsBreast)Resources.FindObjectsOfTypeAll(typeof(CvsBreast))[0];
 					charaCustom = (CvsChara)Resources.FindObjectsOfTypeAll(typeof(CvsChara))[0];
 #endif
 
-#if HONEY_API
-					//Force the floating settings window to show up
-
-					var btn = allCvs?.FirstOrNull(p => p?.btnItem?.gameObject?.GetTextFromTextComponent() == displayName).btnItem;
-					btn?.onClick?.AddListener(() => GetMakerBase().drawMenu.ChangeMenuFunc());
-#endif
 				};
 				MakerExiting += (s, e) => { Cleanup(); };
 				cfg.sliderExtents.SettingChanged += (m, n) =>
@@ -946,7 +946,7 @@ namespace Character_Morpher
 					MorphLoadToggle = gui.Value;
 				});
 
-			e.AddLoadToggle(new MakerLoadToggle("Chara Morph. \nSpecific Enables", initialValue: MorphCharaSpecificEnablesToggle))
+			e.AddLoadToggle(new MakerLoadToggle("Chara Morph.\nEnables", initialValue: MorphCharaSpecificEnablesToggle))
 				.OnGUIExists((gui) =>
 				{
 					tooltipMsg("Allows the card specific enables to override the current values (off by default to avoid confusion). " +
@@ -1008,19 +1008,16 @@ namespace Character_Morpher
 				  ctrl.ObserveEveryValueChanged(v => v.morphEnable).Subscribe(
 					  val =>
 					  {
-
-						  gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(val);
-						  Morph_Util.Logger.LogMessage($"Chara. {(val ? "Enabled" : "Disabled")}");
+						  gui?.SetValue(val);
+						  Logger.LogMessage($"Chara. Morph {(val ? "Enabled" : "Disabled")}");
 					  });
 
-				  gui?.BindToFunctionController<CharaMorpher_Controller, bool>(
-						(ctrl1) => ctrl1.morphEnable,
-						(ctrl1, val) =>
-						{
-							if(val != ctrl1.morphEnable)
-								ctrl1.Enable = val;
-							ShowEnabledSliders();
-						});
+				  gui.ValueChanged.Subscribe(val =>
+				  {
+					  if(val != ctrl.morphEnable)
+						  ctrl.Enable = val;
+					  ShowEnabledSliders();
+				  });
 
 				  tooltipMsg("Character specific enable button (gets saved with card)", gui);
 
@@ -1034,17 +1031,16 @@ namespace Character_Morpher
 					  ctrl.ObserveEveryValueChanged(v => v.morphEnableABMX).Subscribe(
 						  val =>
 						  {
-							  gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(val);
-							  Morph_Util.Logger.LogMessage($"Chara ABMX {(val ? "Enabled" : "Disabled")}");
+							  gui?.SetValue(val);
+							  Logger.LogMessage($"Chara. Morph ABMX {(val ? "Enabled" : "Disabled")}");
 						  });
-					  gui?.BindToFunctionController<CharaMorpher_Controller, bool>(
-							(ctrl1) => ctrl1.morphEnableABMX,
-							(ctrl1, val) =>
-							{
-								if(val != ctrl1.morphEnableABMX)
-									ctrl1.EnableABMX = val;
-								ShowEnabledSliders();
-							});
+
+					  gui?.ValueChanged.Subscribe(val =>
+					  {
+						  if(val != ctrl.morphEnableABMX)
+							  ctrl.EnableABMX = val;
+						  ShowEnabledSliders();
+					  });
 
 
 					  tooltipMsg("Character specific enable ABMX button (gets saved with card)", gui);
@@ -1136,9 +1132,8 @@ namespace Character_Morpher
 			_ = e.AddControl(new MakerToggle(category, "Load Init. Character", cfg.loadInitMorphCharacter.Value, Instance))
 				.OnGUIExists((gui) =>
 				{
-					var tgl = (MakerToggle)gui;
 
-					tgl.BindToFunctionController<CharaMorpher_Controller, bool>(
+					gui.BindToFunctionController<CharaMorpher_Controller, bool>(
 						(ctrl) => cfg.loadInitMorphCharacter.Value,
 						(ctrl, val) =>
 						{
@@ -1158,7 +1153,9 @@ namespace Character_Morpher
 				{
 					cfg.enableTooltips.SettingChanged +=
 					enableTooltipsEvent = (m, n) =>
-					gui.ControlObject.GetComponent<Toggle>().Set(cfg.enableTooltips.Value);
+					gui.SetValue(cfg.enableTooltips.Value);
+
+					gui.ValueChanged.Subscribe((val) => { cfg.enableTooltips.Value = val; });
 				});
 
 			e.AddControl(new MakerButton("Reset To Original Shape", category, Instance))
@@ -1884,6 +1881,8 @@ namespace Character_Morpher
 
 			}
 			public void ApplyDefault() => DefaultValue = StoreDefault;
+
+
 		}
 
 		public class MorphMakerDropdown : MakerDropdown

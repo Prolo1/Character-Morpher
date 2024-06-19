@@ -53,7 +53,7 @@ namespace Character_Morpher
 #if KOI_API
 
 #if KK
-		
+
 			[HarmonyPrefix]
 			[HarmonyPatch(typeof(SimpleFade), nameof(SimpleFade.FadeSet))]
 			static void OnSceneLoad()
@@ -74,11 +74,12 @@ namespace Character_Morpher
 
 					if(inst._Fade == SimpleFade.Fade.Out)
 						if(!MakerAPI.InsideMaker) UpdateCurrentCharacters();
-					
+
 				}
 
 				Instance?.StartCoroutine(after(__instance));
 			}
+
 
 #else
 
@@ -129,8 +130,8 @@ namespace Character_Morpher
 
 				IEnumerator DelayedPngSet(CharaMorpher_Controller ctrl, byte[] png, byte[] facePng)
 				{
-				//	for(int a = 0; a < 0; ++a)
-				//		yield return null;
+					//	for(int a = 0; a < 0; ++a)
+					//		yield return null;
 
 					ctrl.ChaFileControl.pngData = png ?? ctrl.ChaFileControl.pngData;
 					ctrl.ChaFileControl.facePngData = facePng ?? ctrl.ChaFileControl.facePngData;
@@ -143,7 +144,7 @@ namespace Character_Morpher
 #if !KK
 					if(ctrl.ChaControl.chaFile == __instance)
 #endif
-						Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
+					Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
 				}
 
 			}

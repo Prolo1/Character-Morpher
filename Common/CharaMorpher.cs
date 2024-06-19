@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
+//using System.Threading.Tasks;
 
 using BepInEx;
 using BepInEx.Configuration;
@@ -106,7 +107,7 @@ namespace Character_Morpher
 		// Avoid changing GUID unless absolutely necessary. Plugins that rely on your plugin will no longer recognize it, and if you use it in function controllers you will lose all data saved to cards before the change!
 		public const string ModName = "Character Morpher";
 		public const string GUID = "prolo.chararmorpher";//never change this
-		public const string Version = "1.2.1.6";
+		public const string Version = "1.2.1.7";
 		private const bool testing = false;
 
 		public const string strDiv = ":";
@@ -211,17 +212,23 @@ namespace Character_Morpher
 
 		void Awake()
 		{
+
 			Instance = this;
 			Logger = base.Logger;
 			ForeGrounder.SetCurrentForground();
 
-			System.Runtime.GCSettings.LatencyMode =
 #if KK
-				System.Runtime.GCLatencyMode.LowLatency;
-#else
-				System.Runtime.GCLatencyMode.SustainedLowLatency;
-#endif
+			//load Theraot.Core assembly location
 
+			//try
+			//{
+			//	var loc = Assembly.GetAssembly(typeof(CharaMorpher_Core)).Location.MakeDirPath();
+			//	loc = loc.Substring(0, loc.LastIndexOf('/') + 1) + "Theraot.Core.dll";
+			//	Logger.LogMessage("Location: " + loc);
+			//	AppDomain.CurrentDomain.Load(Assembly.LoadFrom(loc).GetName());
+			//}
+			//catch(Exception e) { Logger.LogError(e); }
+#endif
 
 			//Soft dependency variables
 			{
@@ -231,9 +238,6 @@ namespace Character_Morpher
 						$"absence of [{nameof(KKABMX_Core)}] " +
 						$"or the use of an incorrect version\n" +
 						$"{ABMXDependency}");
-
-
-
 			}
 
 			//Embedded Resources
@@ -1217,6 +1221,7 @@ namespace Character_Morpher
 				Logger.LogMessage($"Switched to new slot [{cfg.currentControlSetName.Value}]");
 			}
 		}
+
 	}
 
 	public static class Morph_Util
@@ -1276,26 +1281,26 @@ namespace Character_Morpher
 		{
 			//I love loopholes 🤣
 			try
-			{ return enu.Count() > 0 ? enu.First() : null; }
+			{ return enu.First(); }
 			catch { return null; }
 		}
 		public static T FirstOrNull<T>(this IEnumerable<T> enu, Func<T, bool> predicate) where T : class
 		{
 			//I love loopholes 🤣
 			try
-			{ return enu.Count() > 0 ? enu.First(predicate) : null; }
+			{ return enu.First(predicate); }
 			catch { return null; }
 		}
 		public static T LastOrNull<T>(this IEnumerable<T> enu) where T : class
 		{
 			try
-			{ return enu.Count() > 0 ? enu.Last() : null; }
+			{ return enu.Last(); }
 			catch { return null; }
 		}     //I love loopholes 🤣
 		public static T LastOrNull<T>(this IEnumerable<T> enu, Func<T, bool> predicate) where T : class
 		{
 			try
-			{ return enu.Count() > 0 ? enu.Last(predicate) : null; }
+			{ return enu.Last(predicate); }
 			catch { return null; }
 		}   //I love loopholes 🤣
 
@@ -2059,12 +2064,13 @@ namespace Character_Morpher
 		/// <returns></returns>
 		public static T OnGUIExists<T>(this T gui, UnityAction<T> act) where T : BaseGuiEntry
 		{
-			if(gui == null) return gui;
+			if(gui == null) return null;
 
 			IEnumerator func(T gui1, UnityAction<T> act1)
 			{
 				if(!gui1.Exists)
-					yield return new WaitUntil(() => gui1.Exists);//the thing needs to exist first
+					while(!gui1.Exists)
+						yield return new WaitForEndOfFrame();//the thing needs to exist first
 
 				act1(gui);
 
@@ -2294,38 +2300,79 @@ namespace Character_Morpher
 			return comp;
 		}
 
-		public static IEnumerable<T> GetComponentsInChildren<T>(this GameObject obj, int depth) =>
-		 obj.GetComponentsInChildren<T>().Attempt((v1) =>
-		(((Component)(object)v1).transform.HierarchyLevelIndex() - obj.transform.HierarchyLevelIndex()) < (depth + 1) ?
-		v1 : (T)(object)((T)(object)null).GetType());
-		public static IEnumerable<T> GetComponentsInChildren<T>(this Component obj, int depth) =>
+
+		public static T GetComponentInParent<T>(this GameObject obj) where T : Component
+		{
+			Transform search = obj.transform;
+			T ans = null;
+			while(search && ans == null)
+			{
+				ans = search.GetComponent<T>();
+				search = search.parent;
+			}
+			return ans;
+		}
+		public static T GetComponentInParent<T>(this Component obj) where T : Component =>
+			GetComponentInParent<T>(obj.gameObject);
+
+		public static T GetOrAddComponent<T>(this Component obj) where T : Component => obj.gameObject.GetOrAddComponent<T>();
+		public static T GetOrAddComponent<T>(this GameObject obj) where T : Component => obj.GetComponent<T>() ?? obj.AddComponent<T>();
+
+		public static IEnumerable<T> GetComponentsInChildren<T>(this GameObject obj, int depth) where T : Component =>
+		 obj.GetComponentsInChildren<T>().Where((v1) =>
+		(((Component)(object)v1).transform.HierarchyLevelIndex() - obj.transform.HierarchyLevelIndex()) < (depth > 0 ? depth + 1 : int.MaxValue));
+		public static IEnumerable<T> GetComponentsInChildren<T>(this Component obj, int depth) where T : Component =>
 			obj.gameObject.GetComponentsInChildren<T>(depth);
 
 		public static int HierarchyLevelIndex(this Transform obj) => obj.parent ? obj.parent.HierarchyLevelIndex() + 1 : 0;
 		public static int HierarchyLevelIndex(this GameObject obj) => obj.transform.HierarchyLevelIndex();
 
-
 		public static T AddToCustomGUILayout<T>(this T gui, bool topUI = false, float pWidth = -1, float viewpercent = -1, bool newVertLine = true) where T : BaseGuiEntry
 		{
-			gui.OnGUIExists(g =>
+#if true //TODO: fix new UI loading in KK
+			gui?.OnGUIExists(g =>
 			{
-				Instance.StartCoroutine(g.AddToCustomGUILayoutCO
-				(topUI, pWidth, viewpercent, newVertLine));
+
+				Instance.StartCoroutine(g.AddToCustomGUILayoutCO(topUI, pWidth, viewpercent, newVertLine));
+
+
+				//await g.AddToCustomGUILayoutCO(topUI, pWidth, viewpercent, newVertLine);
 			});
+#endif
 			return gui;
 		}
 
-		static IEnumerator AddToCustomGUILayoutCO<T>(this T gui, bool topUI = false, float pWidth = -1, float viewpercent = -1, bool newVertLine = true) where T : BaseGuiEntry
+		static IEnumerator AddToCustomGUILayoutCO<T>(this T gui, bool topUI = false, float pWidth = -1, float viewpercent = -1, bool newVertLine = true, GameObject ctrlObj = null) where T : BaseGuiEntry
 		{
 			if(cfg.debug.Value) Logger.LogDebug("moving object");
 
-			yield return new WaitWhile(() => gui?.ControlObject?.GetComponentInParent<ScrollRect>()?.transform == null);
+			ctrlObj = ctrlObj ?? gui.ControlObject;
+
+			//await Func();
+			//async Task Func()
+			//{
+			//	UnityEngine.Debug.Log("We Made it here");
+			//	Logger.LogInfo("Looking for scrollrect?");
+			//	while(ctrlObj?.GetComponentInParent<ScrollRect>() == null)
+			//	{
+			//		await Task.Delay(1000);
+			//		ctrlObj = ctrlObj ?? gui.ControlObject;
+			//	}
+			//	UnityEngine.Debug.Log("We Made it here Too");
+			//	Logger.LogInfo("scrollrect found!!!");
+			//}
+
+			if(!ctrlObj)
+				yield return new WaitWhile(() => GetComponentInParent<ScrollRect>(ctrlObj) == null);
+
+
+
 
 			//	newVertLine = horizontal ? newVertLine : true;
 #if HONEY_API
 			if(gui is MakerText)
 			{
-				var piv = (Vector2)gui.ControlObject?
+				var piv = (Vector2)ctrlObj?
 					.GetComponentInChildren<Text>()?
 					.rectTransform.pivot;
 				piv.x = -.5f;
@@ -2333,16 +2380,17 @@ namespace Character_Morpher
 			}
 #endif
 
-			var ctrlObj = gui.ControlObject;
 
-			var scrollRect = ctrlObj.GetComponentInParent<ScrollRect>();
+			var scrollRect = GetComponentInParent<ScrollRect>(ctrlObj);
 			var par = scrollRect.transform;
 
 
 			if(cfg.debug.Value) Logger.LogDebug("Parent: " + par);
 
+			int countcheck = 0;
 
 			//setup VerticalLayoutGroup
+			if(cfg.debug.Value) Logger.LogDebug("Check: " + ++countcheck);
 			var vlg = scrollRect.gameObject.GetOrAddComponent<VerticalLayoutGroup>();
 
 #if HONEY_API
@@ -2359,6 +2407,7 @@ namespace Character_Morpher
 
 			//This fixes the KOI_API rendering issue & enables scrolling over viewport (not elements tho)
 			//Also a sizing issue in Honey_API
+			if(cfg.debug.Value) Logger.LogDebug("Check: " + ++countcheck);
 #if KOI_API
 			scrollRect.GetComponent<Image>().sprite = scrollRect.content.GetComponent<Image>()?.sprite;
 			scrollRect.GetComponent<Image>().color = (Color)scrollRect.content.GetComponent<Image>()?.color;
@@ -2376,6 +2425,7 @@ namespace Character_Morpher
 #endif
 
 			//Setup LayoutElements 
+			if(cfg.debug.Value) Logger.LogDebug("Check: " + ++countcheck);
 			scrollRect.verticalScrollbar.GetOrAddComponent<LayoutElement>().ignoreLayout = true;
 			scrollRect.content.GetOrAddComponent<LayoutElement>().ignoreLayout = true;
 
@@ -2391,44 +2441,69 @@ namespace Character_Morpher
 			Transform layoutObj = null;
 			//Create  LayoutElement
 			//if(horizontal)
+
+			//Create Layout Element GameObject
+			if(cfg.debug.Value) Logger.LogDebug("Check: " + ++countcheck);
+
+			GameObject CreateGameObject(string name, Transform parent = null)
 			{
-				//Create Layout Element GameObject
+				var tmp = new GameObject(name);
+				tmp.transform.parent = parent;
+				return tmp;
+			}
+
+
+			act1();
+			void act1()
+			{
 				par = newVertLine ?
-					GameObject.Instantiate<GameObject>(new GameObject("LayoutElement"), par)?.transform :
+					CreateGameObject("LayoutElement", par)?.transform :
 					par.GetComponentsInChildren<HorizontalLayoutGroup>(2)
 					.LastOrNull((elem) => elem.GetComponent<HorizontalLayoutGroup>())?.transform.parent ??
-					GameObject.Instantiate<GameObject>(new GameObject("LayoutElement"), par)?.transform;
+					CreateGameObject("LayoutElement", par)?.transform;
+
+				//await Task.Yield();
 
 				layoutObj = par = par.GetOrAddComponent<RectTransform>().transform;//May need this line (I totally do)
+			}
 
 
-				//calculate base GameObject sizeing
-				var ele = par.GetOrAddComponent<LayoutElement>();
-				ele.minWidth = -1;
-				ele.minHeight = -1;
-				ele.preferredHeight = Math.Max(ele?.preferredHeight ?? -1, ctrlObj.GetOrAddComponent<LayoutElement>()?.minHeight ?? ele?.preferredHeight ?? -1);
-				ele.preferredWidth =
+
+			//calculate base GameObject sizeing
+			if(cfg.debug.Value) Logger.LogDebug("Check: " + ++countcheck);
+			var ele = par.GetOrAddComponent<LayoutElement>();
+			ele.minWidth = -1;
+			ele.minHeight = -1;
+			ele.preferredHeight = System.Math.Max(ele?.preferredHeight ?? -1, ctrlObj.GetOrAddComponent<LayoutElement>()?.minHeight ?? ele?.preferredHeight ?? -1);
+			ele.preferredWidth =
 #if HONEY_API
-				scrollRect.GetComponent<RectTransform>().rect.width;
+			scrollRect.GetComponent<RectTransform>().rect.width;
 #else
 				//viewLE.minWidth;
 				0;
 #endif
 
-				par.GetComponentInParent<VerticalLayoutGroup>().CalculateLayoutInputHorizontal();
-				par.GetComponentInParent<VerticalLayoutGroup>().CalculateLayoutInputVertical();
+			var lgtmp = GetComponentInParent<VerticalLayoutGroup>(par.gameObject);
+			lgtmp.CalculateLayoutInputHorizontal();
+			lgtmp.CalculateLayoutInputVertical();
 
 
-				//Create and Set Horizontal Layout Settings
+			//Create and Set Horizontal Layout Settings
+			if(cfg.debug.Value) Logger.LogDebug("Check: " + ++countcheck);
+			act2();
+			void act2()
+			{
 
 				par = par.GetComponentsInChildren<HorizontalLayoutGroup>(2)?
 					.FirstOrNull((elem) => elem.gameObject.GetComponent<HorizontalLayoutGroup>())?.transform ??
 					GameObject.Instantiate<GameObject>(new GameObject("HorizontalLayoutGroup"), par)?.transform;
 				par = par.gameObject.GetOrAddComponent<RectTransform>().transform;//May need this line (I totally do)
 
+				//	await Task.Yield();
 
 				var layout = par.GetOrAddComponent<HorizontalLayoutGroup>();
 
+				//	await Task.Yield();
 
 				layout.childControlWidth = true;
 				layout.childControlHeight = true;
@@ -2437,31 +2512,35 @@ namespace Character_Morpher
 				layout.childAlignment = TextAnchor.MiddleCenter;
 
 				par?.ScaleToParent2D();
-
-			}
-
+			};
 
 
 			//Add layout elements to control object children
+			if(cfg.debug.Value) Logger.LogDebug("Check: " + ++countcheck);
 			for(int a = 0; a < ctrlObj.transform.childCount; ++a)
 			{
-				var ele = ctrlObj.transform.GetChild(a).GetOrAddComponent<LayoutElement>();
+				ele = ctrlObj.transform.GetChild(a).GetOrAddComponent<LayoutElement>();
 				ele.preferredHeight = ele.GetComponent<RectTransform>().rect.height;
 			}
 
 			//remove extra LayoutElements
+			if(cfg.debug.Value) Logger.LogDebug("Check: " + ++countcheck);
 			var rList = ctrlObj.GetComponents<LayoutElement>();
 			for(int a = 1; a < rList.Length; ++a)
 				GameObject.DestroyImmediate(rList[a]);
 
+
+
 			//change child layoutelements
-			foreach(var val in ctrlObj.GetComponentsInChildren<LayoutElement>())
+			if(cfg.debug.Value) Logger.LogDebug("Check: " + ++countcheck);
+			foreach(var val in ctrlObj.GetComponentsInChildren<LayoutElement>(0))
 				if(val.gameObject != ctrlObj)
 					val.flexibleWidth = val.minWidth = val.preferredWidth = -1;
 
 
 			//edit layoutgroups
-			foreach(var val in ctrlObj.GetComponentsInChildren<HorizontalLayoutGroup>())
+			if(cfg.debug.Value) Logger.LogDebug("Check: " + ++countcheck);
+			foreach(var val in ctrlObj.GetComponentsInChildren<HorizontalLayoutGroup>(0))
 			//	if(val.gameObject != ctrlObj)
 			{
 				val.childControlWidth = true;
@@ -2470,6 +2549,7 @@ namespace Character_Morpher
 			}
 
 			//Set this object's Layout settings
+			if(cfg.debug.Value) Logger.LogDebug("Check: " + ++countcheck);
 			if(cfg.debug.Value) Logger.LogDebug("setting as first/last");
 			ctrlObj.transform.SetParent(par, false);
 			ctrlObj.GetComponent<RectTransform>().pivot = new Vector2(0, 1);
@@ -2520,7 +2600,7 @@ namespace Character_Morpher
 #if HONEY_API
 				  pWidth > 0 ? scrollRect.rectTransform.rect.width * pWidth : -1;
 #else
-			//	horizontal && horiScale > 0 ? viewLE.minWidth * horiScale : -1;
+			//	 pWidth > 0 ? scrollRect.rectTransform.rect.width * pWidth : -1;
 			0;
 #endif
 			//thisLE.preferredHeight = ctrlObj.GetComponent<RectTransform>().rect.height;
@@ -2537,6 +2617,7 @@ namespace Character_Morpher
 			LayoutRebuilder.MarkLayoutForRebuild(scrollRect.GetComponent<RectTransform>());
 			yield break;
 		}
+
 
 		public static void OnUIEnter<T>(this T gui, UnityAction enterAct) where T : UIBehaviour
 			=> gui.gameObject.OnUIEnter(enterAct);
@@ -2586,6 +2667,8 @@ namespace Character_Morpher
 			if(template != null)
 				template.OnGUIExists((gui) =>
 				{
+
+
 					IEnumerator func()
 					{
 
@@ -2593,9 +2676,9 @@ namespace Character_Morpher
 						if(ctrlObj == null) yield break;
 
 						yield return new WaitUntil(() =>
-						ctrlObj?.GetComponentInParent<ScrollRect>() != null);
+						GetComponentInParent<ScrollRect>(ctrlObj) != null);
 
-						var scrollRect = ctrlObj?.GetComponentInParent<ScrollRect>();
+						var scrollRect = GetComponentInParent<ScrollRect>(ctrlObj);
 
 						var viewLE = scrollRect.viewport.GetOrAddComponent<LayoutElement>();
 						float vHeight = Mathf.Abs(scrollRect.rectTransform.rect.height);

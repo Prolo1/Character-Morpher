@@ -84,8 +84,8 @@ namespace Character_Morpher
 			}
 		}
 		internal readonly MorphData m_data1 = new MorphData(), m_data2 = new MorphData(), m_initalData = new MorphData();
-		internal bool morphEnable = false;
-		internal bool morphEnableABMX = false;
+		internal bool morphEnable = true;
+		internal bool morphEnableABMX = true;
 		#endregion
 
 		#region public
@@ -747,6 +747,7 @@ namespace Character_Morpher
 		}
 		#endregion
 
+
 		/// <summary>
 		/// Called whenever base character data needs to be updated for calculations
 		/// </summary>
@@ -760,6 +761,8 @@ namespace Character_Morpher
 			var boneCtrl = GetComponent<BoneController>();
 			int val = (int)cfg.reloadTest.Value;
 			var tmpCtrlName = "" + cfg.currentControlSetName.Value;
+
+
 
 			//make sure to save current controls
 			SoftSaveControls(true, false);
@@ -2787,10 +2790,11 @@ namespace Character_Morpher
 			get
 			{
 				_abmxReadModifiers = init ? _abmxReadModifiers : ABMXDependency.IsInTargetVersionRange ?
-			  typeof(BoneController).GetMethod("ReadModifiers",
-			  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
-			  null, new[] { typeof(PluginData) }, null) : null;
-				init = true;
+					typeof(BoneController).GetMethod("ReadModifiers",
+					System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+					null, new[] { typeof(PluginData) }, null) : null;
+
+				init = _abmxReadModifiers != null;
 
 				return _abmxReadModifiers;
 			}
