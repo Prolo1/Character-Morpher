@@ -234,7 +234,7 @@ namespace Character_Morpher
 				bgTex,
 				ScaleMode.StretchToFill);
 		}
-
+		
 		internal static void Initialize()
 		{
 			Cleanup();

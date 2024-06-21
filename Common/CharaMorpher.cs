@@ -51,6 +51,7 @@ using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpher_GUI;
 using static Character_Morpher.Morph_Util;
 using static BepInEx.Logging.LogLevel;
+using UGUI_AssistLibrary;
 //using System.Threading;
 //using System.Threading.Tasks;
 //using Unity.Jobs;
@@ -1169,7 +1170,6 @@ namespace Character_Morpher
 
 		}
 
-
 		void Update()
 		{
 
@@ -2066,6 +2066,22 @@ namespace Character_Morpher
 		{
 			if(gui == null) return null;
 
+#if false
+			if(!gui.Exists)
+			{
+				var ob = gui.ObserveEveryValueChanged(p => p.Exists, FrameCountType.EndOfFrame);
+				var sub = ob.Subscribe(val =>
+				{
+					if(!val) return;
+					act(gui);
+				});
+			}
+			else
+			{
+				act(gui);
+			}
+#else
+			Instance.StartCoroutine(func(gui, act));
 			IEnumerator func(T gui1, UnityAction<T> act1)
 			{
 				if(!gui1.Exists)
@@ -2076,7 +2092,7 @@ namespace Character_Morpher
 
 				yield break;
 			}
-			Instance.StartCoroutine(func(gui, act));
+#endif
 
 			return gui;
 		}
@@ -2365,7 +2381,10 @@ namespace Character_Morpher
 			if(!ctrlObj)
 				yield return new WaitWhile(() => GetComponentInParent<ScrollRect>(ctrlObj) == null);
 
-
+#if KK
+			var rctrl = ctrlObj.GetComponentInParent<UI_RaycastCtrl>();
+			rctrl.Reset();
+#endif
 
 
 			//	newVertLine = horizontal ? newVertLine : true;
@@ -2623,19 +2642,21 @@ namespace Character_Morpher
 			=> gui.gameObject.OnUIEnter(enterAct);
 		public static void OnUIEnter(this GameObject gui, UnityAction enterAct)
 		{
-			var tmp = gui.GetOrAddComponent<EventTriggerNoScroll>();
-			tmp.triggers.AddNReturn(new EventTriggerNoScroll.Entry { eventID = EventTriggerType.PointerEnter })
+			var tmp = gui.GetOrAddComponent<UIAL_EventTrigger>();
+			tmp.triggers.AddNReturn(new UIAL_EventTrigger.Entry { eventID = EventTriggerType.PointerEnter })
 				.callback.AddListener(_ => enterAct());
+
 		}
 
 		public static void OnUIExit<T>(this T gui, UnityAction endAct) where T : UIBehaviour
 			=> gui.gameObject.OnUIExit(endAct);
 		public static void OnUIExit(this GameObject gui, UnityAction endAct)
 		{
-			var tmp = gui.GetOrAddComponent<EventTriggerNoScroll>();
-
-			tmp.triggers.AddNReturn(new EventTriggerNoScroll.Entry { eventID = EventTriggerType.PointerExit })
+			var tmp = gui.GetOrAddComponent<UIAL_EventTrigger>();
+			tmp.triggers.AddNReturn(new UIAL_EventTrigger.Entry { eventID = EventTriggerType.PointerExit })
 				.callback.AddListener(_ => endAct());
+
+
 		}
 
 
