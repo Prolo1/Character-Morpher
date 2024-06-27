@@ -43,61 +43,18 @@ using UniRx;
  all I can think of for now
  */
 
+using ProloAPI;
+using ProloAPI.Extentions;
+
 namespace Character_Morpher
 {
-	using static Character_Morpher.Morph_Util;//leave it here
+	using static CharaMorpher_Core;//leave it here
+								   //using static Utilities;//leave it here
 	using static Character_Morpher.CurrentSaveLoadManager.LoadDataType;
 
-	/// <summary>
-	/// saves controls from current data. 
-	/// Note: make a new one if variables change
-	/// </summary> 
-	public abstract class SaveLoadManager<TCtrler, TData>
-	{
-		public abstract int Version { get; }
-		public abstract string[] DataKeys { get; }
-		public enum LoadDataType : int { }
-
-		public SaveLoadManager()
-		{
-			CompositeResolver.Register(
-				UnityResolver.Instance,
-				StandardResolver.Instance,
-				BuiltinResolver.Instance,
-				//default resolver
-				ContractlessStandardResolver.Instance
-				);
-		}
-
-		// Convert an object to a byte array
-		public static byte[] ObjectToByteArray(object obj)
-		{
-			BinaryFormatter bf = new BinaryFormatter();
-			using(var ms = new MemoryStream())
-			{
-				bf.Serialize(ms, obj);
-				return ms.ToArray();
-			}
-		}
-
-		public static T1 ByteArrayToObject<T1>(byte[] arr)
-		{
-			BinaryFormatter bf = new BinaryFormatter();
-			using(var ms = new MemoryStream())
-			{
-				ms.Write(arr, 0, arr.Length);
-				T1 obj = (T1)bf.Deserialize(ms);
-				return obj;
-			}
-		}
-
-		public abstract TData Save(TCtrler ctrler, TData data);
-		public abstract TData Load(TCtrler ctrler, TData data);
-		protected abstract TData UpdateVersionFromPrev(TCtrler ctrler, TData data);
-	}
 
 	/// <inheritdoc/>
-	public class CurrentSaveLoadManager : SaveLoadManagerV2
+	public partial class CurrentSaveLoadManager : SaveLoadManagerV2
 	{
 		public new int Version => base.Version + 1;
 
@@ -224,7 +181,7 @@ namespace Character_Morpher
 				if(ctrl.IsReloading)//can only be done when reloading 
 					ctrl.SoftSaveControls(CanUseCardMorphData);//keep this here
 
-				//	Morph_Util.Logger.LogDebug("DATA 2");
+				//	Logger.LogDebug("DATA 2");
 				ctrl.m_data2.Copy(data2);
 
 				values.CorrectAbmxStates();
@@ -236,7 +193,7 @@ namespace Character_Morpher
 				//get original 
 				data1.abmx.ForceSplitStatus();
 
-				//	Morph_Util.Logger.LogDebug("DATA 1");
+				//	Logger.LogDebug("DATA 1");
 				if(cfg.loadInitMorphCharacter.Value)
 					ctrl.m_data1.Copy(data1);
 			}
@@ -376,9 +333,9 @@ namespace Character_Morpher
 	/// <inheritdoc/>
 	public class SaveLoadManagerV1 : SaveLoadManager<CharaMorpher_Controller, PluginData>
 	{
-		public override int Version => 1;
+		public new int Version => 1;
 
-		public override string[] DataKeys => new[] { "MorphData_values", "MorphData_targetCard", "MorphData_targetPng", };
+		public new string[] DataKeys => new[] { "MorphData_values", "MorphData_targetCard", "MorphData_targetPng", };
 
 		public new enum LoadDataType : int
 		{
@@ -481,8 +438,8 @@ namespace Character_Morpher
 					//Store Bonemod Extended Data
 					{//helps get rid of data sooner
 
-						if(!boneCtrl) Morph_Util.Logger.LogDebug("Bone controller doesn't exist");
-						if(!charaCtrl) Morph_Util.Logger.LogDebug("Character controller doesn't exist");
+						if(!boneCtrl) Logger.LogDebug("Bone controller doesn't exist");
+						if(!charaCtrl) Logger.LogDebug("Character controller doesn't exist");
 
 						//This is the second dumbest fix
 						//(I was changing the player character's bones when this was true ¯\_(ツ)_/¯)
@@ -501,9 +458,9 @@ namespace Character_Morpher
 
 					if(cfg.debug.Value)
 					{
-						if(morph) Morph_Util.Logger.LogDebug("Character 2:");
-						else Morph_Util.Logger.LogDebug("Character 1:");
-						foreach(var part in body) Morph_Util.Logger.LogDebug("Bone: " + part.BoneName);
+						if(morph) Logger.LogDebug("Character 2:");
+						else Logger.LogDebug("Character 1:");
+						foreach(var part in body) Logger.LogDebug("Bone: " + part.BoneName);
 					}
 
 					BoneSplit(morphControl, charaCtrl, morph);
@@ -520,7 +477,7 @@ namespace Character_Morpher
 					if(!bodyCharaCtrl?.objHeadBone) return;
 					if(isSplit || !isLoaded) return;
 
-					if(cfg.debug.Value) Morph_Util.Logger.LogDebug("Splitting bones apart (this is gonna hurt)");
+					if(cfg.debug.Value) Logger.LogDebug("Splitting bones apart (this is gonna hurt)");
 
 
 					var headRoot = bodyCharaCtrl.objHeadBone.transform.parent.parent;
@@ -593,7 +550,7 @@ namespace Character_Morpher
 					tmp.facePngData = main.facePngData.ToArray();//copy
 #endif
 				}
-				catch(Exception e) { Morph_Util.Logger.LogError("Could not copy character data:\n" + e); }
+				catch(Exception e) { Logger.LogError("Could not copy character data:\n" + e); }
 #if HONEY_API
 				//CopyAll will not copy this data in hs2
 				tmp.dataID = main.dataID;
@@ -629,7 +586,7 @@ namespace Character_Morpher
 						data.ChaFileControl.facePngData)?.ToArray();
 #endif
 				}
-				catch(Exception e) { Morph_Util.Logger.LogError("Could not copy character data:\n" + e); }
+				catch(Exception e) { Logger.LogError("Could not copy character data:\n" + e); }
 
 				abmx.Populate(data, morph);
 			}
@@ -648,10 +605,6 @@ namespace Character_Morpher
 
 			return data;
 		}
-
-		public override PluginData Load(CharaMorpher_Controller ctrl, PluginData data = null) { throw new NotImplementedException(); }
-
-		public override PluginData Save(CharaMorpher_Controller ctrl, PluginData data = null) { throw new NotImplementedException(); }
 
 	}
 }

@@ -24,6 +24,9 @@ using KKAPI.Chara;
 using KKABMX.Core;
 using UniRx;
 using UniRx.Triggers;
+using ProloAPI;//leave it here
+using ProloAPI.Extentions;//leave it here
+using ProloAPI.Utilities;//leave it here
 
 #if HONEY_API
 using CharaCustom;
@@ -35,12 +38,13 @@ using ChaCustom;
 using static Character_Morpher.CharaMorpher_Core;
 using static KKAPI.Maker.MakerAPI;
 using static KKAPI.Studio.StudioAPI;
+using static ProloAPI.Utilities.Util_GUI;//leave it here
+using static ProloAPI.Utilities.Util_General;//leave it here
 using Studio;
 
 namespace Character_Morpher
 {
-	using static Character_Morpher.Morph_Util;//leave it here
-											  //	using static Illusion.Utils;
+	using static CharaMorpher_Core;
 
 	class CharaMorpher_GUI : MonoBehaviour
 	{
@@ -215,7 +219,7 @@ namespace Character_Morpher
 
 			if(!StudioLoaded || !enableStudioUI) return;
 
-			var bgTex = greyTex;
+			var bgTex = Util_General.greyTex;
 
 			GUI.DrawTexture(winRec = GUI.Window(CharaMorpher_Core.GUID.GetHashCode(),
 				winRec, id =>
@@ -234,7 +238,7 @@ namespace Character_Morpher
 				bgTex,
 				ScaleMode.StretchToFill);
 		}
-		
+
 		internal static void Initialize()
 		{
 			Cleanup();
@@ -306,7 +310,7 @@ namespace Character_Morpher
 					if(settingName.ToLower().Contains(searchHits[1]))
 					{
 						abmxIndex = abmxIndex >= 0 ? abmxIndex : sliders.Count;
-						//if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"ABMX index: {abmxIndex}");
+						//if(cfg.debug.Value) Logger.LogDebug($"ABMX index: {abmxIndex}");
 
 						tmpSliderLableStyle.normal.textColor = Color.yellow;
 						if(!cfg.enableABMX.Value || !ABMXDependency.IsInTargetVersionRange) return;
@@ -386,7 +390,7 @@ namespace Character_Morpher
 									for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 										ctrl1?.StartCoroutine(ctrl1?.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
 
-									if(cfg.debug.Value) Morph_Util.Logger.LogDebug("controls Changed");
+									if(cfg.debug.Value) Logger.LogDebug("controls Changed");
 								}
 							}
 
@@ -400,15 +404,15 @@ namespace Character_Morpher
 								for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 									ctrl1?.StartCoroutine(ctrl1?.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
 
-								if(cfg.debug.Value) Morph_Util.Logger.LogDebug("controls Reset");
+								if(cfg.debug.Value) Logger.LogDebug("controls Reset");
 							}
 						}
 
 						catch(Exception e)
 						{
-							Morph_Util.Logger.LogInfo($"Current Slot: {ctrl1.controls.currentSet}");
-							Morph_Util.Logger.LogInfo($"Setting Name: {settingName}");
-							Morph_Util.Logger.LogError(e);
+							Logger.LogInfo($"Current Slot: {ctrl1.controls.currentSet}");
+							Logger.LogInfo($"Setting Name: {settingName}");
+							Logger.LogError(e);
 						}
 
 						GUILayout.EndHorizontal();
@@ -588,10 +592,10 @@ namespace Character_Morpher
 							var mctrl = selectedCtrls.InRange(selec) ? selectedCtrls.ElementAt(selec) : null;
 							skipFrames = (studioMorphCtrl == null) != (mctrl == null) ? 3 : 0;
 							studioMorphCtrl = mctrl;
-							//	Morph_Util.Logger.LogMessage(ctrl ? "New Tab Selected" : "No Tab selected");
+							//	Logger.LogMessage(ctrl ? "New Tab Selected" : "No Tab selected");
 
 							//Code Here...
-							string p = Path.Combine(Morph_Util.MakeDirPath(cfg.charDir.Value), Morph_Util.MakeDirPath(cfg.imageName.Value));
+							string p = Path.Combine(cfg.charDir.Value.MakeDirPath(), cfg.imageName.Value.MakeDirPath());
 							OnNewTargetImage.Invoke(p, studioMorphCtrl?.IsUsingExtMorphData ?? false ? studioMorphCtrl?.m_data2?.main?.pngData : null);
 
 
@@ -656,7 +660,7 @@ namespace Character_Morpher
 						if(!init)
 						{
 							CharaMorpher_Controller last = null;
-							dropdown = Morph_Util.GUILayoutDropdownDrawer(
+							dropdown = GUILayoutDropdownDrawer(
 								scrollHeight: 93 * .5f,
 								content: (ctn, index) => new GUIContent { text = $"Current Slot: {studioMorphCtrl?.controls?.currentSet ?? cfg.currentControlSetName.Value ?? "None"} " },
 								listUpdate: (old) =>
@@ -714,14 +718,14 @@ namespace Character_Morpher
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 								studioMorphCtrl.StartCoroutine(studioMorphCtrl.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
 
-							Morph_Util.Logger.LogMessage($"Loaded CharaMorpher {studioMorphCtrl.controls.currentSet}");
+							Logger.LogMessage($"Loaded CharaMorpher {studioMorphCtrl.controls.currentSet}");
 							Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
 						}
 
 						if(GUILayout.Button("Save To Current Slot") && studioMorphCtrl)
 						{
 							MorphBackupCtrl.Copy(studioMorphCtrl.controls);
-							Morph_Util.Logger.LogMessage($"Saved as CharaMorpher {studioMorphCtrl.controls.currentSet}");
+							Logger.LogMessage($"Saved as CharaMorpher {studioMorphCtrl.controls.currentSet}");
 							Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
 						}
 						GUILayout.EndHorizontal();
@@ -771,7 +775,7 @@ namespace Character_Morpher
 
 						init = true;//initial run complete
 					}
-					catch(Exception e) { Morph_Util.Logger.LogError(e); }
+					catch(Exception e) { Logger.LogError(e); }
 
 					if(cfg.enableTooltips.Value)
 						IMGUIUtils.DrawTooltip(winRec, (int)(winRec.width * .75f));
@@ -816,7 +820,7 @@ namespace Character_Morpher
 					//Force the floating settings window to show up
 					var btn = allCvs?.FirstOrNull(p => p?.btnItem?.gameObject?.GetTextFromTextComponent() == displayName).btnItem;
 					btn?.onClick?.AddListener(() => GetMakerBase().drawMenu.ChangeMenuFunc());
- 
+
 #else
 					0;//don't remove this!
 					bodyCustom = (CvsBodyShapeAll)Resources.FindObjectsOfTypeAll(typeof(CvsBodyShapeAll))[0];
@@ -1107,7 +1111,7 @@ namespace Character_Morpher
 							lastUCMDEvent = (s, o) =>
 							{
 
-								var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>()?.First();
+								var ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>()?.First();
 
 								IEnumerator CoUCMD()
 								{
@@ -1165,7 +1169,7 @@ namespace Character_Morpher
 
 					btn.OnClick.AddListener(() =>
 					{
-						var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().First();
+						var ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>().First();
 						ctrl.ResetOriginalShape();
 					});
 					tooltipMsg("resets shape of character to how it looked when disabled (will not change morph values)", gui);
@@ -1193,7 +1197,7 @@ namespace Character_Morpher
 				if(Regex.IsMatch(settingName, searchHits[1], RegexOptions.IgnoreCase))
 				{
 					abmxIndex = abmxIndex >= 0 ? abmxIndex : sliders.Count;
-					if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"ABMX index: {abmxIndex}");
+					if(cfg.debug.Value) Logger.LogDebug($"ABMX index: {abmxIndex}");
 
 					//	return null;
 
@@ -1227,17 +1231,17 @@ namespace Character_Morpher
 						(ctrl) => ctrl.controls.all[ctrl.controls.currentSet][settingName].data,
 						(ctrl, val) =>
 						{
-							//	Morph_Util.Logger.LogDebug($"called slider");
+							//	Logger.LogDebug($"called slider");
 							if(!ctrl) return;
 							if(!ctrl.IsInitLoadFinished || ctrl.IsReloading) return;
 							if(ctrl.controls.all[ctrl.controls.currentSet][settingName].data == (float)Math.Round(val, 2)) return;
 
-							if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"ctrl.controls.all[{ctrl.controls.currentSet}][{settingName}]");
-							if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"{settingName} Value: {(float)Math.Round(val, 2)}");
+							if(cfg.debug.Value) Logger.LogDebug($"ctrl.controls.all[{ctrl.controls.currentSet}][{settingName}]");
+							if(cfg.debug.Value) Logger.LogDebug($"{settingName} Value: {(float)Math.Round(val, 2)}");
 							ctrl.controls.all[ctrl.controls.currentSet][settingName].
 							SetData(currSlider.StoreDefault = (float)Math.Round(val, 2));
 
-							//	Morph_Util.Logger.LogDebug($"edited slider");
+							//	Logger.LogDebug($"edited slider");
 
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
 								ctrl?.StartCoroutine(ctrl?.CoMorphChangeUpdate(delay: a + 1));//this may be necessary (it is)
@@ -1255,7 +1259,7 @@ namespace Character_Morpher
 							if(!ctrl.IsInitLoadFinished || ctrl.IsReloading) return;
 							if((int)ctrl.controls.all[ctrl.controls.currentSet][settingName].calcType == val) return;
 
-							if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"{settingName} Value: {val}");
+							if(cfg.debug.Value) Logger.LogDebug($"{settingName} Value: {val}");
 							ctrl.controls.all[ctrl.controls.currentSet][settingName].SetCalcType((MorphCalcType)val);
 
 							for(int a = -1; a < cfg.multiUpdateSliderTest.Value; ++a)
@@ -1269,9 +1273,9 @@ namespace Character_Morpher
 				//make sure values can be changed internally
 				OnInternalSliderValueChange.AddListener(sliderValActions.AddNReturn((_) =>
 				{
-					if(cfg.debug.Value) Morph_Util.Logger.LogDebug("controls updating");
+					if(cfg.debug.Value) Logger.LogDebug("controls updating");
 
-					CharaMorpher_Controller ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull(k => k != null);//first one only
+					CharaMorpher_Controller ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull(k => k != null);//first one only
 
 					if(ctrl == null) return;
 
@@ -1283,7 +1287,7 @@ namespace Character_Morpher
 						{
 							slider.Value = slider.StoreDefault = ctrl.controls.all[ctrl.controls.currentSet][settingName].data;
 							if(cfg.debug.Value)
-								Morph_Util.Logger.LogDebug($"Slider control [{slider.ModSettingName}] changed: {slider.Value}");
+								Logger.LogDebug($"Slider control [{slider.ModSettingName}] changed: {slider.Value}");
 						}
 					});
 
@@ -1295,7 +1299,7 @@ namespace Character_Morpher
 						{
 							dropdown.Value = dropdown.StoreDefault = (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].calcType;
 							if(cfg.debug.Value)
-								Morph_Util.Logger.LogDebug($"Calc control [{dropdown.ModSettingName}] changed: {dropdown.Value}");
+								Logger.LogDebug($"Calc control [{dropdown.ModSettingName}] changed: {dropdown.Value}");
 						}
 					});
 
@@ -1405,7 +1409,7 @@ namespace Character_Morpher
 			IEnumerator CoModeDisable(bool val, uint start = 0, uint end = int.MaxValue)
 			{
 
-				if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"CoModeDisable Called!");
+				if(cfg.debug.Value) Logger.LogDebug($"CoModeDisable Called!");
 				yield return new WaitWhile(() =>
 				{
 					for(int a = (int)start; a < Math.Min(modes.Count, (int)end); ++a)
@@ -1413,7 +1417,7 @@ namespace Character_Morpher
 					return false;
 				});
 
-				if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Modes are visible: {val}");
+				if(cfg.debug.Value) Logger.LogDebug($"Modes are visible: {val}");
 				for(int a = (int)start; a < modes.Count; ++a)
 					if(sliders?[a]?.ControlObject?.activeSelf ?? false)
 					{
@@ -1427,7 +1431,7 @@ namespace Character_Morpher
 			IEnumerator CoSliderDisable(bool val, uint start = 0, uint end = int.MaxValue)
 			{
 
-				if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"CoSliderDisable Called!");
+				if(cfg.debug.Value) Logger.LogDebug($"CoSliderDisable Called!");
 				yield return new WaitWhile(() =>
 				{
 					for(int a = (int)start; a < Math.Min(sliders.Count, (int)end); ++a)
@@ -1435,7 +1439,7 @@ namespace Character_Morpher
 					return false;
 				});
 
-				if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"sliders are visible: {val}");
+				if(cfg.debug.Value) Logger.LogDebug($"sliders are visible: {val}");
 				for(int a = (int)start; a < sliders.Count; ++a)
 				{
 					sliders?[a]?.ControlObject?.SetActive(val);
@@ -1470,7 +1474,7 @@ namespace Character_Morpher
 			#region Save/Load Buttons
 
 
-			if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Adding buttons");
+			if(cfg.debug.Value) Logger.LogDebug($"Adding buttons");
 
 			var sep = e.AddControl(new MakerSeparator(category, Instance))
 				.OnGUIExists((gui) => gui.AddToCustomGUILayout());
@@ -1529,7 +1533,7 @@ namespace Character_Morpher
 				   foreach(var mode in modes)
 					   mode.ApplyStoredSetting();
 
-				   var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().First();
+				   var ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>().First();
 				   //int count = 0;
 				   //cfg.defaults[ctrl.controls.currentSet] = new List<ConfigEntry<float>>();
 				   if(!cfg.preferCardMorphDataMaker.Value || ctrl.ctrls2 == null)
@@ -1548,7 +1552,7 @@ namespace Character_Morpher
 						   ctrl.controls.all[ctrl.controls.currentSet][def.dataName].calcType;
 
 				   ctrl.SoftSaveControls(cfg.preferCardMorphDataMaker.Value, defaultSave: false);
-				   Morph_Util.Logger.LogMessage($"Saved as CharaMorpher {ctrl.controls.currentSet}");
+				   Logger.LogMessage($"Saved as CharaMorpher {ctrl.controls.currentSet}");
 
 				   Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
 			   });
@@ -1560,7 +1564,7 @@ namespace Character_Morpher
 				   gui.AddToCustomGUILayout(newVertLine: false);
 				   loadDefaultValues = (bool showMessage, bool playSound, bool runUpdate) =>
 				   {
-					   var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().First();
+					   var ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>().First();
 
 					   var data = (!ctrl.IsUsingExtMorphData ? ctrl.ctrls1 : (ctrl.ctrls2 ?? ctrl.ctrls1))?.Clone()?.all;
 					   var listCtrls = ctrl?.controls;
@@ -1572,9 +1576,9 @@ namespace Character_Morpher
 						   {
 							   if(cfg.debug.Value)
 							   {
-								   Morph_Util.Logger.LogDebug($"Data Expected: data[{name}][{def2}]");
-								   Morph_Util.Logger.LogDebug($"Data Key1:\n data[{string.Join(",\n ", data?.Keys.ToArray())}]");
-								   Morph_Util.Logger.LogDebug($"Data Key2:\n data[{string.Join(",\n ", data?[data.Keys.ElementAt(0)].Keys.ToArray())}]");
+								   Logger.LogDebug($"Data Expected: data[{name}][{def2}]");
+								   Logger.LogDebug($"Data Key1:\n data[{string.Join(",\n ", data?.Keys.ToArray())}]");
+								   Logger.LogDebug($"Data Key2:\n data[{string.Join(",\n ", data?[data.Keys.ElementAt(0)].Keys.ToArray())}]");
 							   }
 
 							   var val = data[name][def2].data;
@@ -1595,7 +1599,7 @@ namespace Character_Morpher
 							   ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
 
 					   if(showMessage)
-						   Morph_Util.Logger.LogMessage($"Loaded CharaMorpher: {name}");
+						   Logger.LogMessage($"Loaded CharaMorpher: {name}");
 
 					   if(playSound)
 						   Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
@@ -1607,7 +1611,7 @@ namespace Character_Morpher
 			   });
 
 
-			if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Finished adding buttons");
+			if(cfg.debug.Value) Logger.LogDebug($"Finished adding buttons");
 			//e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			//e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 			#endregion
@@ -1625,14 +1629,14 @@ namespace Character_Morpher
 
 
 			var img = e.AddControl(new MakerImage(null, category, owner)
-			{ Height = 200, Width = 150, Texture = Morph_Util.CreateTexture(TargetPath), });
+			{ Height = 200, Width = 150, Texture = TargetPath.CreateTexture(), });
 			IEnumerator CoSetTexture(string path, byte[] png = null)
 			{
 				for(int a = 0; a < 4; ++a)
 					yield return null;
 				yield return new WaitUntil(() => img.Exists);
 
-				if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"The CoSetTexture was called");
+				if(cfg.debug.Value) Logger.LogDebug($"The CoSetTexture was called");
 				img.Texture = path?.CreateTexture(png);
 				//(img.Texture as Texture2D).Resize(150, 200);
 				img.ControlObject.GetComponentInChildren<RawImage>().color = Color.white * ((!png.IsNullOrEmpty()) ? .65f : 1);
@@ -1641,7 +1645,7 @@ namespace Character_Morpher
 			OnNewTargetImage.AddListener(
 				(path, png) =>
 				{
-					if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Calling OnNewTargetImage callback");
+					if(cfg.debug.Value) Logger.LogDebug($"Calling OnNewTargetImage callback");
 					Instance.StartCoroutine(CoSetTexture(path, png));
 				});
 
@@ -1660,7 +1664,7 @@ namespace Character_Morpher
 				{
 					gui.OnClick.AddListener(() =>
 					{
-						var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().First();
+						var ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>().First();
 						ctrl.MorphTargetUpdate(clearTarget: true);
 					});
 				});
@@ -1701,15 +1705,15 @@ namespace Character_Morpher
 					swap = cfg.easyMorphBtnOverallSet.Value,
 					reset = cfg.easyMorphBtnEnableDefaulting.Value;
 
-					foreach(CharaMorpher_Controller ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+					foreach(CharaMorpher_Controller ctrl in Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>())
 					{
 						//	ctrl.StopAllCoroutines();
 
-						//	Morph_Util.Logger.LogDebug($"Mod Category:{ctrl.controls.currentSet}");
+						//	Logger.LogDebug($"Mod Category:{ctrl.controls.currentSet}");
 						if(reset)
 							for(int a = 0; a < ctrl.controls.all[ctrl.controls.currentSet].Count; ++a)
 							{
-								//Morph_Util.Logger.LogDebug($"Mod name:{ctrl.controls.all[ctrl.controls.currentSet].Keys.ElementAt(a)}");
+								//Logger.LogDebug($"Mod name:{ctrl.controls.all[ctrl.controls.currentSet].Keys.ElementAt(a)}");
 								//	var cal = ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all.Keys.ElementAt(a)].calcType;
 								ctrl.controls.all[ctrl.controls.currentSet][ctrl.controls.all[ctrl.controls.currentSet].Keys.ElementAt(a)].SetData(1f);
 							}
@@ -1725,7 +1729,7 @@ namespace Character_Morpher
 							ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(++a));
 
 
-						Morph_Util.Logger.LogMessage($"Morphed to {percent}%");
+						Logger.LogMessage($"Morphed to {percent}%");
 						break;
 					}
 					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
@@ -1752,7 +1756,7 @@ namespace Character_Morpher
 			if(!InsideMaker && !InsideStudio) return;
 			if(select == null) return;
 
-			var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().FirstOrNull();
+			var ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>().FirstOrNull();
 
 			select.Options = ControlsList;
 			select.Value = SwitchControlSet(select.Options, ctrl?.controls.currentSet);
@@ -1771,7 +1775,7 @@ namespace Character_Morpher
 
 
 			{
-				//	Morph_Util.Logger.LogDebug($"lastUCMD: {lastUCMD}");
+				//	Logger.LogDebug($"lastUCMD: {lastUCMD}");
 				yield return new WaitWhile(() => ctrl.IsReloading);
 
 				var tmpCtrls =
@@ -1786,7 +1790,7 @@ namespace Character_Morpher
 				ctrl?.ctrls1 : (ctrl?.ctrls2 ?? ctrl?.ctrls1));
 
 
-				//Morph_Util.Logger.LogDebug($"Next lastUCMD: {lastUCMD}");
+				//Logger.LogDebug($"Next lastUCMD: {lastUCMD}");
 			}
 
 			if(!name.IsNullOrEmpty())
@@ -1817,7 +1821,7 @@ namespace Character_Morpher
 		}
 		#endregion
 
-		//private static string MakeDirPath(string path) => Morph_Util.MakeDirPath(path);
+		//private static string MakeDirPath(string path) => MakeDirPath(path);
 
 		/// <summary>
 		/// Called after a file is chosen in file explorer menu  
@@ -1827,14 +1831,14 @@ namespace Character_Morpher
 		{
 
 			ForeGrounder.RevertForground();
-			if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Enters accept");
+			if(cfg.debug.Value) Logger.LogDebug($"Enters accept");
 			if(strings == null || strings.Length == 0) return;
 			var texPath = strings[0].MakeDirPath();
 
 			if(cfg.debug.Value)
 			{
-				Morph_Util.Logger.LogDebug($"Original path: {texPath}");
-				Morph_Util.Logger.LogDebug($"texture path: {Path.Combine(Path.GetDirectoryName(texPath), Path.GetFileName(texPath))}");
+				Logger.LogDebug($"Original path: {texPath}");
+				Logger.LogDebug($"texture path: {Path.Combine(Path.GetDirectoryName(texPath), Path.GetFileName(texPath))}");
 			}
 
 			if(string.IsNullOrEmpty(texPath)) return;
@@ -1842,11 +1846,11 @@ namespace Character_Morpher
 			cfg.charDir.Value = Path.GetDirectoryName(texPath).MakeDirPath();
 			cfg.imageName.Value = texPath.Substring(texPath.LastIndexOf('/') + 1).MakeDirPath();//not sure why this happens on hs2?
 
-			foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+			foreach(var ctrl in Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>())
 				if(ctrl.IsInitLoadFinished)
 					ctrl.StartCoroutine(ctrl.CoMorphTargetUpdate(5));
 
-			if(cfg.debug.Value) Morph_Util.Logger.LogDebug($"Exit accept");
+			if(cfg.debug.Value) Logger.LogDebug($"Exit accept");
 		}
 
 		public static void GetNewImageTarget()

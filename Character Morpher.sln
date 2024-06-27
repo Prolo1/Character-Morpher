@@ -30,37 +30,73 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ProloAPI", "Prolo API\ProloAPI.shproj", "{CCA408B5-118C-4C25-96DC-6DBD9127BB62}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mod Projects", "Mod Projects", "{C904BE42-43C0-4A0C-8058-CA3883F6B79B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common Projects", "Common Projects", "{82930F05-60EF-4BCA-AF33-A5629084EB1E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E96314CF-3D68-4A08-94E7-DD86D7BFA157}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E96314CF-3D68-4A08-94E7-DD86D7BFA157}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E96314CF-3D68-4A08-94E7-DD86D7BFA157}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E96314CF-3D68-4A08-94E7-DD86D7BFA157}.Release|Any CPU.Build.0 = Release|Any CPU
+		{676B828F-DE2D-4F54-9B96-3A965EBD2042}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{676B828F-DE2D-4F54-9B96-3A965EBD2042}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{676B828F-DE2D-4F54-9B96-3A965EBD2042}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{676B828F-DE2D-4F54-9B96-3A965EBD2042}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{015CED6A-049A-48FB-9DC0-EED58B486325}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{015CED6A-049A-48FB-9DC0-EED58B486325}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{015CED6A-049A-48FB-9DC0-EED58B486325}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{015CED6A-049A-48FB-9DC0-EED58B486325}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6966B4D9-DB7D-49E9-A012-511C74E352ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6966B4D9-DB7D-49E9-A012-511C74E352ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6966B4D9-DB7D-49E9-A012-511C74E352ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6966B4D9-DB7D-49E9-A012-511C74E352ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F373AC57-E162-4CC1-A57A-31CF53F62045}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F373AC57-E162-4CC1-A57A-31CF53F62045}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F373AC57-E162-4CC1-A57A-31CF53F62045}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F373AC57-E162-4CC1-A57A-31CF53F62045}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E96314CF-3D68-4A08-94E7-DD86D7BFA157} = {C904BE42-43C0-4A0C-8058-CA3883F6B79B}
+		{F835505B-0492-45C9-A446-C4BF82473CEE} = {82930F05-60EF-4BCA-AF33-A5629084EB1E}
+		{676B828F-DE2D-4F54-9B96-3A965EBD2042} = {C904BE42-43C0-4A0C-8058-CA3883F6B79B}
+		{15BB6C66-5B78-4EAA-B02D-99B0FE257F55} = {C904BE42-43C0-4A0C-8058-CA3883F6B79B}
+		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4} = {C904BE42-43C0-4A0C-8058-CA3883F6B79B}
+		{015CED6A-049A-48FB-9DC0-EED58B486325} = {C904BE42-43C0-4A0C-8058-CA3883F6B79B}
+		{F373AC57-E162-4CC1-A57A-31CF53F62045} = {C904BE42-43C0-4A0C-8058-CA3883F6B79B}
+		{CCA408B5-118C-4C25-96DC-6DBD9127BB62} = {82930F05-60EF-4BCA-AF33-A5629084EB1E}
+	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {363853CC-19E3-41DE-A695-D0F2AA9EFE0E}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Common\Common.projitems*{15bb6c66-5b78-4eaa-b02d-99b0fe257f55}*SharedItemsImports = 4
+		Prolo API\ProloAPI.projitems*{15bb6c66-5b78-4eaa-b02d-99b0fe257f55}*SharedItemsImports = 4
 		Common\Common.projitems*{5297f533-ae0e-4a80-83b5-a4acc5758cb4}*SharedItemsImports = 4
+		Prolo API\ProloAPI.projitems*{5297f533-ae0e-4a80-83b5-a4acc5758cb4}*SharedItemsImports = 4
 		Common\Common.projitems*{676b828f-de2d-4f54-9b96-3a965ebd2042}*SharedItemsImports = 4
+		Prolo API\ProloAPI.projitems*{676b828f-de2d-4f54-9b96-3a965ebd2042}*SharedItemsImports = 4
+		Prolo API\ProloAPI.projitems*{cca408b5-118c-4c25-96dc-6dbd9127bb62}*SharedItemsImports = 13
 		Common\Common.projitems*{e96314cf-3d68-4a08-94e7-dd86d7bfa157}*SharedItemsImports = 4
+		Prolo API\ProloAPI.projitems*{e96314cf-3d68-4a08-94e7-dd86d7bfa157}*SharedItemsImports = 4
 		Common\Common.projitems*{f835505b-0492-45c9-a446-c4bf82473cee}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

@@ -130,6 +130,7 @@
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="..\Common\Common.projitems" Label="Shared" />
+  <Import Project="..\Prolo API\ProloAPI.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

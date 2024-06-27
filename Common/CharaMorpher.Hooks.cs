@@ -14,6 +14,7 @@ using KKAPI;
 using KKAPI.Maker;
 using KKABMX;
 using KKABMX.Core;
+using ProloAPI.Extentions;
 //using Manager;
 
 
@@ -25,6 +26,7 @@ using ChaCustom;
 //using StrayTech;
 #endif
 
+using static ProloAPI.Utilities.Util_General;
 namespace Character_Morpher
 {
 	public partial class CharaMorpher_Core
@@ -41,7 +43,7 @@ namespace Character_Morpher
 			static void UpdateCurrentCharacters(bool forcereset = false)
 			{
 				if((MakerAPI.InsideMaker || StudioAPI.InsideStudio) || cfg.enableInGame.Value)//Make sure the in-game flag is checked
-					foreach(CharaMorpher_Controller ctrl in Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>())
+					foreach(CharaMorpher_Controller ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
 					{
 						if(!ctrl) continue;
 						if(ctrl.IsInitLoadFinished && !ctrl.IsReloading)
@@ -138,7 +140,7 @@ namespace Character_Morpher
 					yield break;
 				}
 
-				foreach(CharaMorpher_Controller ctrl in Morph_Util.GetFuncCtrlOfType<CharaMorpher_Controller>())
+				foreach(CharaMorpher_Controller ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
 				{
 
 #if !KK
@@ -289,5 +291,6 @@ namespace Character_Morpher
 
 
 		}
+		 
 	}
 }
