@@ -35,7 +35,7 @@ using AIChara;
 using ChaCustom;
 #endif
 
-using static Character_Morpher.CharaMorpher_Core;
+//using static CharaMorpher_Core;
 using static KKAPI.Maker.MakerAPI;
 using static KKAPI.Studio.StudioAPI;
 using static ProloAPI.Utilities.Util_GUI;//leave it here
@@ -44,7 +44,7 @@ using Studio;
 
 namespace Character_Morpher
 {
-	using static CharaMorpher_Core;
+	using static Character_Morpher.CharaMorpher_Core;
 
 	class CharaMorpher_GUI : MonoBehaviour
 	{
@@ -181,6 +181,7 @@ namespace Character_Morpher
 		GUIStyle tmpSty;
 		internal void OnGUI()
 		{
+
 			if(MakerAPI.InsideAndLoaded && cfg.enableTooltips.Value && !tooltip.IsNullOrEmpty())
 			{
 				if(tmpSty == null)

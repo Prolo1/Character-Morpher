@@ -2539,7 +2539,7 @@ namespace Character_Morpher
 				if(cfg.debug.Value) Logger.LogDebug("Splitting bones apart (this is gonna hurt 🤣🤣)");
 
 
-				var headRoot = bodyCharaCtrl.objHeadBone;
+				var headRoot = bodyCharaCtrl.objHeadBone.transform.parent.parent;
 
 				var headBones = new HashSet<string>(headRoot.GetComponentsInChildren<Transform>(true).Select(x => x.name)) { /*Additional*/headRoot.name };
 

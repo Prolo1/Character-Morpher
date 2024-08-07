@@ -54,10 +54,7 @@ using static Character_Morpher.CharaMorpher_GUI;
 using static ProloAPI.Utilities.Util_General;
 using static ProloAPI.Utilities.Util_GUI;
 using static BepInEx.Logging.LogLevel;
-//using System.Threading;
-//using System.Threading.Tasks;
-//using Unity.Jobs;
-//using System.Runtime.CompilerServices;
+using ProloUnityPlugin = ProloAPI.ProloUnityPlugin<Character_Morpher.CharaMorpher_Core, Character_Morpher.CharaMorpher_Core.MorphConfig>;
 
 /***********************************************
   Features:
@@ -100,7 +97,7 @@ namespace Character_Morpher
 	#endregion
 	// Specify this as a plugin that gets loaded by BepInEx
 	[BepInPlugin(GUID, ModName, Version)]
-	public partial class CharaMorpher_Core : ProloUnityPlugin<CharaMorpher_Core>
+	public partial class CharaMorpher_Core : ProloUnityPlugin
 	{
 
 		#region variables
@@ -117,8 +114,9 @@ namespace Character_Morpher
 		public const string strDiv = ":";
 		public const string defaultStr = "(Default)" + strDiv;
 
-		public static CharaMorpher_Core Instance;
-		public static new ManualLogSource Logger;
+		public static new MorphConfig cfg { get => ((ProloUnityPlugin)Instance).cfg; }
+		public static new CharaMorpher_Core Instance { get => ProloUnityPlugin.Instance; }
+		public static new ManualLogSource Logger { get => ((ProloUnityPlugin)Instance).Logger; }
 
 
 		internal readonly static OnNewImage OnNewTargetImage = new OnNewImage();
@@ -133,7 +131,6 @@ namespace Character_Morpher
 		internal static Texture2D iconBG = null;
 
 		public readonly Dictionary<string, List<MorphSliderData>> controlCategories = new Dictionary<string, List<MorphSliderData>>();
-		public static new MorphConfig cfg;
 
 		public struct MorphConfig : IConfiguration
 		{
@@ -219,15 +216,10 @@ namespace Character_Morpher
 		{
 			ForeGrounder.SetCurrentForground();
 
-			PInfo = new ProloInfo<CharaMorpher_Core>
-			{
-				ModName = ModName,
-				GUID = GUID,
-				Version = Version,
-				Instance = Instance = this,
-				Logger = Logger = base.Logger,
-				cfg = cfg,
-			};
+			info = new ProloInfo { GUID = GUID, ModName = ModName, Version = Version };
+			ProloUnityPlugin.Instance = this;
+			base.cfg = cfg;
+			SetApiInst(this);
 
 #if KK
 			//load Theraot.Core assembly location
@@ -371,7 +363,7 @@ namespace Character_Morpher
 				Instance.Config.SaveOnConfigSet;
 			Instance.Config.SaveOnConfigSet = false;
 
-			PInfo.cfg = cfg = new MorphConfig
+			base.cfg = new MorphConfig
 			{
 				//Main
 				enable = Config.Bind(main, "Enable", false,
@@ -564,9 +556,9 @@ namespace Character_Morpher
 
 			//Advanced
 			{
+				var cfg = base.cfg;
 
 				cfg.debug.ConfigDefaulter();
-
 				cfg.makerViewportUISpace = Config.Bind(adv, "Viewport UI Space",
 #if HONEY_API
 					.73f,
@@ -1298,7 +1290,6 @@ namespace Character_Morpher
 				Instance.Config.SaveOnConfigSet;
 			Instance.Config.SaveOnConfigSet = false;
 
-
 			foreach(var val in defList)
 			{
 				var slotName = val.Key.Substring(0, val.Key.LastIndexOf(strDiv) + 1)?.Trim();
@@ -1306,6 +1297,8 @@ namespace Character_Morpher
 
 				//Logger.LogDebug($"For start");
 				//Logger.LogDebug($"val.key: {val.Key}");
+
+
 
 				if(!cfg.defaults.TryGetValue(slotName, out var tmp) && !slotName.IsNullOrEmpty())
 					PopulateDefaultSettings(slotName);
@@ -1621,7 +1614,7 @@ namespace Character_Morpher
 						data[name][ctrl.dataName] = tmp2.Clone();
 				}
 
-			Logger.LogMessage($"Created {name}");
+			 Logger.LogMessage($"Created {name}");
 
 			return name;
 		}
@@ -1684,8 +1677,8 @@ namespace Character_Morpher
 		static string lastPath = null;
 		internal static void MyImageButtonDrawer(ConfigEntryBase entry)
 		{
-			// Make sure to use GUILayout.ExpandWidth(true) to use all available space
 
+			// Make sure to use GUILayout.ExpandWidth(true) to use all available space
 			GUILayout.BeginVertical();
 
 			string path = Path.Combine(cfg.charDir.Value.MakeDirPath(), cfg.imageName.Value.MakeDirPath());
@@ -1727,11 +1720,11 @@ namespace Character_Morpher
 			get
 			{
 				var val = (((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) || !cfg.preferCardMorphDataMaker.Value) ?
-					Instance?.controlCategories?.Keys.ToList() :
-					(GetFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull()?.controls?.all?.Keys?.ToList()
-					?? Instance?.controlCategories?.Keys.ToList()))
-					.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ? k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
-					.ToArray();
+				   Instance?.controlCategories?.Keys.ToList() :
+				   (GetFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull()?.controls?.all?.Keys?.ToList()
+				   ?? Instance?.controlCategories?.Keys.ToList()))
+				   .Attempt((k) => k.LastIndexOf(strDiv) >= 0 ? k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
+				   .ToArray();
 				Array.Sort(val ?? (val = new string[] { }));
 
 				if(val != LastControlsList)
