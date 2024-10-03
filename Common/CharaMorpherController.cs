@@ -37,18 +37,19 @@ using static ChaFileDefine;
 //using StrayTech;
 #endif
 
-using static Character_Morpher.CharaMorpher_Core;
+//using ProloUnityPlugin = ProloAPI.ProloUnityPlugin<Character_Morpher.CharaMorpher_Core, Character_Morpher.CharaMorpher_Core.MorphConfig>;
+//using static Character_Morpher.CharaMorpher_Core;
 using static Character_Morpher.CharaMorpher_Controller;
 using static Character_Morpher.CharaMorpher_GUI;
 using static Character_Morpher.CurrentSaveLoadManager;
-using static ProloAPI.Utilities.Util_General;
+using static ProloAPI.Utilities.ProloGeneral;
 
 namespace Character_Morpher
 {
-	using ProloAPI;
+	 using ProloAPI;
 
 	using static Character_Morpher.CharaMorpher_Core;//leave it here
-													 //using static ProloAPI.Utilities;
+													 
 
 	public class CharaMorpher_Controller : CharaCustomFunctionController
 	{
@@ -753,7 +754,6 @@ namespace Character_Morpher
 		}
 		#endregion
 
-
 		/// <summary>
 		/// Called whenever base character data needs to be updated for calculations
 		/// </summary>
@@ -767,9 +767,7 @@ namespace Character_Morpher
 			var boneCtrl = GetComponent<BoneController>();
 			int val = (int)cfg.reloadTest.Value;
 			var tmpCtrlName = "" + cfg.currentControlSetName.Value;
-
-
-
+			 
 			//make sure to save current controls
 			SoftSaveControls(true, false);
 			//	bool en=morphEnable, enAbmx=morphEnableABMX;
@@ -849,12 +847,17 @@ namespace Character_Morpher
 				if(IsUsingExtMorphData && cfg.loadInitMorphCharacter.Value)
 				{
 					var isCurData = LZ4MessagePackSerializer.Deserialize<bool>
-					((byte[])m_extData.data[GetSaveLoadManager<CharaMorpher_Controller, PluginData>().DataKeys[((int)LoadDataType.HoldsFigureData)]], CompositeResolver.Instance);
+					((byte[])m_extData.data[GetSaveLoadManager<CurrentSaveLoadManager>().DataKeys[((int)LoadDataType.HoldsFigureData)]], CompositeResolver.Instance);
 
 
 					if(isCurData)
+					{
+						LZ4MessagePackSerializer.Deserialize<bool>
+						((byte[])m_extData.data[GetSaveLoadManager<CurrentSaveLoadManager>().DataKeys[((int)LoadDataType.OrigSize)]], CompositeResolver.Instance);
+
 						for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 							StartCoroutine(CoResetOriginalBody((int)cfg.multiUpdateEnableTest.Value + a + 1, data: m_initalData));
+					}
 				}
 
 				if(m_extData != null && (MakerAPI.InsideMaker || StudioAPI.InsideStudio))
@@ -909,8 +912,9 @@ namespace Character_Morpher
 
 			if(cfg.debug.Value) Logger.LogDebug("replace data 2");
 
-			ctrls2 = null;
-			m_extData = clearTarget ? null : CharaMorpher_GUI.MorphLoadToggle ? this.LoadExtData(
+			ctrls2 = null; 
+			m_extData = clearTarget ? null : CharaMorpher_GUI.MorphLoadToggle ?
+				this.LoadExtData<CurrentSaveLoadManager,CharaMorpher_Controller>(
 				m_extData,
 				() => { if(cfg.debug.Value) Logger.LogDebug("loading extended data..."); },
 				() => { if(cfg.debug.Value) Logger.LogDebug("extended data loaded"); }
@@ -2066,7 +2070,7 @@ namespace Character_Morpher
 		protected override void OnCardBeingSaved(GameMode currentGameMode)
 		{
 			if(cfg.enable.Value && cfg.saveExtData.Value)
-				this.SaveExtData();
+				this.SaveExtData<CurrentSaveLoadManager,CharaMorpher_Controller>();
 		}
 
 		/// <inheritdoc/>
@@ -2362,7 +2366,7 @@ namespace Character_Morpher
 			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio)) return;
 
 			//if(!ctrl)
-			//	ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().FirstOrNull();
+			//	ctrl = GetAllChaFuncCtrlOfType<CharaMorpher_Controller>().FirstOrNull();
 
 			//if(!ctrl) return;//return if ctrl is null
 
@@ -2415,7 +2419,7 @@ namespace Character_Morpher
 					{
 
 						Transform parent = null;
-						parent = GetFuncCtrlOfType<CharaMorpher_Controller>()?.First()?.transform.parent;
+						parent = GetAllChaFuncCtrlOfType<CharaMorpher_Controller>()?.First()?.transform.parent;
 						//_extraCharacter = new ChaControl();
 
 						_extraCharacter =
@@ -2557,7 +2561,7 @@ namespace Character_Morpher
 				isSplit = true;
 			}
 
-			public void ForceSplitStatus(bool force = true) { isSplit = force; isLoaded = force; }
+			public void ForceSplitStatus(bool status = true) { isSplit = status; isLoaded = status; }
 
 			public void Clear()
 			{

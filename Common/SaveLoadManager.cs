@@ -46,6 +46,7 @@ using UniRx;
 using ProloAPI;
 using ProloAPI.Extentions;
 
+
 namespace Character_Morpher
 {
 	using static CharaMorpher_Core;//leave it here
@@ -53,8 +54,7 @@ namespace Character_Morpher
 	using static Character_Morpher.CurrentSaveLoadManager.LoadDataType;
 
 
-	/// <inheritdoc/>
-	public partial class CurrentSaveLoadManager : SaveLoadManagerV2
+	public class CurrentSaveLoadManager : SaveLoadManagerV2
 	{
 		public new int Version => base.Version + 1;
 
@@ -135,7 +135,7 @@ namespace Character_Morpher
 			return data;
 		}
 
-		public new PluginData Load(CharaMorpher_Controller ctrl, PluginData data = null)
+		public override PluginData Load(CharaMorpher_Controller ctrl, PluginData data = null)
 		{
 
 			data = UpdateVersionFromPrev(ctrl, data);// use if version goes up (i.e. 1->2)
@@ -175,6 +175,11 @@ namespace Character_Morpher
 
 
 				data2.abmx.ForceSplitStatus();//needed since split is not saved 😥
+				if(data2.abmx.body.SequenceEqual(data2.abmx.face, (k) => k.BoneName))
+					data2.abmx.Clear();
+				if(data1.abmx.body.SequenceEqual(data1.abmx.face, (k) => k.BoneName))
+					data1.abmx.Clear();
+
 
 				//	var newValues = values.all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value.Clone()));
 
@@ -206,7 +211,7 @@ namespace Character_Morpher
 			return data;
 		}
 
-		public new PluginData Save(CharaMorpher_Controller ctrl, PluginData data = null)
+		public override PluginData Save(CharaMorpher_Controller ctrl, PluginData data = null)
 		{
 			if(!CharaMorpher_Core.cfg.saveExtData.Value) return null;
 			if(data == null)
@@ -215,7 +220,10 @@ namespace Character_Morpher
 			try
 			{
 
-				if(!ctrl.m_data2.abmx.isSplit) throw new Exception("Target card data was not fully initialized");
+				if(!ctrl.m_data2.abmx.isSplit) Logger.Log(Message | Warning,
+					"Target card data was not fully initialized. \n" +
+					"Issues may occur loading the card. \n" +
+					"Check the new card to make sure there are no issues!!!");
 
 				byte[] check;
 				bool pass = true;

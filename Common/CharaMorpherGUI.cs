@@ -35,18 +35,18 @@ using AIChara;
 using ChaCustom;
 #endif
 
-//using static CharaMorpher_Core;
 using static KKAPI.Maker.MakerAPI;
 using static KKAPI.Studio.StudioAPI;
-using static ProloAPI.Utilities.Util_GUI;//leave it here
-using static ProloAPI.Utilities.Util_General;//leave it here
-using Studio;
+using static ProloAPI.Utilities.ProloGUI;
+using System.Reflection;//leave it here 
+						//using Studio;
+
 
 namespace Character_Morpher
 {
-	using static Character_Morpher.CharaMorpher_Core;
+	using static CharaMorpher_Core;
 
-	class CharaMorpher_GUI : MonoBehaviour
+	class CharaMorpher_GUI : ProloGUIBehaviour<CharaMorpher_GUI>
 	{
 		#region Classes
 		class RefEqualsCompare<T> : IEqualityComparer<T>
@@ -146,6 +146,7 @@ namespace Character_Morpher
 		static EventHandler enableCalcTypesEvent = null;
 		static EventHandler lastUCMDEvent = null;
 		static EventHandler loadInitMorphCharacterEvent = null;
+		static EventHandler userDefaultAsDefaultEvent = null;
 		static EventHandler currentControlNameEvent = null;
 		static EventHandler easyMorphOverallEvent = null;
 		static EventHandler easyMorphDefaultingEvent = null;
@@ -220,7 +221,7 @@ namespace Character_Morpher
 
 			if(!StudioLoaded || !enableStudioUI) return;
 
-			var bgTex = Util_General.greyTex;
+			var bgTex = ProloGeneral.greyTex;
 
 			GUI.DrawTexture(winRec = GUI.Window(CharaMorpher_Core.GUID.GetHashCode(),
 				winRec, id =>
@@ -288,7 +289,7 @@ namespace Character_Morpher
 				var topScrollPos = Vector2.zero;
 				var toolPos = Vector2.zero;
 				var init = false;
-				var selectedTool = -1;
+				var selectedChar = -1;
 				//var lastSelecCharNum = 0;
 				winRec = new Rect(cfg.studioWinRec.Value);
 				Func<int> dropdown = null;
@@ -300,6 +301,8 @@ namespace Character_Morpher
 
 				void CreatSlider(string settingName, CharaMorpher_Controller ctrl1, float min = 0, float max = 1)
 				{
+					var Logger = CharaMorpher_Core.Logger;
+
 					var visualName = "" + settingName;
 					if(tmpSliderLableStyle == null)
 						tmpSliderLableStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.BoldAndItalic };
@@ -475,13 +478,20 @@ namespace Character_Morpher
 				});
 
 				#endregion
+				var tabstyle = new GUIStyle(GUI.skin.button)
+				{
 
+					padding = new RectOffset(5, 5, 5, 0),
+					alignment = TextAnchor.UpperLeft
+
+				};
+				var inst = CharaMorpher_Core.Instance;
 				//Update Loop
 				customStudioUI.AddListener(() =>
 				{
+					var Logger = CharaMorpher_Core.Logger;
 					if((skipFrames = Math.Max(-1, --skipFrames)) > -1)
 						return;
-
 					try
 					{
 						GUILayout.BeginVertical();
@@ -511,6 +521,8 @@ namespace Character_Morpher
 
 						var preferCardMorphDataMaker = GUILayout.Toggle(cfg.preferCardMorphDataMaker.Value, new GUIContent { text = "Use Card Morph Data", tooltip = cfg.preferCardMorphDataMaker.Description.Description });
 						var loadInitMorphCharacter = GUILayout.Toggle(cfg.loadInitMorphCharacter.Value, new GUIContent { text = "Load Init. Character", tooltip = cfg.loadInitMorphCharacter.Description.Description });
+						var useDefaultAsDefault = GUILayout.Toggle(cfg.userDefaultAsDefault.Value, new GUIContent { text = "Use Default as Default", tooltip = cfg.userDefaultAsDefault.Description.Description });
+
 						var enableTooltip = GUILayout.Toggle(cfg.enableTooltips.Value, GUIContent.Temp("Enable Tooltips", cfg.enableTooltips.Description.Description));
 
 						//Update checks
@@ -543,15 +555,13 @@ namespace Character_Morpher
 							}
 
 							if(preferCardMorphDataMaker != cfg.preferCardMorphDataMaker.Value)
-							{
 								cfg.preferCardMorphDataMaker.Value = preferCardMorphDataMaker;
-
-
-
-							}
 
 							if(loadInitMorphCharacter != cfg.loadInitMorphCharacter.Value)
 								cfg.loadInitMorphCharacter.Value = loadInitMorphCharacter;
+
+							if(useDefaultAsDefault != cfg.userDefaultAsDefault.Value)
+								cfg.userDefaultAsDefault.Value = useDefaultAsDefault;
 
 							if(enableTooltip != cfg.enableTooltips.Value)
 								cfg.enableTooltips.Value = enableTooltip;
@@ -570,25 +580,19 @@ namespace Character_Morpher
 						toolPos = GUILayout.BeginScrollView(toolPos, true, false, new GUIStyle(GUI.skin.horizontalScrollbar), GUIStyle.none, GUILayout.Height(h + bar), GUILayout.ExpandWidth(true));
 						//	GUILayout.BeginHorizontal(GUILayout.ExpandHeight(false), GUILayout.ExpandWidth(true));
 
-						var tabstyle = new GUIStyle(GUI.skin.button)
-						{
 
-							padding = new RectOffset(5, 5, 5, 0),
-							alignment = TextAnchor.UpperLeft
-
-						};
 
 						//tabstyle.wordWrap = true;
 
-						var selec = GUILayout.Toolbar(selectedTool, names, tabstyle, GUILayout.ExpandHeight(false), GUILayout.Width(winRec.width * 0.2f * names.Length));
+						var selec = GUILayout.Toolbar(selectedChar, names, tabstyle, GUILayout.ExpandHeight(false), GUILayout.Width(winRec.width * 0.2f * names.Length));
 
 						//tab changed
-						if(selec != selectedTool || selectedCharacterChanged)
+						if(selec != selectedChar || selectedCharacterChanged)
 						{
-							selectedTool = selec;
+							selectedChar = selec;
 
 							if(names.Length > 0 && !names.InRange(selec))
-								selectedTool = selec = Mathf.Clamp(selec, 0, names.Length);
+								selectedChar = selec = Mathf.Clamp(selec, 0, names.Length);
 
 							var mctrl = selectedCtrls.InRange(selec) ? selectedCtrls.ElementAt(selec) : null;
 							skipFrames = (studioMorphCtrl == null) != (mctrl == null) ? 3 : 0;
@@ -637,7 +641,7 @@ namespace Character_Morpher
 						#region Slider Stuff
 
 
-						foreach(var cat in Instance.controlCategories[defaultStr])
+						foreach(var cat in inst.controlCategories[defaultStr])
 							if(cat.dataName.ToLower().Contains("voice"))
 								CreateVoiceSlider(cat.dataName, studioMorphCtrl);
 							else
@@ -669,7 +673,7 @@ namespace Character_Morpher
 									if(last != studioMorphCtrl || !init)
 										return
 										(studioMorphCtrl?.controls?.all?.Keys.ToList() ??
-										Instance?.controlCategories?.Keys.ToList())
+										inst?.controlCategories?.Keys.ToList())
 										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
 										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 										.ToArray() ??
@@ -682,7 +686,7 @@ namespace Character_Morpher
 									{
 										selected = SwitchControlSet((
 										studioMorphCtrl?.controls?.all?.Keys?.ToList() ??
-										Instance?.controlCategories?.Keys.ToList())
+										inst?.controlCategories?.Keys.ToList())
 										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
 										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 										.ToArray() ??
@@ -695,7 +699,7 @@ namespace Character_Morpher
 								onSelect: (selected) =>
 								SwitchControlSet((
 										studioMorphCtrl?.controls?.all?.Keys?.ToList() ??
-										Instance?.controlCategories?.Keys.ToList())
+										inst?.controlCategories?.Keys.ToList())
 										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
 										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 										.ToArray() ??
@@ -734,12 +738,12 @@ namespace Character_Morpher
 						GUILayout.BeginHorizontal();
 						if(GUILayout.Button("Add New Slot"))
 						{
-							AddNewSetting(ctrl1: studioMorphCtrl);
+							AddNewSetting(ctrl1: studioMorphCtrl, useUserDefault: useDefaultAsDefault);
 
 							//update dropdown list				 
 							//UpdateGUISelectList();
 							SwitchControlSet((studioMorphCtrl?.controls?.all?.Keys?.ToList() ??
-										Instance?.controlCategories?.Keys.ToList())
+										inst?.controlCategories?.Keys.ToList())
 										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
 										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 										.ToArray() ??
@@ -750,7 +754,7 @@ namespace Character_Morpher
 						{
 							//switch control before deletion
 							var list = (studioMorphCtrl?.controls?.all?.Keys?.ToList() ??
-										Instance?.controlCategories?.Keys.ToList())
+										inst?.controlCategories?.Keys.ToList())
 										.Attempt((k) => k.LastIndexOf(strDiv) >= 0 ?
 										k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 										.ToArray() ??
@@ -894,6 +898,8 @@ namespace Character_Morpher
 				cfg.currentControlSetName.SettingChanged -= currentControlNameEvent;
 			if(loadInitMorphCharacterEvent != null)
 				cfg.loadInitMorphCharacter.SettingChanged -= loadInitMorphCharacterEvent;
+			if(userDefaultAsDefaultEvent != null)
+				cfg.userDefaultAsDefault.SettingChanged -= userDefaultAsDefaultEvent;
 			if(easyMorphOverallEvent != null)
 				cfg.easyMorphBtnOverallSet.SettingChanged -= easyMorphOverallEvent;
 			if(easyMorphDefaultingEvent != null)
@@ -914,7 +920,8 @@ namespace Character_Morpher
 		{
 			Cleanup();//must be called (its now called elsewhere but this can stay)
 
-			var inst = Instance;
+			var inst = CharaMorpher_Core.Instance;
+
 
 			//	if(GetMakerSex() != 0 || !cfg.enableInMaleMaker.Value) return;//lets try it out in male maker
 
@@ -966,9 +973,9 @@ namespace Character_Morpher
 			#endregion
 
 			#region Enables
-			e.AddControl(new MakerText("Enablers", category, Instance));
+			e.AddControl(new MakerText("Enablers", category, inst));
 
-			e.AddControl(new MakerToggle(category, "Enable", cfg.enable.Value, Instance))
+			e.AddControl(new MakerToggle(category, "Enable", cfg.enable.Value, inst))
 			  .OnGUIExists((gui) =>
 			  {
 				  cfg.enable.SettingChanged +=
@@ -987,7 +994,7 @@ namespace Character_Morpher
 				  });
 
 			if(ABMXDependency.IsInTargetVersionRange)
-				e.AddControl(new MakerToggle(category, "Enable ABMX", cfg.enableABMX.Value, Instance))
+				e.AddControl(new MakerToggle(category, "Enable ABMX", cfg.enableABMX.Value, inst))
 				  .OnGUIExists((gui) =>
 				  {
 					  cfg.enableABMX.SettingChanged +=
@@ -1006,7 +1013,7 @@ namespace Character_Morpher
 						  ShowEnabledSliders();
 					  });
 
-			e.AddControl(new MakerToggle(category, "Chara. Enable", true, Instance))
+			e.AddControl(new MakerToggle(category, "Chara. Enable", true, inst))
 			  .OnGUIExists((gui) =>
 			  {
 				  var ctrl = GetCharacterControl().GetComponentInParent<CharaMorpher_Controller>();
@@ -1029,7 +1036,7 @@ namespace Character_Morpher
 			  });
 
 			if(ABMXDependency.IsInTargetVersionRange)
-				e.AddControl(new MakerToggle(category, "Chara. Enable ABMX", true, Instance))
+				e.AddControl(new MakerToggle(category, "Chara. Enable ABMX", true, inst))
 				  .OnGUIExists((gui) =>
 				  {
 					  var ctrl = GetCharacterControl().GetComponentInParent<CharaMorpher_Controller>();
@@ -1052,7 +1059,7 @@ namespace Character_Morpher
 				  });
 
 
-			e.AddControl(new MakerToggle(category, "Save Ext. Data", cfg.saveExtData.Value, Instance))
+			e.AddControl(new MakerToggle(category, "Save Ext. Data", cfg.saveExtData.Value, inst))
 			   .OnGUIExists((gui) =>
 			   {
 				   cfg.saveExtData.SettingChanged +=
@@ -1065,7 +1072,7 @@ namespace Character_Morpher
 			   (ctrl, val) => { if(val != cfg.saveExtData.Value) cfg.saveExtData.Value = val; });
 
 
-			e.AddControl(new MakerToggle(category, "Link Overall Sliders to ABMX Overall Sliders", cfg.linkOverallABMXSliders.Value, Instance))
+			e.AddControl(new MakerToggle(category, "Link Overall Sliders to ABMX Overall Sliders", cfg.linkOverallABMXSliders.Value, inst))
 			  .OnGUIExists((gui) =>
 			  {
 				  cfg.linkOverallABMXSliders.SettingChanged +=
@@ -1086,7 +1093,7 @@ namespace Character_Morpher
 				  //	ctrl.StartCoroutine(ctrl.CoResetHeight(delayFrames: (int)cfg.multiUpdateEnableTest.Value + 1));//this may be necessary (it is)
 			  });
 
-			var enableQuadManip = e.AddControl(new MakerToggle(category, "Enable Calculation Types", cfg.enableCalcTypes.Value, Instance))
+			var enableQuadManip = e.AddControl(new MakerToggle(category, "Enable Calculation Types", cfg.enableCalcTypes.Value, inst))
 				.OnGUIExists((gui) =>
 				{
 					cfg.enableCalcTypes.SettingChanged +=
@@ -1097,7 +1104,7 @@ namespace Character_Morpher
 				}
 				);
 
-			_ = e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.preferCardMorphDataMaker.Value, Instance))
+			_ = e.AddControl(new MakerToggle(category, "Use Card Morph Data", cfg.preferCardMorphDataMaker.Value, inst))
 						.OnGUIExists((gui) =>
 						{
 							gui?.ValueChanged?.Subscribe((_1) =>
@@ -1112,7 +1119,7 @@ namespace Character_Morpher
 							lastUCMDEvent = (s, o) =>
 							{
 
-								var ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>()?.First();
+								var ctrl = ProloGeneral.GetAllChaFuncCtrlOfType<CharaMorpher_Controller>()?.First();
 
 								IEnumerator CoUCMD()
 								{
@@ -1134,7 +1141,7 @@ namespace Character_Morpher
 							tooltipMsg(cfg.preferCardMorphDataMaker.Description.Description, gui);
 						});
 
-			_ = e.AddControl(new MakerToggle(category, "Load Init. Character", cfg.loadInitMorphCharacter.Value, Instance))
+			_ = e.AddControl(new MakerToggle(category, "Load Init. Character", cfg.loadInitMorphCharacter.Value, inst))
 				.OnGUIExists((gui) =>
 				{
 
@@ -1147,13 +1154,27 @@ namespace Character_Morpher
 						});
 
 					cfg.loadInitMorphCharacter.SettingChanged +=
-					loadInitMorphCharacterEvent += (m, n) =>
+					loadInitMorphCharacterEvent = (m, n) =>
 					gui?.ControlObject?.GetComponentInChildren<Toggle>()?.Set(cfg.loadInitMorphCharacter.Value);
 
 					tooltipMsg(cfg.loadInitMorphCharacter.Description.Description, gui);
 				});
 
-			e.AddControl(new MakerToggle(category, "Enable Tooltips", cfg.enableTooltips.Value, Instance))
+			e.AddControl(new MakerToggle(category, "User Default As Default", cfg.userDefaultAsDefault.Value, inst))
+				.OnGUIExists((gui) =>
+				{
+
+					cfg.userDefaultAsDefault.SettingChanged +=
+					userDefaultAsDefaultEvent = (m, n) =>
+					{
+						if(gui?.Value != cfg.userDefaultAsDefault.Value)
+							gui?.SetValue(cfg.userDefaultAsDefault.Value);
+					};
+					gui.ValueChanged.Subscribe((tgl) => cfg.userDefaultAsDefault.Value = tgl);
+					tooltipMsg(cfg.userDefaultAsDefault.Description.Description, gui);
+				});
+
+			e.AddControl(new MakerToggle(category, "Enable Tooltips", cfg.enableTooltips.Value, inst))
 				.OnGUIExists(gui =>
 				{
 					cfg.enableTooltips.SettingChanged +=
@@ -1163,20 +1184,20 @@ namespace Character_Morpher
 					gui.ValueChanged.Subscribe((val) => { cfg.enableTooltips.Value = val; });
 				});
 
-			e.AddControl(new MakerButton("Reset To Original Shape", category, Instance))
+			e.AddControl(new MakerButton("Reset To Original Shape", category, inst))
 				.OnGUIExists((gui) =>
 				{
 					var btn = (MakerButton)gui;
 
 					btn.OnClick.AddListener(() =>
 					{
-						var ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>().First();
+						var ctrl = ProloGeneral.GetAllChaFuncCtrlOfType<CharaMorpher_Controller>().First();
 						ctrl.ResetOriginalShape();
 					});
 					tooltipMsg("resets shape of character to how it looked when disabled (will not change morph values)", gui);
 				});
 
-			e.AddControl(new MakerSeparator(category, Instance));
+			e.AddControl(new MakerSeparator(category, inst));
 			#endregion
 
 			#region Easy Morph Stuff
@@ -1207,13 +1228,13 @@ namespace Character_Morpher
 				//add space after separator
 				if(Regex.IsMatch(settingName, searchHits[0], RegexOptions.IgnoreCase))
 				{
-					e.AddControl(new MakerText("", category, Instance));//create space
+					e.AddControl(new MakerText("", category, inst));//create space
 
 					string part = Regex.Replace(visualName, searchHits[0],
 						Regex.IsMatch(visualName, searchHits[1], RegexOptions.IgnoreCase) ? "" : "Base", RegexOptions.IgnoreCase);
 
 					part = Regex.Replace(part, "  ", " ", RegexOptions.IgnoreCase);
-					e.AddControl(new MakerText($"{part} Controls".Trim(), category, Instance));
+					e.AddControl(new MakerText($"{part} Controls".Trim(), category, inst));
 				}
 
 
@@ -1227,7 +1248,7 @@ namespace Character_Morpher
 
 
 				//setup slider
-				var currSlider = sliders.AddNReturn(e.AddControl(new MorphMakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[cfg.currentControlSetName.Value][settingName].Value.data, Instance)));
+				var currSlider = sliders.AddNReturn(e.AddControl(new MorphMakerSlider(category, visualName.Trim(), min, max, (float)cfg.defaults[cfg.currentControlSetName.Value][settingName].Value.data, inst)));
 				currSlider.BindToFunctionController<CharaMorpher_Controller, float>(
 						(ctrl) => ctrl.controls.all[ctrl.controls.currentSet][settingName].data,
 						(ctrl, val) =>
@@ -1251,7 +1272,7 @@ namespace Character_Morpher
 
 				//mode dropdown 
 				var ting = Enum.GetNames(typeof(MorphCalcType));
-				var currMode = modes.AddNReturn(e.AddControl(new MorphMakerDropdown("", ting, category, (int)cfg.defaults[cfg.currentControlSetName.Value][settingName].Value.calcType, Instance)));
+				var currMode = modes.AddNReturn(e.AddControl(new MorphMakerDropdown("", ting, category, (int)cfg.defaults[cfg.currentControlSetName.Value][settingName].Value.calcType, inst)));
 				currMode.BindToFunctionController<CharaMorpher_Controller, int>(
 						(ctrl) => (int)ctrl.controls.all[ctrl.controls.currentSet][settingName].calcType,
 						(ctrl, val) =>
@@ -1276,7 +1297,7 @@ namespace Character_Morpher
 				{
 					if(cfg.debug.Value) Logger.LogDebug("controls updating");
 
-					CharaMorpher_Controller ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull(k => k != null);//first one only
+					CharaMorpher_Controller ctrl = ProloGeneral.GetAllChaFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull(k => k != null);//first one only
 
 					if(ctrl == null) return;
 
@@ -1308,7 +1329,7 @@ namespace Character_Morpher
 
 				//add separator after overall control
 				if(Regex.IsMatch(settingName, searchHits[0], RegexOptions.IgnoreCase))
-					e.AddControl(new MakerSeparator(category, Instance));//create separator line
+					e.AddControl(new MakerSeparator(category, inst));//create separator line
 
 				return currSlider;
 			}
@@ -1400,7 +1421,7 @@ namespace Character_Morpher
 					CreateShapeSlider(ctrl.dataName);
 
 
-			e.AddControl(new MakerText("", category, Instance));//create space
+			e.AddControl(new MakerText("", category, inst));//create space
 
 			//e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
 			#endregion
@@ -1477,17 +1498,16 @@ namespace Character_Morpher
 
 			if(cfg.debug.Value) Logger.LogDebug($"Adding buttons");
 
-			var sep = e.AddControl(new MakerSeparator(category, Instance))
-				.OnGUIExists((gui) => gui.AddToCustomGUILayout());
+			var sep = e.AddControl(new MakerSeparator(category, inst))
+				 .AddToCustomGUILayout(-1, debug: cfg.debug.Value);
 
 			select = e.AddControl(
-				new MorphMakerDropdown("Selected Slot", ControlsList, category, 0, Instance))
-				.OnGUIExists(
-				(gui) =>
+				new MorphMakerDropdown("Selected Slot", ControlsList, category, 0, inst))
+				.AddToCustomGUILayout(-1, debug: cfg.debug.Value)
+				.OnGUIExists((gui) =>
 				{
 					MorphMakerDropdown mmd = (MorphMakerDropdown)gui;
 
-					gui.AddToCustomGUILayout();
 					mmd.ValueChanged?.Subscribe((val) =>
 					{
 						mmd.Value = SwitchControlSet(mmd.Options, val);
@@ -1497,9 +1517,9 @@ namespace Character_Morpher
 				});
 
 
-			e.AddControl(new MakerButton("Add New Slot", category, Instance))
-				   .OnGUIExists((gui) => gui.AddToCustomGUILayout(newVertLine: true)).
-				   OnClick.AddListener(() =>
+			e.AddControl(new MakerButton("Add New Slot", category, inst))
+				.AddToCustomGUILayout(-1, newVertLine: true, debug: cfg.debug.Value)
+				.OnClick.AddListener(() =>
 				   {
 					   AddNewSetting();
 
@@ -1508,9 +1528,9 @@ namespace Character_Morpher
 				   });
 
 
-			e.AddControl(new MakerButton("Remove Current Slot", category, Instance))
-				.OnGUIExists((gui) => gui.AddToCustomGUILayout(newVertLine: false)).
-				OnClick.AddListener(() =>
+			e.AddControl(new MakerButton("Remove Current Slot", category, inst))
+				.AddToCustomGUILayout(-1, newVertLine: false, debug: cfg.debug.Value)
+				.OnClick.AddListener(() =>
 				{
 
 					//switch control before deletion
@@ -1525,92 +1545,90 @@ namespace Character_Morpher
 				});
 
 
-			e.AddControl(new MakerButton("Save To Slot", category, Instance))
-			   .OnGUIExists((gui) => { gui.AddToCustomGUILayout(newVertLine: true); }).
-			   OnClick.AddListener(() =>
+			e.AddControl(new MakerButton("Save To Slot", category, inst))
+				.AddToCustomGUILayout(-1, newVertLine: true, debug: cfg.debug.Value)
+				.OnClick.AddListener(() =>
+				{
+					foreach(var slider in sliders)
+						slider.ApplyDefault();
+					foreach(var mode in modes)
+						mode.ApplyStoredSetting();
+
+					var ctrl = ProloGeneral.GetAllChaFuncCtrlOfType<CharaMorpher_Controller>().First();
+					//int count = 0;
+					//cfg.defaults[ctrl.controls.currentSet] = new List<ConfigEntry<float>>();
+					if(!cfg.preferCardMorphDataMaker.Value || ctrl.ctrls2 == null)
+						foreach(var def in inst.controlCategories[ctrl.controls.currentSet])
+						{
+
+							cfg.defaults[ctrl.controls.currentSet][def.dataName].Value.data =
+							ctrl.controls.all[ctrl.controls.currentSet][def.dataName].data;//this should work
+																						   //count++;
+						}
+
+
+					if(!cfg.preferCardMorphDataMaker.Value || ctrl.ctrls2 == null)
+						foreach(var def in inst.controlCategories[ctrl.controls.currentSet])
+							cfg.defaults[ctrl.controls.currentSet][def.dataName].Value.calcType =
+							ctrl.controls.all[ctrl.controls.currentSet][def.dataName].calcType;
+
+					ctrl.SoftSaveControls(cfg.preferCardMorphDataMaker.Value, defaultSave: false);
+					Logger.LogMessage($"Saved as CharaMorpher {ctrl.controls.currentSet}");
+
+					Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
+				});
+
+
+			e.AddControl(new MakerButton("Load From Slot", category, inst))
+			   .AddToCustomGUILayout(cfg.makerViewportUISpace.Value, newVertLine: false, debug: cfg.debug.Value)
+			   .OnGUIExists((gui) => loadDefaultValues = (bool showMessage, bool playSound, bool runUpdate) =>
 			   {
+				   var ctrl = ProloGeneral.GetAllChaFuncCtrlOfType<CharaMorpher_Controller>().First();
+
+				   var data = (!ctrl.IsUsingExtMorphData ? ctrl.ctrls1 : (ctrl.ctrls2 ?? ctrl.ctrls1))?.Clone()?.all;
+				   var listCtrls = ctrl?.controls;
+				   var list = listCtrls?.all;
+				   var name = cfg.currentControlSetName.Value;
+
+				   if(list?.ContainsKey(name) ?? false)
+					   foreach(var def2 in list[name].Keys.ToList())
+					   {
+						   if(cfg.debug.Value)
+						   {
+							   Logger.LogDebug($"Data Expected: data[{name}][{def2}]");
+							   Logger.LogDebug($"Data Key1:\n data[{string.Join(",\n ", data?.Keys.ToArray())}]");
+							   Logger.LogDebug($"Data Key2:\n data[{string.Join(",\n ", data?[data.Keys.ElementAt(0)].Keys.ToArray())}]");
+						   }
+
+						   var val = data[name][def2].data;
+						   var cal = data[name][def2].calcType;
+
+						   list[name][def2] = data[name][def2].Clone();
+					   }
+
+				   OnInternalSliderValueChange.Invoke(listCtrls);
+
 				   foreach(var slider in sliders)
 					   slider.ApplyDefault();
 				   foreach(var mode in modes)
 					   mode.ApplyStoredSetting();
 
-				   var ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>().First();
-				   //int count = 0;
-				   //cfg.defaults[ctrl.controls.currentSet] = new List<ConfigEntry<float>>();
-				   if(!cfg.preferCardMorphDataMaker.Value || ctrl.ctrls2 == null)
-					   foreach(var def in inst.controlCategories[ctrl.controls.currentSet])
-					   {
+				   if(runUpdate)
+					   for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
+						   ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
 
-						   cfg.defaults[ctrl.controls.currentSet][def.dataName].Value.data =
-						   ctrl.controls.all[ctrl.controls.currentSet][def.dataName].data;//this should work
-																						  //count++;
-					   }
+				   if(showMessage)
+					   Logger.LogMessage($"Loaded CharaMorpher: {name}");
 
-
-				   if(!cfg.preferCardMorphDataMaker.Value || ctrl.ctrls2 == null)
-					   foreach(var def in inst.controlCategories[ctrl.controls.currentSet])
-						   cfg.defaults[ctrl.controls.currentSet][def.dataName].Value.calcType =
-						   ctrl.controls.all[ctrl.controls.currentSet][def.dataName].calcType;
-
-				   ctrl.SoftSaveControls(cfg.preferCardMorphDataMaker.Value, defaultSave: false);
-				   Logger.LogMessage($"Saved as CharaMorpher {ctrl.controls.currentSet}");
-
-				   Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_s);
-			   });
-
-
-			e.AddControl(new MakerButton("Load From Slot", category, Instance))
-			   .OnGUIExists((gui) =>
-			   {
-				   gui.AddToCustomGUILayout(newVertLine: false);
-				   loadDefaultValues = (bool showMessage, bool playSound, bool runUpdate) =>
-				   {
-					   var ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>().First();
-
-					   var data = (!ctrl.IsUsingExtMorphData ? ctrl.ctrls1 : (ctrl.ctrls2 ?? ctrl.ctrls1))?.Clone()?.all;
-					   var listCtrls = ctrl?.controls;
-					   var list = listCtrls?.all;
-					   var name = cfg.currentControlSetName.Value;
-
-					   if(list?.ContainsKey(name) ?? false)
-						   foreach(var def2 in list[name].Keys.ToList())
-						   {
-							   if(cfg.debug.Value)
-							   {
-								   Logger.LogDebug($"Data Expected: data[{name}][{def2}]");
-								   Logger.LogDebug($"Data Key1:\n data[{string.Join(",\n ", data?.Keys.ToArray())}]");
-								   Logger.LogDebug($"Data Key2:\n data[{string.Join(",\n ", data?[data.Keys.ElementAt(0)].Keys.ToArray())}]");
-							   }
-
-							   var val = data[name][def2].data;
-							   var cal = data[name][def2].calcType;
-
-							   list[name][def2] = data[name][def2].Clone();
-						   }
-
-					   OnInternalSliderValueChange.Invoke(listCtrls);
-
-					   foreach(var slider in sliders)
-						   slider.ApplyDefault();
-					   foreach(var mode in modes)
-						   mode.ApplyStoredSetting();
-
-					   if(runUpdate)
-						   for(int b = -1; b < cfg.multiUpdateEnableTest.Value;)
-							   ctrl.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: ++b));//this may be necessary 
-
-					   if(showMessage)
-						   Logger.LogMessage($"Loaded CharaMorpher: {name}");
-
-					   if(playSound)
-						   Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
-				   };
-			   }).
-			   OnClick.AddListener(() =>
+				   if(playSound)
+					   Illusion.Game.Utils.Sound.Play(Illusion.Game.SystemSE.ok_l);
+			   })
+			   .OnClick.AddListener(() =>
 			   {
 				   loadDefaultValues?.Invoke(true, true, true);
 			   });
 
+			//select.ResizeCustomUIViewport(cfg.makerViewportUISpace.Value);
 
 			if(cfg.debug.Value) Logger.LogDebug($"Finished adding buttons");
 			//e.AddControl(new MakerSeparator(category, CharaMorpher_Core.Instance));
@@ -1626,7 +1644,9 @@ namespace Character_Morpher
 
 		private static void ImageControls(RegisterCustomControlsEvent e, BaseUnityPlugin owner)
 		{
-			e.AddControl(new MakerText("Morph Target", category, Instance));
+			var inst = CharaMorpher_Core.Instance;
+
+			e.AddControl(new MakerText("Morph Target", category, inst));
 
 
 			var img = e.AddControl(new MakerImage(null, category, owner)
@@ -1647,7 +1667,7 @@ namespace Character_Morpher
 				(path, png) =>
 				{
 					if(cfg.debug.Value) Logger.LogDebug($"Calling OnNewTargetImage callback");
-					Instance.StartCoroutine(CoSetTexture(path, png));
+					inst.StartCoroutine(CoSetTexture(path, png));
 				});
 
 			e.AddControl(new MakerButton($"Set New Morph Target", category, owner))
@@ -1665,19 +1685,20 @@ namespace Character_Morpher
 				{
 					gui.OnClick.AddListener(() =>
 					{
-						var ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>().First();
+						var ctrl = ProloGeneral.GetAllChaFuncCtrlOfType<CharaMorpher_Controller>().First();
 						ctrl.MorphTargetUpdate(clearTarget: true);
 					});
 				});
 
-			e.AddControl(new MakerSeparator(category, Instance));
+			e.AddControl(new MakerSeparator(category, inst));
 		}
 
 		private static void ButtonDefaults(RegisterCustomControlsEvent e, BaseUnityPlugin owner)
 		{
+			var inst = CharaMorpher_Core.Instance;
 
 			//e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
-			e.AddControl(new MakerText("Easy Morph Buttons", category, Instance));
+			e.AddControl(new MakerText("Easy Morph Buttons", category, inst));
 
 			((MakerToggle)e.AddControl(new MakerToggle(category, "Control overall sliders with Morph Buttons", cfg.easyMorphBtnOverallSet.Value, owner))
 				.OnGUIExists((gui) =>
@@ -1706,7 +1727,7 @@ namespace Character_Morpher
 					swap = cfg.easyMorphBtnOverallSet.Value,
 					reset = cfg.easyMorphBtnEnableDefaulting.Value;
 
-					foreach(CharaMorpher_Controller ctrl in Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>())
+					foreach(CharaMorpher_Controller ctrl in ProloGeneral.GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 					{
 						//	ctrl.StopAllCoroutines();
 
@@ -1748,7 +1769,7 @@ namespace Character_Morpher
 
 
 			//Add Ending
-			e.AddControl(new MakerSeparator(category, Instance));
+			e.AddControl(new MakerSeparator(category, inst));
 			//	e.AddControl(new MakerText("", category, CharaMorpher_Core.Instance));//create space
 		}
 
@@ -1757,7 +1778,7 @@ namespace Character_Morpher
 			if(!InsideMaker && !InsideStudio) return;
 			if(select == null) return;
 
-			var ctrl = Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>().FirstOrNull();
+			var ctrl = ProloGeneral.GetAllChaFuncCtrlOfType<CharaMorpher_Controller>().FirstOrNull();
 
 			select.Options = ControlsList;
 			select.Value = SwitchControlSet(select.Options, ctrl?.controls.currentSet);
@@ -1768,6 +1789,7 @@ namespace Character_Morpher
 		#region Other
 		static IEnumerator CoUCMDCommon(CharaMorpher_Controller ctrl, bool lastUCMD)
 		{
+
 
 			string name =
 			(!cfg.preferCardMorphDataMaker.Value ?
@@ -1847,7 +1869,7 @@ namespace Character_Morpher
 			cfg.charDir.Value = Path.GetDirectoryName(texPath).MakeDirPath();
 			cfg.imageName.Value = texPath.Substring(texPath.LastIndexOf('/') + 1).MakeDirPath();//not sure why this happens on hs2?
 
-			foreach(var ctrl in Util_General.GetFuncCtrlOfType<CharaMorpher_Controller>())
+			foreach(var ctrl in ProloGeneral.GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 				if(ctrl.IsInitLoadFinished)
 					ctrl.StartCoroutine(ctrl.CoMorphTargetUpdate(5));
 

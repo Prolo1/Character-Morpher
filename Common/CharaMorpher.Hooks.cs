@@ -26,7 +26,7 @@ using ChaCustom;
 //using StrayTech;
 #endif
 
-using static ProloAPI.Utilities.Util_General;
+using static ProloAPI.Utilities.ProloGeneral;
 namespace Character_Morpher
 {
 	public partial class CharaMorpher_Core
@@ -43,7 +43,7 @@ namespace Character_Morpher
 			static void UpdateCurrentCharacters(bool forcereset = false)
 			{
 				if((MakerAPI.InsideMaker || StudioAPI.InsideStudio) || cfg.enableInGame.Value)//Make sure the in-game flag is checked
-					foreach(CharaMorpher_Controller ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+					foreach(CharaMorpher_Controller ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 					{
 						if(!ctrl) continue;
 						if(ctrl.IsInitLoadFinished && !ctrl.IsReloading)
@@ -98,13 +98,13 @@ namespace Character_Morpher
 			[HarmonyPostfix]
 			[HarmonyPatch(typeof(FadeCanvas), nameof(FadeCanvas.StartAysnc),
 				new Type[] { typeof(FadeCanvas.Fade), typeof(float), typeof(bool), typeof(bool), }),]
-			static void OnSceneUnLoad(FadeCanvas __instance,FadeCanvas.Fade __0)
+			static void OnSceneUnLoad(FadeCanvas __instance, FadeCanvas.Fade __0)
 			{
 				if(!(__instance is SceneFadeCanvas)) return;
-			
+
 				IEnumerator after()
 				{
-					for(int a = -1; a < cfg.reloadTest.Value; ++a)
+					for(int a = -1; a < (cfg.reloadTest?.Value ?? 0); ++a)
 						yield return null;
 					if(!MakerAPI.InsideMaker) UpdateCurrentCharacters();
 				}
@@ -140,13 +140,13 @@ namespace Character_Morpher
 					yield break;
 				}
 
-				foreach(CharaMorpher_Controller ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+				foreach(CharaMorpher_Controller ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 				{
 
 #if !KK
 					if(ctrl.ChaControl.chaFile == __instance)
 #endif
-					Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
+						Instance.StartCoroutine(DelayedPngSet(ctrl, _png, _facePng));
 				}
 
 			}
@@ -291,6 +291,6 @@ namespace Character_Morpher
 
 
 		}
-		 
+
 	}
 }

@@ -26,19 +26,17 @@ using ExtensibleSaveFormat;
 using MessagePack.Resolvers;
 using MessagePack.Unity;
 using MessagePack;
-using Studio;
+
 using ProloAPI;
 using ProloAPI.Extentions;
+using ProloAPI.Utilities;
+
+using Studio;
 //using HarmonyLib;
 
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
-using TMPro;
 using UniRx;
-
-
 
 #if HONEY_API
 
@@ -48,13 +46,12 @@ using static AIChara.ChaFileDefine;
 using static ChaFileDefine;
 #endif
 
+using CharaMorphUnityPlugin = ProloAPI.ProloUnityPlugin<Character_Morpher.CharaMorpher_Core>;
 using static Character_Morpher.CharaMorpher_Core;
-//using static Character_Morpher.CharaMorpher_Controller;
 using static Character_Morpher.CharaMorpher_GUI;
-using static ProloAPI.Utilities.Util_General;
-using static ProloAPI.Utilities.Util_GUI;
+using static ProloAPI.Utilities.ProloGeneral;
+using static ProloAPI.Utilities.ProloGUI;
 using static BepInEx.Logging.LogLevel;
-using ProloUnityPlugin = ProloAPI.ProloUnityPlugin<Character_Morpher.CharaMorpher_Core, Character_Morpher.CharaMorpher_Core.MorphConfig>;
 
 /***********************************************
   Features:
@@ -97,7 +94,7 @@ namespace Character_Morpher
 	#endregion
 	// Specify this as a plugin that gets loaded by BepInEx
 	[BepInPlugin(GUID, ModName, Version)]
-	public partial class CharaMorpher_Core : ProloUnityPlugin
+	public partial class CharaMorpher_Core : ProloUnityPlugin<CharaMorpher_Core>
 	{
 
 		#region variables
@@ -114,9 +111,9 @@ namespace Character_Morpher
 		public const string strDiv = ":";
 		public const string defaultStr = "(Default)" + strDiv;
 
-		public static new MorphConfig cfg { get => ((ProloUnityPlugin)Instance).cfg; }
-		public static new CharaMorpher_Core Instance { get => ProloUnityPlugin.Instance; }
-		public static new ManualLogSource Logger { get => ((ProloUnityPlugin)Instance).Logger; }
+		//public static new MorphConfig cfg { get => ProloUnityPlugin.cfg; }
+		//public static new CharaMorpher_Core Instance { get => ProloUnityPlugin.Instance; }
+		//public static new ManualLogSource Logger { get => ProloUnityPlugin.Logger; }
 
 
 		internal readonly static OnNewImage OnNewTargetImage = new OnNewImage();
@@ -124,8 +121,12 @@ namespace Character_Morpher
 		internal readonly static OnControlSetValueChange OnInternalControlListChanged = new OnControlSetValueChange();
 
 		internal static DependencyInfo<KKABMX_Core> ABMXDependency;
-
 		internal static DependencyInfo<BaseUnityPlugin> TimelineDependency;
+
+		public static new CharaMorpher_Core Instance { get => CharaMorphUnityPlugin.Instance; }
+		public static new ManualLogSource Logger { get => CharaMorphUnityPlugin.Logger; }
+		public static MorphConfig cfg;
+
 
 		internal static Texture2D UIGoku = null;
 		internal static Texture2D iconBG = null;
@@ -153,6 +154,7 @@ namespace Character_Morpher
 			public ConfigEntry<bool> preferCardMorphDataGame { set; get; }
 			public ConfigEntry<bool> loadInitMorphCharacter { set; get; }
 			public ConfigEntry<bool> onlyMorphCharWithDataInGame { set; get; }
+			public ConfigEntry<bool> userDefaultAsDefault { set; get; }
 			public ConfigEntry<bool> enableTooltips { set; get; }
 			public ConfigEntry<bool> nukeStudio { set; get; }
 			public ConfigEntry<string> resetToOrigShapeBtn { set; get; }
@@ -212,14 +214,26 @@ namespace Character_Morpher
 		}
 		#endregion
 
+
+		//public CharaMorpher_Core()
+		//{
+		//
+		//	Debug.Log("Logging does work so that is good");
+		//	ForeGrounder.SetCurrentForground();
+		//
+		//	info = new ProloInfo { GUID = GUID, ModName = ModName, Version = Version };
+		//	Instance = this;
+		//	//cfg = cfg;
+		//	SetApiInst(this);
+		//
+		//	Logger.LogInfo("Logging does work so that is good");
+		//
+		//}
+
 		void Awake()
 		{
-			ForeGrounder.SetCurrentForground();
-
-			info = new ProloInfo { GUID = GUID, ModName = ModName, Version = Version };
-			ProloUnityPlugin.Instance = this;
-			base.cfg = cfg;
-			SetApiInst(this);
+			//Logger.LogInfo(ProInfo);
+			//Logger.LogInfo("Logging does work so that is good");
 
 #if KK
 			//load Theraot.Core assembly location
@@ -233,8 +247,7 @@ namespace Character_Morpher
 			//}
 			//catch(Exception e) { Logger.LogError(e); }
 #endif
-
-
+			ProloGeneral.GetInstance<CharaMorpher_Core>();
 			//Soft dependency variables
 			{
 				ABMXDependency = new DependencyInfo<KKABMX_Core>(new Version(KKABMX_Core.Version));
@@ -245,42 +258,44 @@ namespace Character_Morpher
 						$"{ABMXDependency}");
 			}
 
+			//Logger.LogInfo("got past dependencies");
 			//Embedded Resources
 			using(MemoryStream memStream = new MemoryStream())
 			{
-				/**This stuff will be used later*/
 				var assembly = Assembly.GetExecutingAssembly();
 				var resources = assembly.GetManifestResourceNames();
-				//Logger.LogDebug($"\nResources:\n[{string.Join(", ", resources)}]");
+				MemoryStream ResourceGrabber(string name, Assembly ass = null, string[] res = null, MemoryStream mem = null)
+				{
+					/**This stuff will be used later*/
+					//Logger.LogDebug($"\nResources:\n[{string.Join(", ", resources)}]");
+					ass = ass ?? Assembly.GetExecutingAssembly();
+					res = res ?? ass.GetManifestResourceNames();
+					mem = mem ?? new MemoryStream();
 
-
-				var data = assembly.GetManifestResourceStream(resources.FirstOrDefault((txt) => (txt.ToLower()).Contains("ultra instinct")) ?? " ");
+					var data = ass.GetManifestResourceStream(res.FirstOrDefault((txt) => (txt.ToLower()).Contains(name)) ?? " ");
 #if KK
-				memStream.SetLength(0);//Clear Buffer 
-				memStream.Write(data.ReadAllBytes(), 0, (int)data.Length);//write Buffer
+					mem.SetLength(0);//Clear Buffer 
+					mem.Write(data.ReadAllBytes(), 0, (int)data.Length);//write Buffer
 #else
 				memStream.SetLength(0);//Clear Buffer 
 				data?.CopyTo(memStream);
 #endif
+					return mem;
+				}
+
+				//	var data = assembly.GetManifestResourceStream(resources.FirstOrDefault((txt) => (txt.ToLower()).Contains("ultra instinct")) ?? " ");
+				ResourceGrabber("ultra instinct", assembly, resources, memStream);
 				UIGoku =
 					memStream?.GetBuffer()?
 					.LoadTexture();
-				memStream.SetLength(0);
 				UIGoku.Compress(false);
 				UIGoku.Apply();
 
-				data = assembly.GetManifestResourceStream(resources.FirstOrDefault((txt) => (txt.ToLower()).Contains("studio morph icon.png")) ?? " ");
-#if KK
-				memStream.SetLength(0);//Clear Buffer 
-				memStream.Write(data.ReadAllBytes(), 0, (int)data.Length);//write Buffer
-#else
-				memStream.SetLength(0);//Clear Buffer 
-				data?.CopyTo(memStream);
-#endif
+				//data = assembly.GetManifestResourceStream(resources.FirstOrDefault((txt) => (txt.ToLower()).Contains("studio morph icon.png")) ?? " ");
+				ResourceGrabber("studio morph icon.png", assembly, resources, memStream);
 				iconBG =
 					memStream?.GetBuffer()?
 					.LoadTexture();
-				memStream.SetLength(0);
 				iconBG.Compress(false);
 				iconBG.Apply();
 
@@ -302,6 +317,7 @@ namespace Character_Morpher
 
 			}
 
+			//Logger.LogInfo("got past resources");
 			//Type Converters
 			{
 				TomlTypeConverter.AddConverter(
@@ -330,6 +346,7 @@ namespace Character_Morpher
 				MorphSliderData.CreateTypeConverter();
 			}
 
+			//Logger.LogInfo("got past Type converters");
 
 			string femalepath = Path.Combine(Paths.GameRootPath, "UserData/chara/female/").MakeDirPath();
 
@@ -358,12 +375,15 @@ namespace Character_Morpher
 			string advx =
 			$"{secIndex2--:d2}. " + "Advanced";
 			#endregion
+			//Logger.LogInfo("got past variable settings");
 
 			var saveCfgAuto =
 				Instance.Config.SaveOnConfigSet;
 			Instance.Config.SaveOnConfigSet = false;
 
-			base.cfg = new MorphConfig
+			//Config settings
+			//Logger.LogInfo("Got to setting the config");
+			cfg = new MorphConfig
 			{
 				//Main
 				enable = Config.Bind(main, "Enable", false,
@@ -397,6 +417,10 @@ namespace Character_Morpher
 				preferCardMorphDataGame = Config.Bind(main, "Use Card Morph Data (Game)", true,
 				new ConfigDescription("Allows the mod to use data from card instead of default data " +
 				"(If false card uses default Morph card data) \nNote: the image will go dark if using card data", null,
+				new ConfigurationManagerAttributes { Order = --index, Category = mainx })),
+				userDefaultAsDefault = Config.Bind(main, "User Default As Default", true,
+				new ConfigDescription("Enabling this option allows new slots to be populated " +
+				"with the same values as the '[default]' slot", null,
 				new ConfigurationManagerAttributes { Order = --index, Category = mainx })),
 				enableTooltips = Config.Bind(main, "Enable Tooltips", true,
 				new ConfigDescription("Enables tooltips in Maker and Studio so you can see whatever the hell these buttons do", null,
@@ -444,7 +468,7 @@ namespace Character_Morpher
 					HideSettingName = true,
 					CustomDrawer = ButtonDrawer(onClick: () =>
 					{
-						var ctrls = GetFuncCtrlOfType<CharaMorpher_Controller>();
+						var ctrls = GetAllChaFuncCtrlOfType<CharaMorpher_Controller>();
 
 						foreach(var ctrl in ctrls)
 							ctrl.ResetOriginalShape();
@@ -554,15 +578,16 @@ namespace Character_Morpher
 				new ConfigurationManagerAttributes { Order = --index, Category = advx, IsAdvanced = true })),
 			};
 
+			//Logger.LogInfo("Finished setting the config");
 			//Advanced
 			{
-				var cfg = base.cfg;
+				//	var cfg = this.cfg;
 
-				cfg.debug.ConfigDefaulter();
+				cfg.debug.ConfigDefaulter(cfg.resetOnLaunch.Value);
 				cfg.makerViewportUISpace = Config.Bind(adv, "Viewport UI Space",
 #if HONEY_API
 					.73f,
-#elif KOI_API
+#else
 					.86f,
 #endif
 					new ConfigDescription("Increase / decrease the Fashion Line viewport size ",
@@ -573,150 +598,150 @@ namespace Character_Morpher
 						ShowRangeAsPercent = false,
 						IsAdvanced = true,
 						Category = advx
-					})).ConfigDefaulter();
+					})).ConfigDefaulter(cfg.resetOnLaunch.Value);
 
 				//Tests
 				cfg.unknownTest = Config.Bind(tst, "Unknown Test value", 20,
 					new ConfigDescription("Used for whatever the hell I WANT (if you see this I forgot to take it out). RESETS ON GAME LAUNCH", null,
-					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
-				//	cfg.initialMorphTest = Config.Bind(tst, "Init morph value", 1.00f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
+				//	cfg.initialMorphTest = Config.Bind(tst, "Init morph value", 1.00f, new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH", new AcceptableValueRange<float>(0, 1), new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
 				cfg.multiUpdateEnableTest = Config.Bind(tst, "Multi Update Enable value", 5u,
 					new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null,
-					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
 				cfg.multiUpdateSliderTest = Config.Bind(tst, "Multi Update Slider value", 0u,
 					new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null,
-					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
 
 
 #if KOI_API
-				//cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
 				cfg.initialMorphFaceTest = Config.Bind(tst, "Init morph Face value", 0.00f,
 					new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH",
 					new AcceptableValueRange<float>(0, 1),
-					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
 				cfg.initialMorphBodyTest = Config.Bind(tst, "Init morph Body value", 0.00f,
 					new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH",
 					new AcceptableValueRange<float>(0, 1),
-					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
 				cfg.reloadTest = Config.Bind(tst, "Reload delay value", 22u,
 					new ConfigDescription("Used to change the amount of frames to delay before loading. RESETS ON GAME LAUNCH (fixes odd issue)", null,
-					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
 #elif HONEY_API
 				cfg.initialMorphFaceTest = Config.Bind(tst, "Init morph Face value", 0.00f,
 					new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH",
 					new AcceptableValueRange<float>(0, 1),
-					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
 				cfg.initialMorphBodyTest = Config.Bind(tst, "Init morph Body value", 0.00f,
 					new ConfigDescription("Used for calculations on reload. Changing this may cause graphical errors (or fix them). RESETS ON GAME LAUNCH",
 					new AcceptableValueRange<float>(0, 1),
-					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
-				//cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
-				//cfg.multiUpdateEnableTest = Config.Bind("_Testing_", "Multi Update Enable value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
-				//cfg.multiUpdateSliderTest = Config.Bind("_Testing_", "Multi Update Slider value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
+				//cfg.multiUpdateTest = Config.Bind("_Testing_", "Multi Update value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
+				//cfg.multiUpdateEnableTest = Config.Bind("_Testing_", "Multi Update Enable value", 5u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
+				//cfg.multiUpdateSliderTest = Config.Bind("_Testing_", "Multi Update Slider value", 0u, new ConfigDescription("Used to determine how many extra updates are done per-frame. RESETS ON GAME LAUNCH (fixes odd issue)", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
 				cfg.reloadTest = Config.Bind(tst, "Reload delay value", 22u,
 					new ConfigDescription("Used to change the amount of frames to delay before loading. RESETS ON GAME LAUNCH (fixes odd issue)", null,
-					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+					new ConfigurationManagerAttributes { Order = --index, Category = tstx, Browsable = testing, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
 #endif
-				//	cfg.fullBoneResetTest = Config.Bind("_Testing_", "Full Bone Reset Delay", 3u, new ConfigDescription("Used to determine how long to wait for full bone reset. RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter();
+				//	cfg.fullBoneResetTest = Config.Bind("_Testing_", "Full Bone Reset Delay", 3u, new ConfigDescription("Used to determine how long to wait for full bone reset. RESETS ON GAME LAUNCH", null, new ConfigurationManagerAttributes { Order = --index, IsAdvanced = true, ShowRangeAsPercent = false })).ConfigDefaulter(cfg.resetOnLaunch.Value);
 
 
 				cfg.headIndex = new List<ConfigEntry<int>>{
-					Config.Bind("Adv1 Head", $"Head Index {index=1}", (int)BodyShapeIdx.HeadSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })).ConfigDefaulter(),
-					Config.Bind("Adv1 Head", $"Head Index {++index}", (int)BodyShapeIdx.NeckW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })).ConfigDefaulter(),
-					Config.Bind("Adv1 Head", $"Head Index {++index}", (int)BodyShapeIdx.NeckZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv1 Head", $"Head Index {index=1}", (int)BodyShapeIdx.HeadSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv1 Head", $"Head Index {++index}", (int)BodyShapeIdx.NeckW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv1 Head", $"Head Index {++index}", (int)BodyShapeIdx.NeckZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
 				};
 
 				cfg.brestIndex = new List<ConfigEntry<int>>
 				{
-					Config.Bind("Adv2 Brest", $"Brest Index {index=1}", (int)BodyShapeIdx.AreolaBulge, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustRotX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustRotY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustSharp, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.NipStand, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.NipWeight, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {index=1}", (int)BodyShapeIdx.AreolaBulge, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustRotX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustRotY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustSharp, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.NipStand, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.NipWeight, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
 #if KOI_API
-					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(),
+					Config.Bind("Adv2 Brest", $"Brest Index {++index}", (int)BodyShapeIdx.BustForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced = true })).ConfigDefaulter(cfg.resetOnLaunch.Value),
 #endif
 				};
 
 				cfg.torsoIndex = new List<ConfigEntry<int>>
 				{
-					Config.Bind("Adv3 Torso", $"Torso Index {index=1}",  (int)BodyShapeIdx.BodyLowW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.BodyLowZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.BodyShoulderW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.BodyShoulderZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.BodyUpW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.BodyUpZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.WaistUpW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.WaistUpZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.WaistY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {index=1}",  (int)BodyShapeIdx.BodyLowW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.BodyLowZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.BodyShoulderW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.BodyShoulderZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.BodyUpW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.BodyUpZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.WaistUpW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.WaistUpZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.WaistY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 				
 #if KOI_API
-					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.Belly, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv3 Torso", $"Torso Index {++index}",  (int)BodyShapeIdx.Belly, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 #endif
 				  };
 
 				cfg.armIndex = new List<ConfigEntry<int>>
 				{
 
-						Config.Bind("Adv4 Arm", $"Arm Index {index=1}", (int)BodyShapeIdx.ArmLow, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
+						Config.Bind("Adv4 Arm", $"Arm Index {index=1}", (int)BodyShapeIdx.ArmLow, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 #if HONEY_API
-						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ArmUp, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.Shoulder, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
+						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ArmUp, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.Shoulder, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 
 #elif KOI_API
-						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ArmUpW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ArmUpZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ElbowW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ElbowZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ShoulderW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ShoulderZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(),
+						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ArmUpW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ArmUpZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ElbowW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ElbowZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ShoulderW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv4 Arm", $"Arm Index {++index}", (int)BodyShapeIdx.ShoulderZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index , IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 			
 #endif
 				 };
 
 				cfg.buttIndex = new List<ConfigEntry<int>>
 				{
-						Config.Bind("Adv5 Butt", $"Butt Index {index=1}", (int)BodyShapeIdx.Hip, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv5 Butt", $"Butt Index {++index}", (int)BodyShapeIdx.HipRotX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv5 Butt", $"Butt Index {++index}", (int)BodyShapeIdx.WaistLowW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv5 Butt", $"Butt Index {++index}", (int)BodyShapeIdx.WaistLowZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+						Config.Bind("Adv5 Butt", $"Butt Index {index=1}", (int)BodyShapeIdx.Hip, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv5 Butt", $"Butt Index {++index}", (int)BodyShapeIdx.HipRotX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv5 Butt", $"Butt Index {++index}", (int)BodyShapeIdx.WaistLowW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv5 Butt", $"Butt Index {++index}", (int)BodyShapeIdx.WaistLowZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 
 				 };
 
 				cfg.legIndex = new List<ConfigEntry<int>>
 				{
-						Config.Bind("Adv6 Leg", $"Leg Index {index=1}", (int)BodyShapeIdx.Calf, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(),
+						Config.Bind("Adv6 Leg", $"Leg Index {index=1}", (int)BodyShapeIdx.Calf, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(cfg.resetOnLaunch.Value),
 					
 #if HONEY_API
 									
-						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.Ankle, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(),
-						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.ThighLow, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(),
-						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.ThighUp, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(),
+						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.Ankle, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.ThighLow, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.ThighUp, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})) .ConfigDefaulter(cfg.resetOnLaunch.Value),
 #elif KOI_API
 								
-						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.AnkleW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.AnkleZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.KneeLowW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.KneeLowZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.ThighLowW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.ThighLowZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.ThighUpW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.ThighUpZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.AnkleW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.AnkleZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.KneeLowW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.KneeLowZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.ThighLowW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.ThighLowZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.ThighUpW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv6 Leg", $"Leg Index {++index}", (int)BodyShapeIdx.ThighUpZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, bodyBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 #endif
 				  };
 
 				cfg.earIndex = new List<ConfigEntry<int>>
 				{
 
-					Config.Bind("Adv7 Ear", $"Ear Index {index=1}", (int)FaceShapeIdx.EarLowForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv7 Ear", $"Ear Index {++index}", (int)FaceShapeIdx.EarRotY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv7 Ear", $"Ear Index {++index}", (int)FaceShapeIdx.EarRotZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv7 Ear", $"Ear Index {++index}", (int)FaceShapeIdx.EarSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv7 Ear", $"Ear Index {++index}", (int)FaceShapeIdx.EarUpForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv7 Ear", $"Ear Index {index=1}", (int)FaceShapeIdx.EarLowForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv7 Ear", $"Ear Index {++index}", (int)FaceShapeIdx.EarRotY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv7 Ear", $"Ear Index {++index}", (int)FaceShapeIdx.EarRotZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv7 Ear", $"Ear Index {++index}", (int)FaceShapeIdx.EarSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv7 Ear", $"Ear Index {++index}", (int)FaceShapeIdx.EarUpForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 
 
 				};
@@ -724,75 +749,75 @@ namespace Character_Morpher
 				cfg.eyeIndex = new List<ConfigEntry<int>>
 				{
 
-						Config.Bind("Adv8 Eye", $"Eye Index {index=1}", (int)FaceShapeIdx.EyeH, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeInX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeOutY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+						Config.Bind("Adv8 Eye", $"Eye Index {index=1}", (int)FaceShapeIdx.EyeH, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeInX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeOutY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 
 
 #if HONEY_API
 											
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeInY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidForm01, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidForm02, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeOutX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeRotY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeRotZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeInY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidForm01, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidForm02, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeOutX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeRotY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeRotZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 #elif KOI_API
 									
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyebrowInForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyebrowOutForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyebrowRotZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyebrowX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyebrowY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidsLowForm1, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidsLowForm2, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidsLowForm3, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidsUpForm1, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidsUpForm2, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidsUpForm3, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeTilt, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyebrowInForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyebrowOutForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyebrowRotZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyebrowX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyebrowY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidsLowForm1, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidsLowForm2, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidsLowForm3, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidsUpForm1, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidsUpForm2, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyelidsUpForm3, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+						Config.Bind("Adv8 Eye", $"Eye Index {++index}", (int)FaceShapeIdx.EyeTilt, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, 58), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 #endif
 				};
 
 				cfg.noseIndex = new List<ConfigEntry<int>>
 				{
-					Config.Bind("Adv9 Nose", $"Nose Index {index=1}", (int)FaceShapeIdx.NoseBridgeH, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Nose", $"Nose Index {index=1}", (int)FaceShapeIdx.NoseBridgeH, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 				
 #if HONEY_API
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseAllRotX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseAllW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseAllY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseAllZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseBridgeForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseBridgeW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseH, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseRotX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseWingRotX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseWingRotZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseWingW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseWingY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseWingZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseAllRotX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseAllW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseAllY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseAllZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseBridgeForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseBridgeW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseH, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseRotX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseSize, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseWingRotX, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseWingRotZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseWingW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseWingY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseWingZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 #elif KOI_API
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseTipH, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseTipH, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv9 Nose", $"Nose Index {++index}", (int)FaceShapeIdx.NoseY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 #endif
 				};
 
 				cfg.mouthIndex = new List<ConfigEntry<int>>
 				{
-					Config.Bind("Adv10 Mouth", $"Mouth Index {index=1}", (int)FaceShapeIdx.MouthCornerForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv10 Mouth", $"Mouth Index {++index}", (int)FaceShapeIdx.MouthLowForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv10 Mouth", $"Mouth Index {++index}", (int)FaceShapeIdx.MouthUpForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv10 Mouth", $"Mouth Index {++index}", (int)FaceShapeIdx.MouthW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv10 Mouth", $"Mouth Index {++index}", (int)FaceShapeIdx.MouthY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
-					Config.Bind("Adv10 Mouth", $"Mouth Index {++index}", (int)FaceShapeIdx.MouthZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv10 Mouth", $"Mouth Index {index=1}", (int)FaceShapeIdx.MouthCornerForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv10 Mouth", $"Mouth Index {++index}", (int)FaceShapeIdx.MouthLowForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv10 Mouth", $"Mouth Index {++index}", (int)FaceShapeIdx.MouthUpForm, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv10 Mouth", $"Mouth Index {++index}", (int)FaceShapeIdx.MouthW, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv10 Mouth", $"Mouth Index {++index}", (int)FaceShapeIdx.MouthY, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
+					Config.Bind("Adv10 Mouth", $"Mouth Index {++index}", (int)FaceShapeIdx.MouthZ, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 #if HONEY_API
-					Config.Bind("Adv10 Mouth", $"Mouth Index {++index}", (int)FaceShapeIdx.MouthH, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(),
+					Config.Bind("Adv10 Mouth", $"Mouth Index {++index}", (int)FaceShapeIdx.MouthH, new ConfigDescription("for testing only", new AcceptableValueRange<int>(0, faceBoneAmount), new ConfigurationManagerAttributes { Order = -index, IsAdvanced=true})).ConfigDefaulter(cfg.resetOnLaunch.Value),
 #endif
 			   };
 
@@ -811,10 +836,18 @@ namespace Character_Morpher
 			Instance.Config.Save();
 			Instance.Config.SaveOnConfigSet = saveCfgAuto;
 
+			Logger.LogInfo("Got to populating defaults");
 			//populate defaults
 			PopulateDefaultSettings(defaultStr);
 			UpdateDefaultsList();
 
+
+			Logger.LogInfo("Got to making path");
+			string p = Path.Combine(cfg.charDir.Value.MakeDirPath(), cfg.imageName.Value.MakeDirPath());
+			Logger.LogInfo("Got to making texture");
+			CharaMorpher_GUI.morphTex = p.CreateTexture();
+
+			Logger.LogInfo("Got to making callbacks");
 
 			//if it's needed
 			if(cfg.unknownTest != null)
@@ -823,13 +856,11 @@ namespace Character_Morpher
 
 				};
 
-			string p = Path.Combine(cfg.charDir.Value.MakeDirPath(), cfg.imageName.Value.MakeDirPath());
-			CharaMorpher_GUI.morphTex = p.CreateTexture();
 			cfg.charDir.SettingChanged += (m, n) =>
 			{
 
 				string path = Path.Combine(cfg.charDir.Value.MakeDirPath(), cfg.imageName.Value.MakeDirPath());
-				foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+				foreach(var ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 				{
 					if(File.Exists(path))
 						if(ctrl.IsInitLoadFinished)
@@ -841,7 +872,7 @@ namespace Character_Morpher
 			{
 
 				string path = Path.Combine(cfg.charDir.Value.MakeDirPath(), cfg.imageName.Value.MakeDirPath());
-				foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+				foreach(var ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 				{
 					if(File.Exists(path))
 						if(ctrl.IsInitLoadFinished)
@@ -857,7 +888,7 @@ namespace Character_Morpher
 			cfg.preferCardMorphDataMaker.SettingChanged += (m, n) =>
 			{
 				if(MakerAPI.InsideMaker || StudioAPI.InsideStudio)
-					foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+					foreach(var ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 						if(ctrl.IsInitLoadFinished)
 							ctrl?.StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 			};
@@ -865,7 +896,7 @@ namespace Character_Morpher
 			cfg.preferCardMorphDataGame.SettingChanged += (m, n) =>
 			{
 				if(!MakerAPI.InsideMaker && !StudioAPI.InsideStudio)
-					foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+					foreach(var ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 						if(ctrl.IsInitLoadFinished)
 							ctrl?.StartCoroutine(ctrl?.CoMorphTargetUpdate(5));
 			};
@@ -873,14 +904,14 @@ namespace Character_Morpher
 			cfg.onlyMorphCharWithDataInGame.SettingChanged += (m, n) =>
 			{
 				if(!MakerAPI.InsideMaker && !StudioAPI.InsideStudio)
-					foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+					foreach(var ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 						for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 							ctrl?.StartCoroutine(ctrl?.CoMorphChangeUpdate(delay: a + 1, forceReset: !ctrl.Enable));
 			};
 
 			cfg.enable.SettingChanged += (m, n) =>
 			{
-				foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+				foreach(var ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						ctrl?.StartCoroutine(ctrl.CoMorphChangeUpdate(delay: a + 1, forceReset: !cfg.enable.Value));
 
@@ -893,7 +924,7 @@ namespace Character_Morpher
 
 			cfg.enableInGame.SettingChanged += (m, n) =>
 			{
-				foreach(CharaMorpher_Controller ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+				foreach(CharaMorpher_Controller ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						ctrl?.StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
 			};
@@ -909,24 +940,27 @@ namespace Character_Morpher
 					return;
 				}
 
-				foreach(CharaMorpher_Controller ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+				foreach(CharaMorpher_Controller ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 				{
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						ctrl?.StartCoroutine(ctrl?.CoMorphChangeUpdate(a + 1));
 				}
 			};
 
+			Logger.LogInfo("Got to here maybe 1?");
 			cfg.studioWinRec.SettingChanged += (m, n) =>
 			{
 				if(!cfg.studioWinRec.Value.Equals(winRec))
 					winRec = new Rect(cfg.studioWinRec.Value);
 			};
 
+			Logger.LogInfo("Got to here maybe 2?");
 			cfg.makerViewportUISpace.SettingChanged += (m, n) =>
 			{
-				CharaMorpher_GUI.select.ResizeCustomUIViewport();
+				select.ResizeCustomUIViewport(cfg.makerViewportUISpace.Value);
 			};
 
+			Logger.LogInfo("Got to here maybe 3?");
 			// useCardMorphDataGame()
 			{
 				Coroutine tmp = null;
@@ -944,7 +978,7 @@ namespace Character_Morpher
 					IEnumerator CoUCMD()
 					{
 
-						foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+						foreach(var ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 						{
 							string name =
 							(!cfg.preferCardMorphDataGame.Value ?
@@ -985,11 +1019,13 @@ namespace Character_Morpher
 
 			}
 
+			Logger.LogInfo("Got to nuke studio");
 
 			if(StudioAPI.InsideStudio && cfg.nukeStudio.Value) return;//this is one of my favourite lines 🤣
 
 
 
+			Logger.LogInfo("Got to regester things?");
 			/*
 				Register your logic that depends on a character.
 				A new instance of this component will be added to ALL characters in the game.
@@ -999,6 +1035,7 @@ namespace Character_Morpher
 			CharacterApi.RegisterExtraBehaviour<CharaMorpher_Controller>(GUID);
 			CharaMorpher_GUI.Initialize();
 			Hooks.Init();
+			Logger.LogInfo("finished everything");
 		}
 
 		readonly HashSet<CharaMorpher_Controller> m_timelineUpdateList = new HashSet<CharaMorpher_Controller>();
@@ -1192,7 +1229,7 @@ namespace Character_Morpher
 
 			if(cfg.enableCharKey.Value.IsDown())
 			{
-				var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().FirstOrNull();
+				var ctrl = GetAllChaFuncCtrlOfType<CharaMorpher_Controller>().FirstOrNull();
 
 				if(MakerAPI.InsideMaker && ctrl)
 					ctrl.Enable = !ctrl.morphEnable;
@@ -1217,7 +1254,7 @@ namespace Character_Morpher
 
 				//Logger.LogMessage("KEY WAS PRESSED!!!!");
 
-				foreach(var ctrl in GetFuncCtrlOfType<CharaMorpher_Controller>())
+				foreach(var ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 					for(int a = -1; a < cfg.multiUpdateEnableTest.Value; ++a)
 						StartCoroutine(ctrl?.CoMorphChangeUpdate(delay: a + 1));
 
@@ -1303,10 +1340,10 @@ namespace Character_Morpher
 				if(!cfg.defaults.TryGetValue(slotName, out var tmp) && !slotName.IsNullOrEmpty())
 					PopulateDefaultSettings(slotName);
 
-				if(!cfg.defaults.TryGetValue(slotName, out tmp))
+				if(!cfg.defaults.TryGetValue(slotName, out var tmp2))
 					cfg.defaults[slotName] = new Dictionary<string, ConfigEntry<MorphSliderData>>();
 
-				if(!Instance.controlCategories.TryGetValue(slotName, out var tmp2))
+				if(!Instance.controlCategories.TryGetValue(slotName, out var tmp3))
 					Instance.controlCategories[slotName] =
 						new List<MorphSliderData>(Instance.controlCategories[defaultStr]);
 
@@ -1384,7 +1421,7 @@ namespace Character_Morpher
 
 		public static int SwitchControlSet(string[] selection, int val, bool keepProgress = true, CharaMorpher_Controller ctrl = null)
 		{
-			//var ctrl = GetFuncCtrlOfType<CharaMorpher_Controller>().First();
+			//var ctrl = GetAllChaFuncCtrlOfType<CharaMorpher_Controller>().First();
 			if(selection is null || selection.Length < 1) return -1;
 
 			if(cfg.debug.Value) Logger.LogDebug($"current slot [{(ctrl?.controls?.currentSet ?? cfg.currentControlSetName.Value)}]");
@@ -1406,7 +1443,7 @@ namespace Character_Morpher
 				}
 				else
 				{
-					foreach(var ctrl1 in GetFuncCtrlOfType<CharaMorpher_Controller>())
+					foreach(var ctrl1 in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 					{
 
 						if((MakerAPI.InsideMaker || StudioAPI.InsideStudio) && keepProgress && ctrl1.controls.all.  //made so you don't loose your																              
@@ -1442,43 +1479,47 @@ namespace Character_Morpher
 
 		}
 
-		public static void PopulateDefaultSettings(string name)
+		public static void PopulateDefaultSettings(string name, bool useUserDefault = false)
 		{
-			var ctrl1 = GetFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull();
+			var ctrl1 = GetAllChaFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull();
 			if(name.LastIndexOf(strDiv) != (name.Length - strDiv.Length)) name += strDiv;
 
 			Instance.controlCategories[name] = new List<MorphSliderData> { };//init list
 
-			if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) || !cfg.preferCardMorphDataMaker.Value || ctrl1?.ctrls2 == null)
+			//START MANUAL CONFIG SAVE
+			var saveCfgAuto = Instance.Config.SaveOnConfigSet;
+			Instance.Config.SaveOnConfigSet = false;
+
+			try
 			{
-				var saveCfgAuto =
-				Instance.Config.SaveOnConfigSet;
-				Instance.Config.SaveOnConfigSet = false;
+				if((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) || !cfg.preferCardMorphDataMaker.Value || ctrl1?.ctrls2 == null)
+				{
 
-
-				string settingName = null;
-				var ctrlCat = Instance.controlCategories[name];
-				cfg.defaults[name] = new Dictionary<string, ConfigEntry<MorphSliderData>>()
+					string settingName = null;
+					var ctrlCat = Instance.controlCategories[name];
+					cfg.defaults[name] = new Dictionary<string, ConfigEntry<MorphSliderData>>()
 				{
 					{settingName = "Overall Voice",  Instance.Config.Bind("Defaults", $"{name} "+"Vioce Default",ctrlCat.AddNReturn(new MorphSliderData(settingName, data: 00f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -ctrlCat.Count + 1, Browsable = false }))
 					},
 
 					{ settingName = "Overall Skin Colour",Instance.Config.Bind("Defaults", $"{name} "+"Skin Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data: 100f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -ctrlCat.Count + 1, Browsable = false }))
-					},{settingName = "Base Skin Colour",Instance.Config.Bind("Defaults", $"{name} "+"Base Skin Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data: 00f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -ctrlCat.Count + 1, Browsable = false }))
-					},{settingName = "Sunburn Colour",Instance.Config.Bind("Defaults", $"{name} "+"Sunburn Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data: 00f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
-					new ConfigurationManagerAttributes { Order = -ctrlCat.Count + 1, Browsable = false }))
-					},
+					new ConfigurationManagerAttributes { Order = -ctrlCat.Count + 1, Browsable = false }))},
+					{settingName = "Base Skin Colour",Instance.Config.Bind("Defaults", $"{name} "+"Base Skin Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data: 00f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -ctrlCat.Count + 1, Browsable = false }))},
+					{settingName = "Sunburn Colour",Instance.Config.Bind("Defaults", $"{name} "+"Sunburn Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data: 00f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
+					new ConfigurationManagerAttributes { Order = -ctrlCat.Count + 1, Browsable = false }))},
 
 					{settingName = "Overall Body", Instance.Config.Bind("Defaults", $"{name} "+"Body  Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data: 100f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
 					 new ConfigurationManagerAttributes { Order = -ctrlCat.Count + 1, Browsable = false }))
-					},{settingName = "Head",Instance.Config.Bind("Defaults", $"{name} "+"Head  Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data: 50f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
+					},
+					{settingName = "Head",Instance.Config.Bind("Defaults", $"{name} "+"Head  Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data: 50f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -ctrlCat.Count + 1, Browsable = false }))
-					},{settingName = "Boobs",Instance.Config.Bind("Defaults", $"{name} "+"Boobs Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data: 50f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
+					},
+					{settingName = "Boobs",Instance.Config.Bind("Defaults", $"{name} "+"Boobs Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data: 50f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -ctrlCat.Count + 1, Browsable = false }))
-					},{settingName = "Boob Phys.",Instance.Config.Bind("Defaults", $"{name} "+"Boob Phys. Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data : 50f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
+					},
+					{settingName = "Boob Phys.",Instance.Config.Bind("Defaults", $"{name} "+"Boob Phys. Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data : 50f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -ctrlCat.Count + 1, Browsable = false }))
 					},{ settingName = "Torso",Instance.Config.Bind("Defaults", $"{name} "+"Torso Default", ctrlCat.AddNReturn(new MorphSliderData(settingName, data : 50f *.01f)).Clone(), new ConfigDescription("Set default value on maker startup", null,
 					new ConfigurationManagerAttributes { Order = -ctrlCat.Count + 1, Browsable = false }))
@@ -1546,22 +1587,30 @@ namespace Character_Morpher
 					},
 				};
 
-				foreach(var val in cfg.defaults[name])
-					val.Value.Value.dataName = val.Key + "";
+					foreach(var val in cfg.defaults[name])
+						val.Value.Value.dataName = val.Key + "";
 
-				//Logger.LogDebug($"Current List: [{string.Join(", ", Instance.controlCategories[name].Attempt((v)=>v.Value))}]");
+					//Logger.LogDebug($"Current List: [{string.Join(", ", Instance.controlCategories[name].Attempt((v)=>v.Value))}]");
 
-				Instance.Config.Save();
-				Instance.Config.SaveOnConfigSet = saveCfgAuto;
+				}
+
+				//use user defaults
+				if(useUserDefault)
+					foreach(var thing in cfg.defaults[name])
+						thing.Value.Value = cfg.defaults[defaultStr][thing.Key].Value.Clone();
+
 			}
+			catch(Exception e) { Logger.LogError(e); }
 
-
+			//END MANUAL CONFIG SAVE
+			Instance.Config.SaveOnConfigSet = saveCfgAuto;
+			Instance.Config.Save();
 		}
 
-		public static string AddNewSetting(string baseName = "Slot", CharaMorpher_Controller ctrl1 = null)
+		public static string AddNewSetting(string baseName = "Slot", CharaMorpher_Controller ctrl1 = null, bool useUserDefault = false)
 		{
 			int count = 1;
-			ctrl1 = ctrl1 ?? GetFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull();
+			ctrl1 = ctrl1 ?? GetAllChaFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull();
 
 			string name = "Error" + strDiv;
 			var defList = (!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) || !cfg.preferCardMorphDataMaker.Value || ctrl1?.ctrls2 == null ?
@@ -1584,14 +1633,11 @@ namespace Character_Morpher
 			while(defList?.Any((k) =>
 			k.Contains(name = $"{baseName} {count}{strDiv}")) ?? false) ++count;
 
-
-
 			//	Logger.LogDebug("creating Defaults");
-
-			PopulateDefaultSettings(name);
+			PopulateDefaultSettings(name, useUserDefault);
 
 			//Logger.LogDebug("creating Controls");
-			foreach(var ctrl2 in GetFuncCtrlOfType<CharaMorpher_Controller>())
+			foreach(var ctrl2 in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 			{
 				ctrl2.controls.all[name] = new Dictionary<string, MorphSliderData>();
 
@@ -1600,7 +1646,7 @@ namespace Character_Morpher
 					data[name] = new Dictionary<string, MorphSliderData>();
 
 			}
-			foreach(var ctrl2 in GetFuncCtrlOfType<CharaMorpher_Controller>())
+			foreach(var ctrl2 in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 				foreach(var ctrl in Instance.controlCategories[name])
 				{
 					var tmp2 = Instance.controlCategories[defaultStr].Find(v => v.dataName == ctrl.dataName);
@@ -1614,14 +1660,14 @@ namespace Character_Morpher
 						data[name][ctrl.dataName] = tmp2.Clone();
 				}
 
-			 Logger.LogMessage($"Created {name}");
+			Logger.LogMessage($"Created {name}");
 
 			return name;
 		}
 
 		public static void RemoveCurrentSetting(string baseName, CharaMorpher_Controller ctrl = null)
 		{
-			ctrl = ctrl ?? GetFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull();
+			ctrl = ctrl ?? GetAllChaFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull();
 
 			string name = baseName.IsNullOrEmpty() ? cfg.currentControlSetName.Value : baseName;
 
@@ -1629,7 +1675,7 @@ namespace Character_Morpher
 
 			//Logger.LogDebug("remove Controls");
 
-			foreach(CharaMorpher_Controller ctrl1 in GetFuncCtrlOfType<CharaMorpher_Controller>())
+			foreach(CharaMorpher_Controller ctrl1 in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
 			{
 				var obj = ctrl1.controls.all;
 				if(obj.ContainsKey(name))
@@ -1721,7 +1767,7 @@ namespace Character_Morpher
 			{
 				var val = (((!MakerAPI.InsideMaker && !StudioAPI.InsideStudio) || !cfg.preferCardMorphDataMaker.Value) ?
 				   Instance?.controlCategories?.Keys.ToList() :
-				   (GetFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull()?.controls?.all?.Keys?.ToList()
+				   (GetAllChaFuncCtrlOfType<CharaMorpher_Controller>()?.FirstOrNull()?.controls?.all?.Keys?.ToList()
 				   ?? Instance?.controlCategories?.Keys.ToList()))
 				   .Attempt((k) => k.LastIndexOf(strDiv) >= 0 ? k.Substring(0, k.LastIndexOf(strDiv)) : throw new Exception())
 				   .ToArray();
