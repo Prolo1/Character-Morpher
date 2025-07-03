@@ -1,55 +1,40 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-
-using UnityEngine;
+using System.Text;
 using UnityEngine.UI;
 
 using HarmonyLib;
-using KKAPI.Chara;
-using KKAPI.Studio;
-using KKAPI;
-using KKAPI.Maker;
-using KKABMX;
-using KKABMX.Core;
+
+using Il2CppSystem;
+
 using ProloAPI.Extensions;
-//using Manager;
-
-
-#if HONEY_API
-using CharaCustom;
-using AIChara;
-#else
-using ChaCustom;
-//using StrayTech;
-#endif
 
 using static ProloAPI.Utilities.PGeneral;
-namespace Character_Morpher
+using ILLGames.Extensions;
+namespace Character_Morpher_IL2CPP
 {
-	public partial class CharaMorpher_Core
+	partial class CharaMorpherIL2CPP_Core
 	{
 		private static class Hooks
 		{
 
 			public static void Init()
 			{
-				Harmony.CreateAndPatchAll(typeof(Hooks), GUID);
+				Harmony.CreateAndPatchAll(typeof(Hooks),
+					GetInstance<CharaMorpherIL2CPP_Core>().manager.Metadata.GUID);
 			}
 
 
-			static void UpdateCurrentCharacters(bool forcereset = false)
-			{
-				if((MakerAPI.InsideMaker || StudioAPI.InsideStudio) || cfg.enableInGame.Value)//Make sure the in-game flag is checked
-					foreach(CharaMorpher_Controller ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
-					{
-						if(!ctrl) continue;
-						if(ctrl.IsInitLoadFinished && !ctrl.IsReloading)
-							ctrl.MorphChangeUpdate(forceReset: forcereset);
-					}
-			}
+			//static void UpdateCurrentCharacters(bool forcereset = false)
+			//{
+			//	if((MakerAPI.InsideMaker || StudioAPI.InsideStudio) || cfg.enableInGame.Value)//Make sure the in-game flag is checked
+			//		foreach(CharaMorpher_Controller ctrl in GetAllChaFuncCtrlOfType<CharaMorpher_Controller>())
+			//		{
+			//			if(!ctrl) continue;
+			//			if(ctrl.IsInitLoadFinished && !ctrl.IsReloading)
+			//				ctrl.MorphChangeUpdate(forceReset: forcereset);
+			//		}
+			//}
 
 
 #if KOI_API
@@ -86,7 +71,7 @@ namespace Character_Morpher
 #else
 
 			[HarmonyPrefix]
-			[HarmonyPatch(typeof(FadeCanvas), nameof(FadeCanvas.StartAysnc),
+			[HarmonyPatch(typeof(FadeCanvas), nameof(FadeCanvas.),
 				new Type[] { typeof(FadeCanvas.Fade), typeof(float), typeof(bool), typeof(bool), }),]
 			static void OnSceneLoad(FadeCanvas __instance)
 			{
@@ -152,53 +137,53 @@ namespace Character_Morpher
 			}
 #endif
 
-			[HarmonyPostfix]
-			[HarmonyPatch(typeof(Toggle), nameof(Toggle.OnPointerClick))]
-			static void OnPostToggleClick(Toggle __instance)
-			{
-				if(!__instance.interactable) return;
-
-				if(!MakerAPI.InsideMaker) return;
-
-				OnFaceBonemodToggleClick(__instance);
-				OnBodyBonemodToggleClick(__instance);
-			}
-
-			static void OnFaceBonemodToggleClick(Toggle __instance)
-			{
-				if(__instance.GetTextFromTextComponent()?.ToLower().Contains("face bonemod") ?? false)
-				{
-					if(cfg.debug.Value) Logger.LogDebug("Change to face bonemod toggle");
-					CharaMorpher_Controller.FaceBonemodTgl = __instance.isOn;
-				}
-
-			}
-
-			static void OnBodyBonemodToggleClick(Toggle __instance)
-			{
-				if(__instance.GetTextFromTextComponent()?.ToLower().Contains("body bonemod") ?? false)
-				{
-					if(cfg.debug.Value) Logger.LogDebug("Change to body bonemod toggle");
-					CharaMorpher_Controller.BodyBonemodTgl = __instance.isOn;
-				}
-			}
-
-
-			//nothing below here is actually being used...
-
+			//[HarmonyPostfix]
+			//[HarmonyPatch(typeof(Toggle), nameof(Toggle.OnPointerClick))]
+			//static void OnPostToggleClick(Toggle __instance)
+			//{
+			//	if(!__instance.interactable) return;
+			//
+			//	if(!MakerAPI.InsideMaker) return;
+			//
+			//	OnFaceBonemodToggleClick(__instance);
+			//	OnBodyBonemodToggleClick(__instance);
+			//}
+			//
+			//static void OnFaceBonemodToggleClick(Toggle __instance)
+			//{
+			//	if(__instance.GetTextFromTextComponent()?.ToLower().Contains("face bonemod") ?? false)
+			//	{
+			//		if(cfg.debug.Value) Logger.LogDebug("Change to face bonemod toggle");
+			//		CharacterMorpherControllerIL2CPP.FaceBonemodTgl = __instance.isOn;
+			//	}
+			//
+			//}
+			//
+			//static void OnBodyBonemodToggleClick(Toggle __instance)
+			//{
+			//	if(__instance.GetTextFromTextComponent()?.ToLower().Contains("body bonemod") ?? false)
+			//	{
+			//		if(cfg.debug.Value) Logger.LogDebug("Change to body bonemod toggle");
+			//		CharaMorpher_Controller.BodyBonemodTgl = __instance.isOn;
+			//	}
+			//}
+			//
+			//
+			////nothing below here is actually being used...
+			//
 			//[HarmonyPrefix]
 			//[HarmonyPatch(typeof(Button), nameof(Button.OnPointerClick))]
-			static void OnPreButtonClick(Button __instance)
-			{
-				return;//don't worry about it 😏
-				if(!__instance.interactable) return;
-
-				if(!MakerAPI.InsideMaker) return;
-
-				//	OnSaveLoadClick(__instance);
-				//	OnExitSaveClick(__instance);
-				//	OnCoordLoadClick(__instance);
-			}
+			//static void OnPreButtonClick(Button __instance)
+			//{
+			//	return;//don't worry about it 😏
+			//	if(!__instance.interactable) return;
+			//
+			//	if(!MakerAPI.InsideMaker) return;
+			//
+			//	//	OnSaveLoadClick(__instance);
+			//	//	OnExitSaveClick(__instance);
+			//	//	OnCoordLoadClick(__instance);
+			//}
 
 			/// <summary>
 			/// Resets the character before a new one is loaded
@@ -217,8 +202,8 @@ namespace Character_Morpher
 				if(!(ctrler.GetComponentInParent<CustomCharaFile>())) return;
 				if(!(ctrler.name.ToLower().Contains("load"))) return;
 #endif
-				if(cfg.debug.Value) Logger.LogDebug("The Chara Load Button was called!!!");
-				UpdateCurrentCharacters(true);
+				//	if(cfg.debug.Value) Logger.LogDebug("The Chara Load Button was called!!!");
+				//	UpdateCurrentCharacters(true);
 			}
 
 			/// <summary>
@@ -238,8 +223,8 @@ namespace Character_Morpher
 				if(!(ctrler.GetComponentInParent<CustomCoordinateFile>())) return;
 				if(!(ctrler.name.ToLower().Contains("load"))) return;
 #endif
-				if(cfg.debug.Value) Logger.LogDebug("The Coord Load Button was called!!!");
-				UpdateCurrentCharacters();
+				//if(cfg.debug.Value) Logger.LogDebug("The Coord Load Button was called!!!");
+				//UpdateCurrentCharacters();
 			}
 
 			/// <summary>
@@ -262,12 +247,12 @@ namespace Character_Morpher
 					|| ctrler.name.ToLower().Contains("load") || ctrler.name.ToLower().Contains("screenshot"))) return;
 #endif
 
-				if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
-				if(cfg.enable.Value && cfg.saveExtData.Value)
-				{
-					UpdateCurrentCharacters(true);
-					UpdateCurrentCharacters();
-				}
+				//if(cfg.debug.Value) Logger.LogDebug("The Overwrite Button was called!!!");
+				//if(cfg.enable.Value && cfg.saveExtData.Value)
+				//{
+				//	UpdateCurrentCharacters(true);
+				//	UpdateCurrentCharacters();
+				//}
 			}
 
 			/// <summary>
@@ -284,9 +269,9 @@ namespace Character_Morpher
 #elif KOI_API
 				if(!(ctrler.name.ToLower().Contains("exit") || ctrler.name.Contains("No")/*fixes issue with finding false results*/)) return;
 #endif
-				if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
-				if(cfg.enable.Value && cfg.saveExtData.Value)
-					UpdateCurrentCharacters();
+				//if(cfg.debug.Value) Logger.LogDebug("The Exiting Button was called!!!");
+				//if(cfg.enable.Value && cfg.saveExtData.Value)
+				//	UpdateCurrentCharacters();
 			}
 
 

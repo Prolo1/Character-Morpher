@@ -1,20 +1,609 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace>Character_Morpher</RootNamespace>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<RootNamespace>Character_Morpher_IL2CPP</RootNamespace>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="BepInEx.ConfigurationManager.IL2CPP" Version="18.2.1" />
-    <PackageReference Include="IllusionLibs.HoneyCome.Assembly-CSharp" Version="2023.99.12.15" />
-    <PackageReference Include="IllusionLibs.HoneyCome.Il2Cppmscorlib" Version="2023.99.12.15" />
-    <PackageReference Include="IllusionLibs.HoneyCome.UnityEngine" Version="2021.3.14.3" />
-    <PackageReference Include="IllusionLibs.HoneyCome.UnityEngine.ImageConversionModule" Version="2021.3.14.3" />
-    <PackageReference Include="IllusionLibs.HoneyCome.UnityEngine.UI" Version="2021.3.14.3" />
-    <PackageReference Include="IllusionLibs.HoneyComeStudio.Assembly-CSharp" Version="2023.101.12.22" />
-  </ItemGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<DefineConstants>$(DefineConstants);IL2CPP;HC</DefineConstants>
+		<DebugType>none</DebugType>
+		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+		<IsPublishable>False</IsPublishable>
+		<OutputPath>..\Builds\[HC]_Character_Morpher\BepInEx\plugins\Prolo\</OutputPath>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DefineConstants>$(DefineConstants);HC;IL2CPP</DefineConstants>
+		<DebugType>none</DebugType>
+		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+		<IsPublishable>False</IsPublishable>
+		<OutputPath>..\Builds\[HC]_Character_Morpher\BepInEx\plugins\Prolo\</OutputPath>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="powershell &quot;&amp; '$(SolutionDir)Post-Builder.ps1' '$(TargetPath)' '$(SolutionDir)zipper.bat' '$(TargetDir)..\..\..\..\[HC]_Character_Morpher.zip' '$(TargetDir)..\..\..\' '$(SolutionDir)Readme.md' &quot;&#xD;&#xA;" />
+	</Target>
+
+	<PropertyGroup>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+		<PackageOutputPath></PackageOutputPath>
+		<PlatformTarget>AnyCPU</PlatformTarget>
+		<ProduceReferenceAssembly>False</ProduceReferenceAssembly>
+		<NoWin32Manifest>true</NoWin32Manifest>
+		<ErrorReport>none</ErrorReport>
+	</PropertyGroup>
+
+	<Import Project="..\CommonIL2CPP\CommonIL2CPP.projitems" Label="Shared" />
+
+	<Import Project="..\Prolo API\ProloAPI.projitems" Label="Shared" />
+
+	<ItemGroup>
+	  <PackageReference Include="BepInEx.ConfigurationManager.IL2CPP" Version="18.3.1" />
+	  <PackageReference Include="BepInEx.KeyboardShortcut.IL2CPP" Version="18.3.1" />
+	  <PackageReference Include="IllusionLibs.HoneyCome.Assembly-CSharp" Version="2023.99.12.15" />
+	  <PackageReference Include="IllusionLibs.HoneyCome.Il2Cppmscorlib" Version="2023.99.12.15" />
+	  <PackageReference Include="IllusionLibs.HoneyCome.UnityEngine" Version="2021.3.14.3" />
+	  <PackageReference Include="IllusionLibs.HoneyCome.UnityEngine.ImageConversionModule" Version="2021.3.14.3" />
+	  <PackageReference Include="IllusionLibs.XUnity.AutoTranslator.Plugin.Core.IL2CPP" Version="5.4.0" />
+	  <PackageReference Include="RuntimeUnityEditor.Core.IL2CPP" Version="5.5.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="0Harmony">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\0Harmony.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="AsmResolver">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\AsmResolver.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="AsmResolver.DotNet">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\AsmResolver.DotNet.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="AsmResolver.PE">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\AsmResolver.PE.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="AsmResolver.PE.File">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\AsmResolver.PE.File.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Assembly-CSharp">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Assembly-CSharp.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Assembly-CSharp-firstpass">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Assembly-CSharp-firstpass.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="AssetRipper.VersionUtilities">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\AssetRipper.VersionUtilities.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Beautify.Universal.Runtime">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Beautify.Universal.Runtime.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="BepInEx.Core">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\BepInEx.Core.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="BepInEx.Preloader.Core">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\BepInEx.Preloader.Core.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="BepInEx.Unity.Common">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\BepInEx.Unity.Common.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="BepInEx.Unity.IL2CPP">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\BepInEx.Unity.IL2CPP.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Cinemachine">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Cinemachine.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Coffee.SoftMaskForUGUI">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Coffee.SoftMaskForUGUI.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Coffee.UIParticle">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Coffee.UIParticle.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Coffee.UnmaskForUGUI">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Coffee.UnmaskForUGUI.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="com.rlabrecque.steamworks.net">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\com.rlabrecque.steamworks.net.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Cpp2IL.Core">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\Cpp2IL.Core.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Disarm">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\Disarm.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Gee.External.Capstone">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\Gee.External.Capstone.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Iced">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\Iced.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="IL">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\IL.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppInterop.Common">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\Il2CppInterop.Common.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppInterop.Generator">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\Il2CppInterop.Generator.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppInterop.HarmonySupport">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\Il2CppInterop.HarmonySupport.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppInterop.Runtime">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\Il2CppInterop.Runtime.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppMicrosoft.NET.StringTools">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Il2CppMicrosoft.NET.StringTools.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppMono.Security">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Il2CppMono.Security.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2Cppmscorlib">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Il2Cppmscorlib.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppSystem">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Il2CppSystem.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppSystem.Configuration">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Il2CppSystem.Configuration.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppSystem.Core">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Il2CppSystem.Core.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppSystem.IO.Compression">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Il2CppSystem.IO.Compression.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppSystem.Numerics">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Il2CppSystem.Numerics.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppSystem.Runtime.CompilerServices.Unsafe">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Il2CppSystem.Runtime.CompilerServices.Unsafe.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppSystem.Runtime.Serialization">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Il2CppSystem.Runtime.Serialization.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppSystem.Xml">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Il2CppSystem.Xml.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Il2CppSystem.Xml.Linq">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Il2CppSystem.Xml.Linq.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="LibCpp2IL">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\LibCpp2IL.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="MagicaCloth">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\MagicaCloth.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="MemoryPack">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\MemoryPack.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="MessagePack">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\MessagePack.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="MessagePack.Annotations">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\MessagePack.Annotations.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Mono.Cecil">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\Mono.Cecil.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Mono.Cecil.Mdb">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\Mono.Cecil.Mdb.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Mono.Cecil.Pdb">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\Mono.Cecil.Pdb.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Mono.Cecil.Rocks">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\Mono.Cecil.Rocks.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="MonoMod.RuntimeDetour">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\MonoMod.RuntimeDetour.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="MonoMod.Utils">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\MonoMod.Utils.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Obi">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Obi.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="RaindropFX.URP">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\RaindropFX.URP.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="SemanticVersioning">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\SemanticVersioning.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="StableNameDotNet">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\StableNameDotNet.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UniRx">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UniRx.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UniTask">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UniTask.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Unity.Addressables">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Unity.Addressables.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Unity.Burst">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Unity.Burst.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Unity.Burst.Unsafe">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Unity.Burst.Unsafe.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Unity.Collections">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Unity.Collections.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Unity.Collections.LowLevel.ILSupport">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Unity.Collections.LowLevel.ILSupport.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Unity.Mathematics">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Unity.Mathematics.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Unity.RenderPipeline.Universal.ShaderLibrary">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Unity.RenderPipeline.Universal.ShaderLibrary.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Unity.RenderPipelines.Core.Runtime">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Unity.RenderPipelines.Core.Runtime.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Unity.RenderPipelines.Universal.Runtime">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Unity.ResourceManager">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Unity.ResourceManager.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Unity.TextMeshPro">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Unity.TextMeshPro.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="Unity.Timeline">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\Unity.Timeline.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.AccessibilityModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.AccessibilityModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.AIModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.AIModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.AndroidJNIModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.AndroidJNIModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.AnimationModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.AnimationModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.AssetBundleModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.AssetBundleModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.AudioModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.AudioModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.ClothModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.ClothModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.ClusterInputModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.ClusterInputModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.ClusterRendererModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.ClusterRendererModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.CoreModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.CoreModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.CrashReportingModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.CrashReportingModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.DirectorModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.DirectorModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.DSPGraphModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.DSPGraphModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.GameCenterModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.GameCenterModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.GIModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.GIModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.GridModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.GridModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.HotReloadModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.HotReloadModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.ImageConversionModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.ImageConversionModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.IMGUIModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.IMGUIModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.InputLegacyModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.InputLegacyModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.InputModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.InputModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.JSONSerializeModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.JSONSerializeModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.LocalizationModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.LocalizationModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.ParticleSystemModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.ParticleSystemModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.PerformanceReportingModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.PerformanceReportingModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.Physics2DModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.Physics2DModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.PhysicsModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.PhysicsModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.ProfilerModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.ProfilerModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.ScreenCaptureModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.ScreenCaptureModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.SharedInternalsModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.SharedInternalsModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.SpriteMaskModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.SpriteMaskModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.SpriteShapeModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.SpriteShapeModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.StreamingModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.StreamingModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.SubstanceModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.SubstanceModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.SubsystemsModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.SubsystemsModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.TerrainModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.TerrainModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.TerrainPhysicsModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.TerrainPhysicsModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.TextCoreFontEngineModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.TextCoreFontEngineModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.TextCoreTextEngineModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.TextCoreTextEngineModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.TextRenderingModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.TextRenderingModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.TilemapModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.TilemapModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.TLSModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.TLSModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UI">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UI.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UIElementsModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UIElementsModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UIElementsNativeModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UIElementsNativeModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UIModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UIModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UmbraModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UmbraModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UNETModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UNETModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UnityAnalyticsCommonModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UnityAnalyticsCommonModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UnityAnalyticsModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UnityAnalyticsModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UnityConnectModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UnityConnectModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UnityCurlModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UnityCurlModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UnityTestProtocolModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UnityTestProtocolModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UnityWebRequestAssetBundleModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UnityWebRequestAssetBundleModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UnityWebRequestAudioModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UnityWebRequestModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UnityWebRequestModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UnityWebRequestTextureModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UnityWebRequestTextureModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.UnityWebRequestWWWModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.VehiclesModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.VehiclesModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.VFXModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.VFXModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.VideoModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.VideoModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.VirtualTexturingModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.VirtualTexturingModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.VRModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.VRModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.WindModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.WindModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="UnityEngine.XRModule">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\UnityEngine.XRModule.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="WasmDisassembler">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\WasmDisassembler.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="XUnity.Common">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\core\XUnity.Common.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	  <Reference Include="ZString">
+	    <HintPath>..\..\..\..\[HoneyCome]\[BetterRepack]\BepInEx\HoneyCome\interop\ZString.dll</HintPath>
+	    <Private>False</Private>
+	  </Reference>
+	</ItemGroup>
 
 </Project>

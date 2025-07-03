@@ -19,6 +19,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Master", "Master\Master.csp
 		{5297F533-AE0E-4A80-83B5-A4ACC5758CB4} = {5297F533-AE0E-4A80-83B5-A4ACC5758CB4}
 		{676B828F-DE2D-4F54-9B96-3A965EBD2042} = {676B828F-DE2D-4F54-9B96-3A965EBD2042}
 		{E96314CF-3D68-4A08-94E7-DD86D7BFA157} = {E96314CF-3D68-4A08-94E7-DD86D7BFA157}
+		{F373AC57-E162-4CC1-A57A-31CF53F62045} = {F373AC57-E162-4CC1-A57A-31CF53F62045}
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Testing", "Testing\Testing.csproj", "{6966B4D9-DB7D-49E9-A012-511C74E352ED}"
@@ -35,6 +36,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mod Projects", "Mod Projects", "{C904BE42-43C0-4A0C-8058-CA3883F6B79B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common Projects", "Common Projects", "{82930F05-60EF-4BCA-AF33-A5629084EB1E}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "CommonIL2CPP", "CommonIL2CPP\CommonIL2CPP.shproj", "{87A69DBF-E709-437F-98CE-AE9B686C51D6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -83,6 +86,7 @@ Global
 		{015CED6A-049A-48FB-9DC0-EED58B486325} = {C904BE42-43C0-4A0C-8058-CA3883F6B79B}
 		{F373AC57-E162-4CC1-A57A-31CF53F62045} = {C904BE42-43C0-4A0C-8058-CA3883F6B79B}
 		{CCA408B5-118C-4C25-96DC-6DBD9127BB62} = {82930F05-60EF-4BCA-AF33-A5629084EB1E}
+		{87A69DBF-E709-437F-98CE-AE9B686C51D6} = {82930F05-60EF-4BCA-AF33-A5629084EB1E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {363853CC-19E3-41DE-A695-D0F2AA9EFE0E}
@@ -94,9 +98,12 @@ Global
 		Prolo API\ProloAPI.projitems*{5297f533-ae0e-4a80-83b5-a4acc5758cb4}*SharedItemsImports = 4
 		Common\Common.projitems*{676b828f-de2d-4f54-9b96-3a965ebd2042}*SharedItemsImports = 4
 		Prolo API\ProloAPI.projitems*{676b828f-de2d-4f54-9b96-3a965ebd2042}*SharedItemsImports = 4
+		CommonIL2CPP\CommonIL2CPP.projitems*{87a69dbf-e709-437f-98ce-ae9b686c51d6}*SharedItemsImports = 13
 		Prolo API\ProloAPI.projitems*{cca408b5-118c-4c25-96dc-6dbd9127bb62}*SharedItemsImports = 13
 		Common\Common.projitems*{e96314cf-3d68-4a08-94e7-dd86d7bfa157}*SharedItemsImports = 4
 		Prolo API\ProloAPI.projitems*{e96314cf-3d68-4a08-94e7-dd86d7bfa157}*SharedItemsImports = 4
+		CommonIL2CPP\CommonIL2CPP.projitems*{f373ac57-e162-4cc1-a57a-31cf53f62045}*SharedItemsImports = 5
+		Prolo API\ProloAPI.projitems*{f373ac57-e162-4cc1-a57a-31cf53f62045}*SharedItemsImports = 5
 		Common\Common.projitems*{f835505b-0492-45c9-a446-c4bf82473cee}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

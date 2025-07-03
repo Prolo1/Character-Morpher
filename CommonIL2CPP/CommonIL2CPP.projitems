@@ -6,8 +6,16 @@
     <SharedGUID>87a69dbf-e709-437f-98ce-ae9b686c51d6</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>CommonIL2CPP</Import_RootNamespace>
+    <Import_RootNamespace>Character_Morpher_IL2CPP</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\CommonIL2CPP\CharacterMorpherIL2CPP_Controller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CharacterMorpherIL2CPP.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CharacterMorpherIL2CPP.Hooks.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CharacterMorpherIL2CPP_GUI.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\studio morph icon.png" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\ultra instinct.jpg" />
   </ItemGroup>
 </Project>

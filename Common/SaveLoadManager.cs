@@ -44,43 +44,44 @@ using UniRx;
  */
 
 using ProloAPI;
-using ProloAPI.Extentions;
+using ProloAPI.Extensions;
+using ProloAPI.Utilities;
 
 
 namespace Character_Morpher
 {
-	using static CharaMorpher_Core;//leave it here
-								   //using static Utilities;//leave it here
-	using static Character_Morpher.CurrentSaveLoadManager.LoadDataType;
+    using static CharaMorpher_Core;//leave it here
+                                   //using static Utilities;//leave it here
+    using static Character_Morpher.CurrentSaveLoadManager.LoadDataType;
 
 
-	public class CurrentSaveLoadManager : SaveLoadManagerV2
-	{
-		public new int Version => base.Version + 1;
+    public class CurrentSaveLoadManager : SaveLoadManagerV2
+    {
+        public new int Version => base.Version + 1;
 
-		public new string[] DataKeys => new[]
-		{
-			"MorphData_values",
-			"MorphData_targetCard",
-			"MorphData_targetPng",
-			"MorphData_ogSize",
-			"MorphData_isCurrenntData",
-			"MorphData_enable",
-			"MorphData_enableABMX"
-		};
+        public new string[] DataKeys => new[]
+        {
+            "MorphData_values",
+            "MorphData_targetCard",
+            "MorphData_targetPng",
+            "MorphData_ogSize",
+            "MorphData_isCurrenntData",
+            "MorphData_enable",
+            "MorphData_enableABMX"
+        };
 
-		public new enum LoadDataType : int
-		{
-			Values,
-			TargetCard,
-			TargetPng,
-			OrigSize,
-			HoldsFigureData,
-			Enable,
-			EnableABMX,
-		}
+        public new enum LoadDataType : int
+        {
+            Values,
+            TargetCard,
+            TargetPng,
+            OrigSize,
+            HoldsFigureData,
+            Enable,
+            EnableABMX,
+        }
 
-		/*
+        /*
 		 Data that can (potentially) affect the save:
 		* enum MorphCalcType
 		* class MorphControls
@@ -93,190 +94,200 @@ namespace Character_Morpher
 		* string CharaMorpher_Core.defaultStr
 		 all I can think of for now
 		 */
-		/// <summary>
-		/// creates an updated version 
-		/// </summary>
-		/// <param name="data"></param>
-		/// <returns></returns>
-		/// <summary>
-		/// creates an updated version 
-		/// </summary>
-		/// <param name="data"></param>
-		/// <returns></returns>
-		protected new PluginData UpdateVersionFromPrev(CharaMorpher_Controller ctrl, PluginData data)
-		{
+        /// <summary>
+        /// creates an updated version 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        /// <summary>
+        /// creates an updated version 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected new PluginData UpdateVersionFromPrev(CharaMorpher_Controller ctrl, PluginData data)
+        {
 
-			if(data == null)
-				data = ctrl?.GetExtendedData(ctrl.IsReloading);
+            if(data == null)
+                data = ctrl?.GetExtendedData(ctrl.IsReloading);
 
-			if(data == null || data.version != Version)
-			{
+            if(data == null || data.version != Version)
+            {
 
-				data = base.UpdateVersionFromPrev(ctrl, data)?.Copy();
+                data = base.UpdateVersionFromPrev(ctrl, data)?.Copy();
 
-				if(cfg.debug.Value) Logger.LogDebug($"Old version: {data?.version.ToString() ?? "Don't exist..."}");
-				if(data != null && data.version == base.Version)
-				{
-					data.data[DataKeys[((int)LoadDataType.Enable)]] = LZ4MessagePackSerializer.Serialize(true, CompositeResolver.Instance);
-					data.data[DataKeys[((int)LoadDataType.EnableABMX)]] = LZ4MessagePackSerializer.Serialize(true, CompositeResolver.Instance);
+                if(cfg.debug.Value) Logger.LogDebug($"Old version: {data?.version.ToString() ?? "Don't exist..."}");
+                if(data != null && data.version == base.Version)
+                {
+                    data.data[DataKeys[((int)LoadDataType.Enable)]] = LZ4MessagePackSerializer.Serialize(true, CompositeResolver.Instance);
+                    data.data[DataKeys[((int)LoadDataType.EnableABMX)]] = LZ4MessagePackSerializer.Serialize(true, CompositeResolver.Instance);
 
-					//Todo: next line can be removed from newer versions (V4+)
-					if(!data.data.ContainsKey(DataKeys[((int)LoadDataType.HoldsFigureData)]))
-						data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]] = LZ4MessagePackSerializer.Serialize(false, CompositeResolver.Instance);
+                    //Todo: next line can be removed from newer versions (V4+)
+                    if(!data.data.ContainsKey(DataKeys[((int)LoadDataType.HoldsFigureData)]))
+                        data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]] = LZ4MessagePackSerializer.Serialize(false, CompositeResolver.Instance);
 
-					data.version = Version;
-				}
-			}
+                    data.version = Version;
+                }
+            }
 
-			if(data == null)
-				data = ctrl?.GetExtendedData(ctrl.IsReloading);
-
-
-			return data;
-		}
-
-		public override PluginData Load(CharaMorpher_Controller ctrl, PluginData data = null)
-		{
-
-			data = UpdateVersionFromPrev(ctrl, data);// use if version goes up (i.e. 1->2)
-
-			if(data == null) return null;
-
-			try
-			{
-
-				if(data.version != Version) throw new Exception($"Target card data was incorrect version: expected [V{Version}] instead of [V{data.version}]");
-
-				var png = ObjectToByteArray(data.data[DataKeys[((int)LoadDataType.TargetPng)]]);
-
-				if(png == null) throw new Exception("png data does not exist...");
-
-				if(CharaMorpher_GUI.MorphCharaSpecificEnablesToggle)
-					ctrl.morphEnable = LZ4MessagePackSerializer.Deserialize<bool>
-						((byte[])data.data[DataKeys[((int)LoadDataType.Enable)]], CompositeResolver.Instance);
-
-				if(CharaMorpher_GUI.MorphCharaSpecificEnablesToggle)
-					ctrl.morphEnableABMX = LZ4MessagePackSerializer.Deserialize<bool>
-						((byte[])data.data[DataKeys[((int)LoadDataType.EnableABMX)]], CompositeResolver.Instance);
+            if(data == null)
+                data = ctrl?.GetExtendedData(ctrl.IsReloading);
 
 
-				var values = LZ4MessagePackSerializer.Deserialize<MorphControls>
-					((byte[])data.data[DataKeys[((int)LoadDataType.Values)]], CompositeResolver.Instance);
+            return data;
+        }
 
-				var data2 = LZ4MessagePackSerializer.Deserialize<MorphData>
-					((byte[])data.data[DataKeys[((int)LoadDataType.TargetCard)]], CompositeResolver.Instance);
+        public override PluginData Load(CharaMorpher_Controller ctrl, PluginData data = null)
+        {
 
-				var data1 = LZ4MessagePackSerializer.Deserialize<MorphData>
-					((byte[])data.data[DataKeys[((int)LoadDataType.OrigSize)]], CompositeResolver.Instance);
+            data = UpdateVersionFromPrev(ctrl, data);// use if version goes up (i.e. 1->2)
 
-				var isCurData = LZ4MessagePackSerializer.Deserialize<bool>
-					((byte[])data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]], CompositeResolver.Instance);
+            if(data == null) return null;
+
+            try
+            {
+
+                if(data.version != Version) throw new Exception($"Target card data was incorrect version: expected [V{Version}] instead of [V{data.version}]");
+
+                var png = ObjectToByteArray(data.data[DataKeys[((int)LoadDataType.TargetPng)]]);
+
+                if(png == null) throw new Exception("png data does not exist...");
+
+                if(CharaMorpher_GUI.MorphCharaSpecificEnablesToggle)
+                    ctrl.morphEnable = LZ4MessagePackSerializer.Deserialize<bool>
+                        ((byte[])data.data[DataKeys[((int)LoadDataType.Enable)]], CompositeResolver.Instance);
+
+                if(CharaMorpher_GUI.MorphCharaSpecificEnablesToggle)
+                    ctrl.morphEnableABMX = LZ4MessagePackSerializer.Deserialize<bool>
+                        ((byte[])data.data[DataKeys[((int)LoadDataType.EnableABMX)]], CompositeResolver.Instance);
+
+
+                var values = LZ4MessagePackSerializer.Deserialize<MorphControls>
+                    ((byte[])data.data[DataKeys[((int)LoadDataType.Values)]], CompositeResolver.Instance);
+
+                var data2 = LZ4MessagePackSerializer.Deserialize<MorphData>
+                    ((byte[])data.data[DataKeys[((int)LoadDataType.TargetCard)]], CompositeResolver.Instance);
+
+                var data1 = LZ4MessagePackSerializer.Deserialize<MorphData>
+                    ((byte[])data.data[DataKeys[((int)LoadDataType.OrigSize)]], CompositeResolver.Instance);
+
+                var isCurData = LZ4MessagePackSerializer.Deserialize<bool>
+                    ((byte[])data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]], CompositeResolver.Instance);
 
 
 
-				data2.abmx.ForceSplitStatus();//needed since split is not saved 😥
-				if(data2.abmx.body.SequenceEqual(data2.abmx.face, (k) => k.BoneName))
-					data2.abmx.Clear();
-				if(data1.abmx.body.SequenceEqual(data1.abmx.face, (k) => k.BoneName))
-					data1.abmx.Clear();
+                data2.abmx.ForceSplitStatus();//needed since split is not saved 😥
+                if(data2.abmx.body.SequenceEqual(data2.abmx.face, (k) => k.BoneName))
+                    data2.abmx.Clear();
+                if(data1.abmx.body.SequenceEqual(data1.abmx.face, (k) => k.BoneName))
+                    data1.abmx.Clear();
 
 
-				//	var newValues = values.all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value.Clone()));
+                //	var newValues = values.all.ToDictionary(k => k.Key, v => v.Value.ToDictionary(k => k.Key, v2 => v2.Value.Clone()));
 
-				if(ctrl.IsReloading)//can only be done when reloading 
-					ctrl.SoftSaveControls(CanUseCardMorphData);//keep this here
+                if(ctrl.IsReloading)//can only be done when reloading 
+                    ctrl.SoftSaveControls(CanUseCardMorphData);//keep this here
 
-				//	Logger.LogDebug("DATA 2");
-				ctrl.m_data2.Copy(data2);
+                //	Logger.LogDebug("DATA 2");
+                ctrl.m_data2.Copy(data2);
 
-				values.CorrectAbmxStates();
-				ctrl.ctrls2 = values.Clone();
+                values.CorrectAbmxStates();
+                ctrl.ctrls2 = values.Clone();
 
-				if(CanUseCardMorphData)
-					ctrl.controls.Copy(ctrl.ctrls2);
+                if(CanUseCardMorphData)
+                    ctrl.controls.Copy(ctrl.ctrls2);
 
-				//get original 
-				data1.abmx.ForceSplitStatus();
+                //get original 
+                data1.abmx.ForceSplitStatus();
 
-				//	Logger.LogDebug("DATA 1");
-				if(cfg.loadInitMorphCharacter.Value)
-					ctrl.m_data1.Copy(data1);
-			}
-			catch(Exception e)
-			{
-				Logger.Log(Error | Message, $"Could not load PluginData:\n{e}\n");
-				return null;
-			}
+                //	Logger.LogDebug("DATA 1");
+                if(cfg.loadInitMorphCharacter.Value)
+                    ctrl.m_data1.Copy(data1);
+            }
+            catch(Exception e)
+            {
+                Logger.Log(Error | Message, $"Could not load PluginData:\n{e}\n");
+                return null;
+            }
 
-			return data;
-		}
+            return data;
+        }
 
-		public override PluginData Save(CharaMorpher_Controller ctrl, PluginData data = null)
-		{
-			if(!CharaMorpher_Core.cfg.saveExtData.Value) return null;
-			if(data == null)
-				data = new PluginData() { version = Version, };
+        public override PluginData Save(CharaMorpher_Controller ctrl, PluginData data = null)
+        {
+            if(!CharaMorpher_Core.cfg.saveExtData.Value) return null;
+            if(data == null)
+                data = new PluginData() { version = Version, };
 
-			try
-			{
+            try
+            {
 
-				if(!ctrl.m_data2.abmx.isSplit) Logger.Log(Message | Warning,
-					"Target card data was not fully initialized. \n" +
-					"Issues may occur loading the card. \n" +
-					"Check the new card to make sure there are no issues!!!");
+                if(!ctrl.m_data2.abmx.isSplit) Logger.Log(Message | Warning,
+                    "Target card data was not fully initialized. \n" +
+                    "Issues may occur loading the card. \n" +
+                    "Check the new card to make sure there are no issues!!!");
 
-				byte[] check;
-				bool pass = true;
-				data.data[DataKeys[((int)LoadDataType.Enable)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.morphEnable, CompositeResolver.Instance);
-				pass &= check.IsNullOrEmpty();
-				data.data[DataKeys[((int)LoadDataType.EnableABMX)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.morphEnableABMX, CompositeResolver.Instance);
-				pass &= check.IsNullOrEmpty();
-				data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]] = check = LZ4MessagePackSerializer.Serialize(true, CompositeResolver.Instance);
-				pass &= check.IsNullOrEmpty();
+                byte[] check;
+                bool pass = true;
+                data.data[DataKeys[((int)LoadDataType.Enable)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.morphEnable, CompositeResolver.Instance);
+                pass &= !check.IsNullOrEmpty();
+                data.data[DataKeys[((int)LoadDataType.EnableABMX)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.morphEnableABMX, CompositeResolver.Instance);
+                pass &= !check.IsNullOrEmpty();
+                data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]] = check = LZ4MessagePackSerializer.Serialize(true, CompositeResolver.Instance);
+                pass &= !check.IsNullOrEmpty();
 
-				data.data[DataKeys[((int)LoadDataType.Values)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.controls, CompositeResolver.Instance);
-				pass &= check.IsNullOrEmpty();
-				data.data[DataKeys[((int)LoadDataType.TargetCard)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.m_data2, CompositeResolver.Instance);
-				pass &= check.IsNullOrEmpty();
+                data.data[DataKeys[((int)LoadDataType.Values)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.controls, CompositeResolver.Instance);
+                pass &= !check.IsNullOrEmpty();
+                data.data[DataKeys[((int)LoadDataType.TargetCard)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.m_data2, CompositeResolver.Instance);
+                pass &= !check.IsNullOrEmpty();
 
-				if(ctrl.m_data2.main.pngData.IsNullOrEmpty()) throw new Exception("png data does not exist...");
-				data.data[DataKeys[((int)LoadDataType.TargetPng)]] = check = ctrl.m_data2.main.pngData;
-				pass &= check.IsNullOrEmpty();
-				data.data[DataKeys[((int)LoadDataType.OrigSize)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.m_data1, CompositeResolver.Instance);
-				pass &= check.IsNullOrEmpty();
+                if(ctrl.m_data2.main.pngData.IsNullOrEmpty()) throw new Exception("png data does not exist...");
+                data.data[DataKeys[((int)LoadDataType.TargetPng)]] = check = ctrl.m_data2.main.pngData;
+                pass &= !check.IsNullOrEmpty();
+                data.data[DataKeys[((int)LoadDataType.OrigSize)]] = check = LZ4MessagePackSerializer.Serialize(ctrl.m_data1, CompositeResolver.Instance);
+                pass &= !check.IsNullOrEmpty();
 
-				if(!pass) throw new ArgumentException("there was no data in one or more parameters");
-			}
-			catch(Exception e)
-			{
-				Logger.Log(Error | Message, $"Could not save PluginData: \n {e} ");
-				return null;
-			}
+                if(!pass)
+                {
+                    string issues = "";
 
-			ctrl.SetExtendedData(data);
+                    foreach(var key in DataKeys)
+                        if(((byte[])data.data[key]).IsNullOrEmpty())
+                            issues += $"\n{key} is: {(((byte[])data.data[key]) == null ? "Null" : "Empty")}";
 
-			return data;
-		}
 
-	}
+                    throw new ArgumentException($"there was no data in one or more parameters: {issues}");
+                }
+            }
+            catch(Exception e)
+            {
+                Logger.Log(Error | Message, $"Could not save PluginData: \n {e} ");
+                return null;
+            }
 
-	/// <inheritdoc/>
-	public class SaveLoadManagerV2 : SaveLoadManagerV1
-	{
-		public new int Version => base.Version + 1;
+            ctrl.SetExtendedData(data);
 
-		public new string[] DataKeys => new[] { "MorphData_values", "MorphData_targetCard", "MorphData_targetPng", "MorphData_ogSize", "MorphData_isCurrenntData" };
+            return data;
+        }
 
-		public new enum LoadDataType : int
-		{
-			Values,
-			TargetCard,
-			TargetPng,
-			OrigSize,
-			HoldsFigureData,
-		}
+    }
 
-		/*
+    /// <inheritdoc/>
+    public class SaveLoadManagerV2 : SaveLoadManagerV1
+    {
+        public new int Version => base.Version + 1;
+
+        public new string[] DataKeys => new[] { "MorphData_values", "MorphData_targetCard", "MorphData_targetPng", "MorphData_ogSize", "MorphData_isCurrenntData" };
+
+        public new enum LoadDataType : int
+        {
+            Values,
+            TargetCard,
+            TargetPng,
+            OrigSize,
+            HoldsFigureData,
+        }
+
+        /*
 		 Data that can (potentially) affect the save:
 		* enum MorphCalcType
 		* class MorphControls
@@ -290,329 +301,329 @@ namespace Character_Morpher
 		 all I can think of for now
 		 */
 
-		/// <summary>
-		/// creates an updated version 
-		/// </summary>
-		/// <param name="data"></param>
-		/// <returns></returns>
-		protected new PluginData UpdateVersionFromPrev(CharaMorpher_Controller ctrl, PluginData data)
-		{
+        /// <summary>
+        /// creates an updated version 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected new PluginData UpdateVersionFromPrev(CharaMorpher_Controller ctrl, PluginData data)
+        {
 
-			if(data == null)
-				data = ctrl?.GetExtendedData(ctrl.IsReloading);
+            if(data == null)
+                data = ctrl?.GetExtendedData(ctrl.IsReloading);
 
-			if(data == null || data.version != Version)
-			{
+            if(data == null || data.version != Version)
+            {
 
-				data = base.UpdateVersionFromPrev(ctrl, data)?.Copy();
+                data = base.UpdateVersionFromPrev(ctrl, data)?.Copy();
 
-				if(cfg.debug.Value) Logger.LogDebug($"Old version: {data?.version.ToString() ?? "Don't exist..."}");
-				if(data != null && data.version == base.Version)
-				{
-					//last version
-					var values = LZ4MessagePackSerializer.Deserialize<Dictionary<string, Tuple<float, MorphCalcType>>>((byte[])data.data[DataKeys[0]], CompositeResolver.Instance);
-					var tmpVals = values.ToDictionary((k) => k.Key.Trim(),
-						(v) => new MorphSliderData(v.Key.Trim() /*just in case*/,
-						data: v.Value.Item1, calc: v.Value.Item2,
-						isABMX: bool.Parse(oldConversionList.FirstOrNull((p) => v.Key.Trim() == p[0].Trim())?[2] ?? bool.FalseString)));
+                if(cfg.debug.Value) Logger.LogDebug($"Old version: {data?.version.ToString() ?? "Don't exist..."}");
+                if(data != null && data.version == base.Version)
+                {
+                    //last version
+                    var values = LZ4MessagePackSerializer.Deserialize<Dictionary<string, Tuple<float, MorphCalcType>>>((byte[])data.data[DataKeys[0]], CompositeResolver.Instance);
+                    var tmpVals = values.ToDictionary((k) => k.Key.Trim(),
+                        (v) => new MorphSliderData(v.Key.Trim() /*just in case*/,
+                        data: v.Value.Item1, calc: v.Value.Item2,
+                        isABMX: bool.Parse(oldConversionList.FirstOrNull((p) => v.Key.Trim() == p[0].Trim())?[2] ?? bool.FalseString)));
 
-					var newValues = new MorphControls() { currentSet = defaultStr, all = { { defaultStr, tmpVals } } };
-					data.data[DataKeys[((int)LoadDataType.Values)]] = LZ4MessagePackSerializer.Serialize(newValues, CompositeResolver.Instance);
-					data.data[DataKeys[((int)LoadDataType.OrigSize)]] = LZ4MessagePackSerializer.Serialize(ctrl.m_data1, CompositeResolver.Instance);
-					//Todo: next line can be removed from newer versions (V3+)
-					data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]] = LZ4MessagePackSerializer.Serialize(false, CompositeResolver.Instance);
+                    var newValues = new MorphControls() { currentSet = defaultStr, all = { { defaultStr, tmpVals } } };
+                    data.data[DataKeys[((int)LoadDataType.Values)]] = LZ4MessagePackSerializer.Serialize(newValues, CompositeResolver.Instance);
+                    data.data[DataKeys[((int)LoadDataType.OrigSize)]] = LZ4MessagePackSerializer.Serialize(ctrl.m_data1, CompositeResolver.Instance);
+                    //Todo: next line can be removed from newer versions (V3+)
+                    data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]] = LZ4MessagePackSerializer.Serialize(false, CompositeResolver.Instance);
 
-					data.version = Version;
-				}
-			}
+                    data.version = Version;
+                }
+            }
 
-			if(data == null)
-				data = ctrl?.GetExtendedData(ctrl.IsReloading);
+            if(data == null)
+                data = ctrl?.GetExtendedData(ctrl.IsReloading);
 
-			//Todo: next 3 lines can be removed from newer versions (V3+)
-			if(data != null && !data.data.Keys.Contains(DataKeys[((int)LoadDataType.HoldsFigureData)]))
-				data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]] =
-					LZ4MessagePackSerializer.Serialize(true, CompositeResolver.Instance);
+            //Todo: next 3 lines can be removed from newer versions (V3+)
+            if(data != null && !data.data.Keys.Contains(DataKeys[((int)LoadDataType.HoldsFigureData)]))
+                data.data[DataKeys[((int)LoadDataType.HoldsFigureData)]] =
+                    LZ4MessagePackSerializer.Serialize(true, CompositeResolver.Instance);
 
-			return data;
-		}
-	}
+            return data;
+        }
+    }
 
-	/// <inheritdoc/>
-	public class SaveLoadManagerV1 : SaveLoadManager<CharaMorpher_Controller, PluginData>
-	{
-		public new int Version => 1;
+    /// <inheritdoc/>
+    public class SaveLoadManagerV1 : SaveLoadManager<CharaMorpher_Controller, PluginData>
+    {
+        public new int Version => 1;
 
-		public new string[] DataKeys => new[] { "MorphData_values", "MorphData_targetCard", "MorphData_targetPng", };
+        public new string[] DataKeys => new[] { "MorphData_values", "MorphData_targetCard", "MorphData_targetPng", };
 
-		public new enum LoadDataType : int
-		{
-			Values,
-			TargetCard,
-			TargetPng,
-		}
+        public new enum LoadDataType : int
+        {
+            Values,
+            TargetCard,
+            TargetPng,
+        }
 
-		internal class OldMorphControls
-		{
-			Dictionary<string, Tuple<float, MorphCalcType>> _all, _lastAll;
+        internal class OldMorphControls
+        {
+            Dictionary<string, Tuple<float, MorphCalcType>> _all, _lastAll;
 
-			Coroutine post;
-			public Dictionary<string, Tuple<float, MorphCalcType>> all
-			{
-				get
-				{
-					if(_all == null)
-					{
-						_all = new Dictionary<string, Tuple<float, MorphCalcType>>();
-						_lastAll = new Dictionary<string, Tuple<float, MorphCalcType>>();
-					}
+            Coroutine post;
+            public Dictionary<string, Tuple<float, MorphCalcType>> all
+            {
+                get
+                {
+                    if(_all == null)
+                    {
+                        _all = new Dictionary<string, Tuple<float, MorphCalcType>>();
+                        _lastAll = new Dictionary<string, Tuple<float, MorphCalcType>>();
+                    }
 
-					return _all;
-				}
-				set { _all = value; }
-			}
+                    return _all;
+                }
+                set { _all = value; }
+            }
 
-			/// <summary>
-			/// each value is set to one
-			/// </summary>
-			public Dictionary<string, Tuple<float, MorphCalcType>> fullVal
-			{
-				get
-				{
-					var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
-					for(int a = 0; a < tmp.Count; ++a)
-						tmp[tmp.Keys.ElementAt(a)] = Tuple.Create(1f, tmp[tmp.Keys.ElementAt(a)].Item2);
-					return tmp;
-				}
-			}
+            /// <summary>
+            /// each value is set to one
+            /// </summary>
+            public Dictionary<string, Tuple<float, MorphCalcType>> fullVal
+            {
+                get
+                {
+                    var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
+                    for(int a = 0; a < tmp.Count; ++a)
+                        tmp[tmp.Keys.ElementAt(a)] = Tuple.Create(1f, tmp[tmp.Keys.ElementAt(a)].Item2);
+                    return tmp;
+                }
+            }
 
-			/// <summary>
-			/// each value is set to zero
-			/// </summary>
-			public Dictionary<string, Tuple<float, MorphCalcType>> noVal
-			{
-				get
-				{
-					var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
-					for(int a = 0; a < tmp.Count; ++a)
-						tmp[tmp.Keys.ElementAt(a)] = Tuple.Create(0f, tmp[tmp.Keys.ElementAt(a)].Item2);
-					return tmp;
-				}
-			}
+            /// <summary>
+            /// each value is set to zero
+            /// </summary>
+            public Dictionary<string, Tuple<float, MorphCalcType>> noVal
+            {
+                get
+                {
+                    var tmp = all.ToDictionary(curr => curr.Key, curr => curr.Value);
+                    for(int a = 0; a < tmp.Count; ++a)
+                        tmp[tmp.Keys.ElementAt(a)] = Tuple.Create(0f, tmp[tmp.Keys.ElementAt(a)].Item2);
+                    return tmp;
+                }
+            }
 
-			/// <summary>
-			/// list of every control with an "overall" name
-			/// </summary>
-			public IEnumerable<KeyValuePair<string, Tuple<float, MorphCalcType>>> overall
-			{
-				get
-				=> all.Where((p) => Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
-			}
+            /// <summary>
+            /// list of every control with an "overall" name
+            /// </summary>
+            public IEnumerable<KeyValuePair<string, Tuple<float, MorphCalcType>>> overall
+            {
+                get
+                => all.Where((p) => Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
+            }
 
-			/// <summary>
-			/// list of every control w/o an "overall" name
-			/// </summary>
-			public IEnumerable<KeyValuePair<string, Tuple<float, MorphCalcType>>> notOverall
-			{
-				get
-				=> all.Where((p) => !Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
-			}
+            /// <summary>
+            /// list of every control w/o an "overall" name
+            /// </summary>
+            public IEnumerable<KeyValuePair<string, Tuple<float, MorphCalcType>>> notOverall
+            {
+                get
+                => all.Where((p) => !Regex.IsMatch(p.Key, "overall", RegexOptions.IgnoreCase));
+            }
 
-		}
+        }
 
-		[Serializable]
-		public class OldMorphData
-		{
-			[Serializable]
-			public class OldAMBXSections
-			{
-				public List<BoneModifier> body = new List<BoneModifier>();
-				public List<BoneModifier> face = new List<BoneModifier>();
-				private bool m_isLoaded = false;
-				private bool m_isSplit = false;
+        [Serializable]
+        public class OldMorphData
+        {
+            [Serializable]
+            public class OldAMBXSections
+            {
+                public List<BoneModifier> body = new List<BoneModifier>();
+                public List<BoneModifier> face = new List<BoneModifier>();
+                private bool m_isLoaded = false;
+                private bool m_isSplit = false;
 
-				public bool isLoaded { get => m_isLoaded; private set => m_isLoaded = value; }
-				public bool isSplit { get => m_isSplit; private set => m_isSplit = value; }
-
-
-				public void Populate(CharaMorpher_Controller morphControl, bool morph = false)
-				{
-					if(!ABMXDependency.IsInTargetVersionRange) return;
-
-					var boneCtrl = morph ? MorphTarget.extraCharacter?.GetComponent<BoneController>() : morphControl?.GetComponent<BoneController>();
-					var charaCtrl = morphControl?.ChaControl;
-
-					if(isLoaded) return;
-					//Store Bonemod Extended Data
-					{//helps get rid of data sooner
-
-						if(!boneCtrl) Logger.LogDebug("Bone controller doesn't exist");
-						if(!charaCtrl) Logger.LogDebug("Character controller doesn't exist");
-
-						//This is the second dumbest fix
-						//(I was changing the player character's bones when this was true ¯\_(ツ)_/¯)
-						var data = boneCtrl?.GetExtendedData(!morph);
-
-						var newModifiers = data.ReadBoneModifiers();
-						//body bonemods on
-						if(morph || BodyBonemodTgl)
-							body = new List<BoneModifier>(newModifiers);
-						//face bonemods on
-						if(morph || FaceBonemodTgl)
-							face = new List<BoneModifier>(newModifiers);
-
-						isLoaded = !!boneCtrl;//it can be shortened to just "boneCtrl" if I want
-					}
-
-					if(cfg.debug.Value)
-					{
-						if(morph) Logger.LogDebug("Character 2:");
-						else Logger.LogDebug("Character 1:");
-						foreach(var part in body) Logger.LogDebug("Bone: " + part.BoneName);
-					}
-
-					BoneSplit(morphControl, charaCtrl, morph);
-				}
-
-				//split up body & head bones
-				public void BoneSplit(CharaMorpher_Controller charaControl, ChaControl bodyCharaCtrl, bool morph = false)
-				{
-					if(!ABMXDependency.IsInTargetVersionRange) return;
-
-					var ChaControl = charaControl?.GetComponent<ChaControl>();
-					var ChaFileControl = ChaControl?.chaFile;
-
-					if(!bodyCharaCtrl?.objHeadBone) return;
-					if(isSplit || !isLoaded) return;
-
-					if(cfg.debug.Value) Logger.LogDebug("Splitting bones apart (this is gonna hurt)");
+                public bool isLoaded { get => m_isLoaded; private set => m_isLoaded = value; }
+                public bool isSplit { get => m_isSplit; private set => m_isSplit = value; }
 
 
-					var headRoot = bodyCharaCtrl.objHeadBone.transform.parent.parent;
+                public void Populate(CharaMorpher_Controller morphControl, bool morph = false)
+                {
+                    if(!ABMXDependency.IsInTargetVersionRange) return;
 
-					var headBones = new HashSet<string>(headRoot.GetComponentsInChildren<Transform>().Select(x => x.name)) { /*Additional*/headRoot.name };
+                    var boneCtrl = morph ? DummyChara<CharaMorpher_Controller>.extraCharacter?.GetComponent<BoneController>() : morphControl?.GetComponent<BoneController>();
+                    var charaCtrl = morphControl?.ChaControl;
 
-					//Load Body
-					if(morph || BodyBonemodTgl)
-						body.RemoveAll(x => headBones.Contains(x.BoneName));
+                    if(isLoaded) return;
+                    //Store Bonemod Extended Data
+                    {//helps get rid of data sooner
 
-					//Load face
-					if(morph || FaceBonemodTgl)
-					{
-						var bodyBones = new HashSet<string>(bodyCharaCtrl.objTop.transform.
-							GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
-						face.RemoveAll(x => bodyBones.Contains(x.BoneName));
-					}
+                        if(!boneCtrl) Logger.LogDebug("Bone controller doesn't exist");
+                        if(!charaCtrl) Logger.LogDebug("Character controller doesn't exist");
 
-					isSplit = true;
-				}
+                        //This is the second dumbest fix
+                        //(I was changing the player character's bones when this was true ¯\_(ツ)_/¯)
+                        var data = boneCtrl?.GetExtendedData(!morph);
 
-				public void ForceSplitStatus(bool force = true) { isSplit = force; isLoaded = force; }
+                        var newModifiers = data.ReadBoneModifiers();
+                        //body bonemods on
+                        if(morph || BodyBonemodTgl)
+                            body = new List<BoneModifier>(newModifiers);
+                        //face bonemods on
+                        if(morph || FaceBonemodTgl)
+                            face = new List<BoneModifier>(newModifiers);
 
+                        isLoaded = !!boneCtrl;//it can be shortened to just "boneCtrl" if I want
+                    }
 
-				public void Clear()
-				{
+                    if(cfg.debug.Value)
+                    {
+                        if(morph) Logger.LogDebug("Character 2:");
+                        else Logger.LogDebug("Character 1:");
+                        foreach(var part in body) Logger.LogDebug("Bone: " + part.BoneName);
+                    }
 
-					if(BodyBonemodTgl)
-						body?.Clear();
-					if(FaceBonemodTgl)
-						face?.Clear();
+                    BoneSplit(morphControl, charaCtrl, morph);
+                }
 
+                //split up body & head bones
+                public void BoneSplit(CharaMorpher_Controller charaControl, ChaControl bodyCharaCtrl, bool morph = false)
+                {
+                    if(!ABMXDependency.IsInTargetVersionRange) return;
 
+                    var ChaControl = charaControl?.GetComponent<ChaControl>();
+                    var ChaFileControl = ChaControl?.chaFile;
 
-					isLoaded = false;
-					isSplit = false;
-				}
+                    if(!bodyCharaCtrl?.objHeadBone) return;
+                    if(isSplit || !isLoaded) return;
 
-				public OldAMBXSections Copy()
-				{
-					return new OldAMBXSections()
-					{
-						body = new List<BoneModifier>(body ?? new List<BoneModifier>()),
-						face = new List<BoneModifier>(face ?? new List<BoneModifier>()),
-
-						m_isSplit = m_isSplit,
-						m_isLoaded = m_isLoaded,
-					};
-				}
-			}
-
-			public ChaFileControl main = new ChaFileControl();
-			public OldAMBXSections abmx = new OldAMBXSections();
+                    if(cfg.debug.Value) Logger.LogDebug("Splitting bones apart (this is gonna hurt)");
 
 
-			public void Clear()
-			{
-				main = new ChaFileControl();
-				abmx.Clear();
-			}
+                    var headRoot = bodyCharaCtrl.objHeadBone.transform.parent.parent;
 
-			public OldMorphData Clone()
-			{
-				var tmp = new ChaFileControl();
-				try
-				{
-					tmp.CopyAll(main);
-					tmp.pngData = main.pngData.ToArray();//copy
+                    var headBones = new HashSet<string>(headRoot.GetComponentsInChildren<Transform>().Select(x => x.name)) { /*Additional*/headRoot.name };
+
+                    //Load Body
+                    if(morph || BodyBonemodTgl)
+                        body.RemoveAll(x => headBones.Contains(x.BoneName));
+
+                    //Load face
+                    if(morph || FaceBonemodTgl)
+                    {
+                        var bodyBones = new HashSet<string>(bodyCharaCtrl.objTop.transform.
+                            GetComponentsInChildren<Transform>().Select(x => x.name).Except(headBones));
+                        face.RemoveAll(x => bodyBones.Contains(x.BoneName));
+                    }
+
+                    isSplit = true;
+                }
+
+                public void ForceSplitStatus(bool force = true) { isSplit = force; isLoaded = force; }
+
+
+                public void Clear()
+                {
+
+                    if(BodyBonemodTgl)
+                        body?.Clear();
+                    if(FaceBonemodTgl)
+                        face?.Clear();
+
+
+
+                    isLoaded = false;
+                    isSplit = false;
+                }
+
+                public OldAMBXSections Copy()
+                {
+                    return new OldAMBXSections()
+                    {
+                        body = new List<BoneModifier>(body ?? new List<BoneModifier>()),
+                        face = new List<BoneModifier>(face ?? new List<BoneModifier>()),
+
+                        m_isSplit = m_isSplit,
+                        m_isLoaded = m_isLoaded,
+                    };
+                }
+            }
+
+            public ChaFileControl main = new ChaFileControl();
+            public OldAMBXSections abmx = new OldAMBXSections();
+
+
+            public void Clear()
+            {
+                main = new ChaFileControl();
+                abmx.Clear();
+            }
+
+            public OldMorphData Clone()
+            {
+                var tmp = new ChaFileControl();
+                try
+                {
+                    tmp.CopyAll(main);
+                    tmp.pngData = main.pngData.ToArray();//copy
 #if KOI_API
 					tmp.facePngData = main.facePngData.ToArray();//copy
 #endif
-				}
-				catch(Exception e) { Logger.LogError("Could not copy character data:\n" + e); }
+                }
+                catch(Exception e) { Logger.LogError("Could not copy character data:\n" + e); }
 #if HONEY_API
-				//CopyAll will not copy this data in hs2
-				tmp.dataID = main.dataID;
+                //CopyAll will not copy this data in hs2
+                tmp.dataID = main.dataID;
 #endif
 
-				return new OldMorphData() { main = tmp, abmx = abmx.Copy() };
-			}
+                return new OldMorphData() { main = tmp, abmx = abmx.Copy() };
+            }
 
-			public void Copy(OldMorphData data)
-			{
-				if(data == null) return;
+            public void Copy(OldMorphData data)
+            {
+                if(data == null) return;
 
-				var tmp = data.Clone();
-				this.main = tmp.main;
-				this.abmx = tmp.abmx;
-			}
+                var tmp = data.Clone();
+                this.main = tmp.main;
+                this.abmx = tmp.abmx;
+            }
 
-			public void Copy(CharaMorpher_Controller data, bool morph = false)
-			{
+            public void Copy(CharaMorpher_Controller data, bool morph = false)
+            {
 
 #if HONEY_API
-				//CopyAll will not copy this data in hs2/AI
-				main.dataID = morph ? MorphTarget.chaFile.dataID : data.ChaControl.chaFile.dataID;
+                //CopyAll will not copy this data in hs2/AI
+                main.dataID = morph ? DummyChara<CharaMorpher_Controller>.chaFile.dataID : data.ChaControl.chaFile.dataID;
 #endif
 
-				try
-				{
-					main.CopyAll(morph ? MorphTarget.chaFile : data.ChaFileControl);
-					main.pngData = (morph ? MorphTarget.chaFile.pngData :
-						data.ChaFileControl.pngData)?.ToArray();
+                try
+                {
+                    main.CopyAll(morph ? DummyChara<CharaMorpher_Controller>.chaFile : data.ChaFileControl);
+                    main.pngData = (morph ? DummyChara<CharaMorpher_Controller>.chaFile.pngData :
+                        data.ChaFileControl.pngData)?.ToArray();
 #if KOI_API
-					main.facePngData = (morph ? MorphTarget.chaFile.facePngData :
+					main.facePngData = (morph ? DummyChara<CharaMorpher_Controller>.chaFile.facePngData :
 						data.ChaFileControl.facePngData)?.ToArray();
 #endif
-				}
-				catch(Exception e) { Logger.LogError("Could not copy character data:\n" + e); }
+                }
+                catch(Exception e) { Logger.LogError("Could not copy character data:\n" + e); }
 
-				abmx.Populate(data, morph);
-			}
-		}
+                abmx.Populate(data, morph);
+            }
+        }
 
-		/// <summary>
-		/// creates an updated version (can NOT be called on base version)
-		/// </summary>
-		/// <param name="data"></param>
-		/// <returns></returns>
-		protected override PluginData UpdateVersionFromPrev(CharaMorpher_Controller ctrl, PluginData data)
-		{
+        /// <summary>
+        /// creates an updated version (can NOT be called on base version)
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected override PluginData UpdateVersionFromPrev(CharaMorpher_Controller ctrl, PluginData data)
+        {
 
-			if(data == null)
-				data = ctrl?.GetExtendedData(ctrl.IsReloading);
+            if(data == null)
+                data = ctrl?.GetExtendedData(ctrl.IsReloading);
 
-			return data;
-		}
+            return data;
+        }
 
-	}
+    }
 }
